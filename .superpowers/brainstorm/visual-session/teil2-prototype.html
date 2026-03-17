@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 2 — Grenzen & Halluzinationen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff; color: #1a1a1a;
+    overflow: hidden; height: 100vh;
+    cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  .slide {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem; opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  .slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+  .slide-inner { max-width: 1000px; width: 100%; }
+
+  .progress { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(135deg, #fabb43 0%, #ea580c 100%); z-index: 1000; transition: width 0.5s; }
+
+  .overline { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: #fabb43; margin-bottom: 1.2rem; opacity: 0; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 600; line-height: 1.15; margin-bottom: 1.2rem; letter-spacing: -0.02em; opacity: 0; }
+  h1 .hl { color: #fabb43; }
+  .subtitle { font-size: 1.15rem; color: #777; max-width: 500px; line-height: 1.55; opacity: 0; }
+
+  .nav { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.5rem; z-index: 100; }
+  .nav-counter { font-size: 0.75rem; color: #bbb; font-variant-numeric: tabular-nums; margin-right: 0.25rem; }
+  .nav-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e0e0e0;
+    background: white; color: #666; cursor: pointer; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: #fabb43; border-color: #fabb43; color: white; }
+  .nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: white; border-color: #e0e0e0; color: #666; }
+
+  /* === SLIDE 2: Hallucination === */
+  .halluc-container { margin-top: 2rem; max-width: 700px; }
+
+  .halluc-box {
+    background: #fafafa; border: 1px solid #eee; border-radius: 14px;
+    padding: 1.8rem 2rem; position: relative; overflow: hidden;
+    opacity: 0;
+  }
+  .halluc-text { font-size: 1rem; line-height: 1.8; color: #333; }
+  .halluc-text .fake {
+    position: relative; display: inline;
+  }
+  .halluc-text .fake .underline {
+    position: absolute; left: -2px; right: -2px; bottom: -1px;
+    height: 3px; background: #dc2626; opacity: 0;
+    border-radius: 2px;
+  }
+
+  .halluc-reveals {
+    margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .halluc-reveal-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    font-size: 0.9rem; opacity: 0;
+  }
+  .reveal-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+  }
+  .reveal-icon.bad { background: rgba(220,38,38,0.08); color: #dc2626; }
+  .reveal-icon.good { background: rgba(22,163,74,0.08); color: #16a34a; }
+
+  .halluc-quote {
+    margin-top: 2rem; font-size: 1.1rem; font-style: italic;
+    color: #92400e; border-left: 3px solid #fabb43; padding-left: 1.2rem;
+    line-height: 1.5; opacity: 0;
+  }
+
+  /* Glitch effect */
+  .glitch-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; opacity: 0; z-index: 5;
+  }
+  .glitch-bar {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: rgba(220, 38, 38, 0.3);
+  }
+
+  /* === SLIDE 3: What we know === */
+  .two-cols {
+    display: flex; gap: 3rem; margin-top: 2.5rem;
+  }
+  .col { flex: 1; }
+  .col-header {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 1rem; padding-bottom: 0.6rem;
+    border-bottom: 2px solid;
+  }
+  .col-header.know { color: #16a34a; border-color: #16a34a; }
+  .col-header.dont { color: #dc2626; border-color: #dc2626; }
+
+  .col-item {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    margin-bottom: 0.8rem; opacity: 0;
+  }
+  .col-item .icon {
+    font-size: 0.9rem; font-weight: 700; margin-top: 2px; flex-shrink: 0;
+  }
+  .col-item .icon.green { color: #16a34a; }
+  .col-item .icon.red { color: #dc2626; }
+  .col-item .text { font-size: 0.95rem; color: #444; line-height: 1.45; }
+
+  /* === SLIDE 4: Risks === */
+  .risk-list {
+    margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem;
+  }
+  .risk-item {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.2rem 1.5rem; background: #fafafa;
+    border-radius: 12px; border: 1px solid #eee;
+    opacity: 0;
+    transition: border-color 0.2s;
+  }
+  .risk-item:hover { border-color: rgba(220,38,38,0.2); }
+  .risk-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(220,38,38,0.06); color: #dc2626;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .risk-content { flex: 1; }
+  .risk-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .risk-desc { font-size: 0.8rem; color: #888; line-height: 1.45; }
+
+  .rule-box {
+    margin-top: 2rem; padding: 1rem 1.5rem;
+    background: rgba(22,163,74,0.05); border-left: 4px solid #16a34a;
+    border-radius: 0 10px 10px 0; opacity: 0;
+  }
+  .rule-box strong { color: #16a34a; }
+  .rule-box span { font-size: 0.95rem; color: #444; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- SLIDE 1: Section Opener -->
+<div class="slide active" id="s1">
+  <div class="slide-inner" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+    <div class="overline">Teil 2</div>
+    <h1>Was KI <span class="hl">nicht</span> kann</h1>
+    <div class="subtitle" style="text-align:center;">"...und warum das unvermeidlich ist."</div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Hallucination -->
+<div class="slide" id="s2">
+  <div class="slide-inner">
+    <div class="overline">Halluzinationen</div>
+    <h1>Warum KI <span class="hl">überzeugend falsch</span> liegt</h1>
+    <div class="halluc-container">
+      <div class="halluc-box" id="hallucBox">
+        <div class="glitch-overlay" id="glitchOverlay">
+          <div class="glitch-bar" style="top:12%;"></div>
+          <div class="glitch-bar" style="top:38%;"></div>
+          <div class="glitch-bar" style="top:55%;"></div>
+          <div class="glitch-bar" style="top:78%;"></div>
+        </div>
+        <div class="halluc-text">
+          „Gemäß der BGH-Entscheidung
+          <span class="fake" id="f1">X&nbsp;ZR&nbsp;47/19<span class="underline"></span></span>
+          vom
+          <span class="fake" id="f2">14.03.2021<span class="underline"></span></span>
+          wurde festgestellt, dass der Patentanspruch 1 durch die Druckschrift
+          <span class="fake" id="f3">DE&nbsp;10&nbsp;2019&nbsp;123&nbsp;456&nbsp;A1<span class="underline"></span></span>
+          neuheitsschädlich vorweggenommen wird."
+        </div>
+        <div class="halluc-reveals" id="reveals">
+          <div class="halluc-reveal-item"><div class="reveal-icon bad">✗</div><span>Aktenzeichen existiert nicht</span></div>
+          <div class="halluc-reveal-item"><div class="reveal-icon bad">✗</div><span>Datum stimmt nicht</span></div>
+          <div class="halluc-reveal-item"><div class="reveal-icon bad">✗</div><span>Druckschrift existiert nicht</span></div>
+          <div class="halluc-reveal-item"><div class="reveal-icon good">✓</div><span>Klingt absolut überzeugend</span></div>
+        </div>
+      </div>
+      <div class="halluc-quote" id="hallucQuote">
+        „Die KI halluziniert nicht TROTZ ihrer Funktionsweise — sondern WEGEN."
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: What we know / don't know -->
+<div class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="overline">Der Stand der Forschung</div>
+    <h1>Was wir <span class="hl">wissen</span> — und was nicht</h1>
+    <div class="two-cols">
+      <div class="col">
+        <div class="col-header know">Was wir wissen</div>
+        <div class="col-item"><span class="icon green">✓</span><span class="text">Architektur (Transformer)</span></div>
+        <div class="col-item"><span class="icon green">✓</span><span class="text">Trainingsdaten (grob)</span></div>
+        <div class="col-item"><span class="icon green">✓</span><span class="text">Wie Attention funktioniert</span></div>
+        <div class="col-item"><span class="icon green">✓</span><span class="text">Mathematische Grundlagen</span></div>
+        <div class="col-item"><span class="icon green">✓</span><span class="text">Warum Halluzinationen passieren</span></div>
+      </div>
+      <div class="col">
+        <div class="col-header dont">Was wir NICHT wissen</div>
+        <div class="col-item"><span class="icon red">?</span><span class="text">Warum bestimmte Fähigkeiten plötzlich entstehen</span></div>
+        <div class="col-item"><span class="icon red">?</span><span class="text">Was einzelne Neuronen genau tun</span></div>
+        <div class="col-item"><span class="icon red">?</span><span class="text">Ob echtes „Verstehen" stattfindet</span></div>
+        <div class="col-item"><span class="icon red">?</span><span class="text">Wo die Grenzen der Fähigkeiten liegen</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Risks for patent attorneys -->
+<div class="slide" id="s4">
+  <div class="slide-inner">
+    <div class="overline">Risiken für die Praxis</div>
+    <h1>Wo es für Patentanwälte <span class="hl">gefährlich</span> wird</h1>
+    <div class="risk-list">
+      <div class="risk-item">
+        <div class="risk-icon">⚠</div>
+        <div class="risk-content">
+          <div class="risk-title">Erfundene Rechtsprechung & Aktenzeichen</div>
+          <div class="risk-desc">KI generiert formal korrekte Aktenzeichen, die nicht existieren. Sieht aus wie echte BGH-Entscheidungen.</div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-icon">⚠</div>
+        <div class="risk-content">
+          <div class="risk-title">Plausible aber falsche technische Beschreibungen</div>
+          <div class="risk-desc">Technische Details klingen richtig, sind aber subtil falsch — besonders bei Randbereichen.</div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-icon">⚠</div>
+        <div class="risk-content">
+          <div class="risk-title">Subtile Fehler in Anspruchsformulierungen</div>
+          <div class="risk-desc">Formulierungen sehen gut aus, aber die Schutzbereich-Grenzen stimmen nicht oder Merkmale fehlen.</div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-icon">⚠</div>
+        <div class="risk-content">
+          <div class="risk-title">Falsche Sicherheit durch überzeugende Sprache</div>
+          <div class="risk-desc">KI schreibt in perfektem Fachdeutsch — das macht es schwerer, Fehler zu erkennen.</div>
+        </div>
+      </div>
+    </div>
+    <div class="rule-box" id="ruleBox">
+      <strong>Regel #1:</strong> <span>KI-Output ist ein Entwurf, niemals ein Ergebnis. IMMER verifizieren.</span>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <span class="nav-counter"><span id="cur">1</span>/4</span>
+  <button class="nav-btn" id="prevBtn" disabled>←</button>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+let animating = false;
+
+function animateIn(idx) {
+  const s = slides[idx];
+
+  // Standard elements
+  const els = s.querySelectorAll('.overline, h1, .subtitle');
+  gsap.set(els, { opacity: 0, y: 30 });
+  gsap.to(els, { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out', delay: 0.15 });
+
+  // Slide-specific animations
+  if (idx === 1) animateHallucination();
+  if (idx === 2) animateKnowledge();
+  if (idx === 3) animateRisks();
+}
+
+function animateOut(idx, dir) {
+  const s = slides[idx];
+  const all = s.querySelectorAll('.overline, h1, .subtitle, .halluc-box, .halluc-quote, .halluc-reveal-item, .col-item, .risk-item, .rule-box');
+  return gsap.to(all, { opacity: 0, x: -35 * dir, duration: 0.35, stagger: 0.02, ease: 'power2.in' });
+}
+
+// === HALLUCINATION ANIMATION ===
+function animateHallucination() {
+  const tl = gsap.timeline({ delay: 0.8 });
+
+  // Box appears clean
+  tl.to('#hallucBox', { opacity: 1, duration: 0.6 });
+
+  // Pause — let them read
+  tl.to({}, { duration: 2.5 });
+
+  // GLITCH flash
+  tl.to('#glitchOverlay', { opacity: 1, duration: 0.08 });
+  tl.to('#glitchOverlay', { opacity: 0, duration: 0.05 }, '+=0.06');
+  tl.to('#glitchOverlay', { opacity: 0.8, duration: 0.05 }, '+=0.1');
+  tl.to('#glitchOverlay', { opacity: 0, duration: 0.08 }, '+=0.04');
+  tl.to('#glitchOverlay', { opacity: 0.5, duration: 0.04 }, '+=0.15');
+  tl.to('#glitchOverlay', { opacity: 0, duration: 0.1 }, '+=0.03');
+
+  // Red underlines appear under fake data
+  tl.to('#f1 .underline', { opacity: 1, duration: 0.3 }, '+=0.2');
+  tl.to('#f2 .underline', { opacity: 1, duration: 0.3 }, '+=0.1');
+  tl.to('#f3 .underline', { opacity: 1, duration: 0.3 }, '+=0.1');
+
+  // Reveal items
+  const reveals = document.querySelectorAll('#reveals .halluc-reveal-item');
+  tl.to(reveals[0], { opacity: 1, duration: 0.4 }, '+=0.3');
+  tl.to(reveals[1], { opacity: 1, duration: 0.4 }, '+=0.15');
+  tl.to(reveals[2], { opacity: 1, duration: 0.4 }, '+=0.15');
+  // "Klingt überzeugend" last, with a pause
+  tl.to(reveals[3], { opacity: 1, duration: 0.5 }, '+=0.4');
+
+  // Quote
+  tl.to('#hallucQuote', { opacity: 1, duration: 0.7 }, '+=0.5');
+}
+
+// === KNOWLEDGE ANIMATION ===
+function animateKnowledge() {
+  const tl = gsap.timeline({ delay: 0.8 });
+
+  // Left column first
+  const leftItems = document.querySelectorAll('#s3 .col:first-child .col-item');
+  tl.to(leftItems, { opacity: 1, duration: 0.5, stagger: 0.15 });
+
+  // Pause
+  tl.to({}, { duration: 0.6 });
+
+  // Right column
+  const rightItems = document.querySelectorAll('#s3 .col:last-child .col-item');
+  tl.to(rightItems, { opacity: 1, duration: 0.5, stagger: 0.15 });
+}
+
+// === RISKS ANIMATION ===
+function animateRisks() {
+  const tl = gsap.timeline({ delay: 0.8 });
+
+  const items = document.querySelectorAll('#s4 .risk-item');
+  items.forEach((item, i) => {
+    gsap.set(item, { opacity: 0, y: 20 });
+    tl.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, i * 0.2);
+  });
+
+  // Rule box last
+  tl.to('#ruleBox', { opacity: 1, duration: 0.6, ease: 'power2.out' }, '+=0.4');
+}
+
+// === NAV ===
+function goTo(idx) {
+  if (idx === current || animating || idx < 0 || idx >= slides.length) return;
+  animating = true;
+  const dir = idx > current ? 1 : -1;
+  const old = current;
+
+  // Reset glitch/reveal state if going back to hallucination slide
+  if (idx === 1) {
+    gsap.set('#hallucBox', { opacity: 0 });
+    gsap.set('#glitchOverlay', { opacity: 0 });
+    gsap.set('.underline', { opacity: 0 });
+    gsap.set('#reveals .halluc-reveal-item', { opacity: 0 });
+    gsap.set('#hallucQuote', { opacity: 0 });
+  }
+
+  animateOut(old, dir).then(() => {
+    slides[old].classList.remove('active');
+    slides[idx].classList.add('active');
+    current = idx;
+    updateUI();
+    animateIn(idx);
+    setTimeout(() => animating = false, 700);
+  });
+}
+
+function updateUI() {
+  document.getElementById('cur').textContent = current + 1;
+  document.getElementById('progress').style.width = ((current + 1) / slides.length * 100) + '%';
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').disabled = current === slides.length - 1;
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+});
+
+animateIn(0);
+</script>
+
+</body>
+</html>

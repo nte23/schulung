@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recall Drawer Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; }
+
+  /* Current slide content */
+  .slide-content {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s;
+  }
+  .slide-content.pushed-up { transform: translateY(-25%) scale(0.85); filter: blur(3px) brightness(0.9); }
+
+  .slide-inner { max-width: 800px; width: 100%; }
+  .overline { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: #fabb43; margin-bottom: 1rem; }
+  h1 { font-size: 2.5rem; font-weight: 600; line-height: 1.15; margin-bottom: 1.2rem; }
+  h1 .hl { color: #fabb43; }
+  .body-text { font-size: 1rem; color: #666; line-height: 1.7; max-width: 550px; }
+
+  /* === THE DRAWER === */
+  .recall-drawer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    transform: translateY(100%);
+    z-index: 100;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .recall-drawer.open { transform: translateY(0); }
+
+  .drawer-handle {
+    display: flex; justify-content: center; padding: 0.5rem;
+  }
+  .drawer-handle-bar {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  .drawer-body {
+    background: #fafafa;
+    border-top: 1px solid #eee;
+    border-radius: 20px 20px 0 0;
+    padding: 2rem 3rem 2.5rem;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.1);
+    height: 68vh;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .drawer-title {
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #fabb43;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .drawer-title .icon { font-size: 0.9rem; }
+  .drawer-close {
+    font-size: 0.65rem; color: #bbb; cursor: pointer;
+    padding: 0.3rem 0.6rem; border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .drawer-close:hover { background: #eee; }
+
+  .drawer-cards {
+    display: flex; gap: 1.5rem; flex: 1;
+    padding-bottom: 0.5rem; overflow-x: auto;
+    align-items: stretch;
+  }
+  .drawer-card {
+    min-width: 280px; flex: 1; flex-shrink: 0;
+    background: white; border: 1px solid #eee;
+    border-radius: 14px; padding: 1.5rem 1.8rem;
+    cursor: default; transition: border-color 0.2s;
+    display: flex; flex-direction: column;
+  }
+  .drawer-card:hover { border-color: rgba(250,187,67,0.3); }
+  .drawer-card .dc-from {
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #bbb; margin-bottom: 0.5rem;
+  }
+  .drawer-card .dc-title {
+    font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;
+  }
+  .drawer-card .dc-body {
+    font-size: 0.88rem; color: #666; line-height: 1.6; flex: 1;
+  }
+  .drawer-card .dc-visual {
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;
+  }
+
+  /* Mini token chips in recall */
+  .mini-tokens { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mini-tok { padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; color: white; font-weight: 500; }
+
+  /* Mini bars */
+  .mini-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .mini-bar-word { font-size: 0.75rem; width: 70px; text-align: right; color: #999; }
+  .mini-bar-fill { height: 10px; border-radius: 4px; }
+
+  /* Trigger buttons at bottom */
+  .trigger-bar {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 0.5rem; z-index: 50;
+  }
+  .trigger-btn {
+    padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid #e0e0e0;
+    background: white; font-family: inherit; font-size: 0.7rem;
+    color: #555; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .trigger-btn:hover { border-color: #fabb43; background: rgba(250,187,67,0.04); }
+  .trigger-btn .key {
+    font-size: 0.55rem; font-weight: 600; color: #bbb;
+    background: #f5f5f5; padding: 0.15rem 0.4rem; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Current slide (example: Few-Shot Prompting) -->
+<div class="slide-content" id="slideContent">
+  <div class="slide-inner">
+    <div class="overline">Technik 2: Few-Shot</div>
+    <h1>Beispiele geben → <span class="hl">Muster vorgeben</span></h1>
+    <div class="body-text">
+      Wenn du der KI 2-3 Beispiele gibst, versteht sie das gewünschte Format und den Stil automatisch. Die Qualität steigt dramatisch — besonders bei Fach-Sprache wie Patentansprüchen.
+      <br><br>
+      <em style="color:#999;">Erinnerst du dich, warum das funktioniert? Die Beispiele verschieben die Wahrscheinlichkeitsverteilung...</em>
+    </div>
+  </div>
+</div>
+
+<!-- RECALL DRAWER -->
+<div class="recall-drawer" id="drawer">
+  <div class="drawer-handle"><div class="drawer-handle-bar"></div></div>
+  <div class="drawer-body">
+    <div class="drawer-header">
+      <div class="drawer-title"><span class="icon">↩</span> Erinnerst du dich?</div>
+      <div class="drawer-close" id="closeDrawer">Schließen ✕</div>
+    </div>
+    <div class="drawer-cards" id="drawerCards">
+      <!-- Cards get swapped based on which recall is triggered -->
+    </div>
+  </div>
+</div>
+
+<!-- Trigger buttons -->
+<div class="trigger-bar" id="triggerBar">
+  <div class="trigger-btn" data-recall="tokens">
+    <span>↩ Tokenisierung</span>
+    <span class="key">1</span>
+  </div>
+  <div class="trigger-btn" data-recall="nextoken">
+    <span>↩ Next-Token</span>
+    <span class="key">2</span>
+  </div>
+  <div class="trigger-btn" data-recall="temperature">
+    <span>↩ Temperature</span>
+    <span class="key">3</span>
+  </div>
+  <div class="trigger-btn" data-recall="halluc">
+    <span>↩ Halluzination</span>
+    <span class="key">4</span>
+  </div>
+</div>
+
+<script>
+const drawer = document.getElementById('drawer');
+const slideContent = document.getElementById('slideContent');
+const drawerCards = document.getElementById('drawerCards');
+let isOpen = false;
+
+// Pre-built recall card sets
+const recalls = {
+  tokens: [
+    {
+      from: 'Teil 1, Slide 5',
+      title: 'Tokenisierung',
+      body: 'Text wird in nummerierte Bausteine zerlegt. "Patentanspruch" → 2 Tokens.',
+      visual: `<div class="mini-tokens">
+        <span class="mini-tok" style="background:#4a90d9;">Der</span>
+        <span class="mini-tok" style="background:#7c5cbf;">Patent</span>
+        <span class="mini-tok" style="background:#e8853d;">anspruch</span>
+        <span class="mini-tok" style="background:#3daa8f;">betrifft</span>
+      </div>`
+    },
+    {
+      from: 'Teil 1, Slide 5',
+      title: '1 Wort → 2 Tokens',
+      body: '"Patentanspruch" wird vom Modell als zwei separate Bausteine verarbeitet — "Patent" + "anspruch".',
+      visual: ''
+    }
+  ],
+  nextoken: [
+    {
+      from: 'Teil 1, Slide 10',
+      title: 'Next-Token-Prediction',
+      body: 'Das Modell sagt das wahrscheinlichste nächste Wort vorher — Wort für Wort. Es WEISS die Antwort nicht.',
+      visual: `<div>
+        <div class="mini-bar-row"><div class="mini-bar-word">anspruch</div><div class="mini-bar-fill" style="width:68%;background:linear-gradient(90deg,#fabb43,#ea580c);"></div></div>
+        <div class="mini-bar-row"><div class="mini-bar-word">inhaber</div><div class="mini-bar-fill" style="width:44%;background:#fabb43;opacity:0.6;"></div></div>
+        <div class="mini-bar-row"><div class="mini-bar-word">schutz</div><div class="mini-bar-fill" style="width:36%;background:#e0d5c0;"></div></div>
+      </div>`
+    }
+  ],
+  temperature: [
+    {
+      from: 'Teil 1, Slide 11',
+      title: 'Temperature',
+      body: 'T=0: immer #1 Wort. T=1: proportional. T=2: fast zufällig. Selbst bei T=0 halluziniert es!',
+      visual: ''
+    },
+    {
+      from: 'Teil 1, Slide 11',
+      title: 'Der Kreativitätsregler',
+      body: 'Höhere Temperature = flachere Wahrscheinlichkeitsverteilung = mehr "Kreativität" = mehr Risiko.',
+      visual: ''
+    }
+  ],
+  halluc: [
+    {
+      from: 'Teil 2, Slide 15-16',
+      title: 'Nicht TROTZ sondern WEGEN',
+      body: 'Halluzinationen passieren, weil das Modell Muster vervollständigt — nicht weil es kaputt ist. Plausibel ≠ wahr.',
+      visual: ''
+    },
+    {
+      from: 'Teil 2, Slide 16',
+      title: 'Fake-Zitat',
+      body: '"X ZR 47/19" — sieht echt aus, ist komplett generiert. Aktenzeichen, Datum, Druckschrift — alles erfunden.',
+      visual: ''
+    },
+    {
+      from: 'Teil 2, Slide 18',
+      title: 'Regel #1',
+      body: 'KI-Output ist ein Entwurf, niemals ein Ergebnis. IMMER verifizieren.',
+      visual: ''
+    }
+  ]
+};
+
+function openDrawer(recallKey) {
+  const cards = recalls[recallKey];
+  if (!cards) return;
+
+  drawerCards.innerHTML = '';
+  cards.forEach(card => {
+    const el = document.createElement('div');
+    el.className = 'drawer-card';
+    el.innerHTML = `
+      <div class="dc-from">${card.from}</div>
+      <div class="dc-title">${card.title}</div>
+      <div class="dc-body">${card.body}</div>
+      ${card.visual ? `<div class="dc-visual">${card.visual}</div>` : ''}
+    `;
+    drawerCards.appendChild(el);
+  });
+
+  drawer.classList.add('open');
+  slideContent.classList.add('pushed-up');
+  isOpen = true;
+}
+
+function closeDrawer() {
+  drawer.classList.remove('open');
+  slideContent.classList.remove('pushed-up');
+  isOpen = false;
+}
+
+// Button triggers
+document.querySelectorAll('.trigger-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const key = btn.dataset.recall;
+    if (isOpen) { closeDrawer(); setTimeout(() => openDrawer(key), 400); }
+    else openDrawer(key);
+  });
+});
+
+// Close button
+document.getElementById('closeDrawer').addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeDrawer();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === '1') openDrawer('tokens');
+  if (e.key === '2') openDrawer('nextoken');
+  if (e.key === '3') openDrawer('temperature');
+  if (e.key === '4') openDrawer('halluc');
+  if (e.key === 'Escape') closeDrawer();
+});
+
+// Click on slide closes drawer
+slideContent.addEventListener('click', () => {
+  if (isOpen) closeDrawer();
+});
+</script>
+
+</body>
+</html>

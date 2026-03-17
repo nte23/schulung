@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; padding: 2.5rem; overflow-y: auto; line-height: 1.6; }
+
+  .page-header { max-width: 900px; margin: 0 auto 2.5rem; }
+  .page-header .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #fabb43; margin-bottom: 0.4rem; }
+  .page-header h1 { font-size: 1.6rem; font-weight: 600; }
+  .page-header p { font-size: 0.85rem; color: #888; margin-top: 0.3rem; }
+
+  .section { max-width: 900px; margin: 0 auto 3rem; }
+  .section h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #fabb43; display: inline-block; }
+  .section h3 { font-size: 0.85rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.4rem; color: #555; }
+  .section p { font-size: 0.82rem; color: #666; margin-bottom: 0.5rem; }
+
+  .principle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1rem; }
+  .principle {
+    background: white; border-radius: 12px; border: 1px solid #eee;
+    padding: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .principle .p-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.5rem; }
+  .principle .p-title .num { font-size: 0.6rem; font-weight: 700; color: white; background: #fabb43; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .principle .p-body { font-size: 0.75rem; color: #888; line-height: 1.5; }
+  .principle .p-example { font-size: 0.65rem; color: #fabb43; font-style: italic; margin-top: 0.4rem; }
+
+  .flow-diagram { background: white; border-radius: 14px; border: 1px solid #eee; padding: 1.5rem; margin-top: 1rem; }
+  .flow-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+  .flow-block {
+    padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.7rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .flow-block.white { background: white; border: 1px solid #eee; color: #555; }
+  .flow-block.dark { background: #1a1a1a; color: #fff; border: 1px solid #333; }
+  .flow-block.orange { background: rgba(250,187,67,0.1); color: #e5a530; border: 1px solid rgba(250,187,67,0.2); }
+  .flow-block.morph { background: rgba(124,92,191,0.08); color: #7c5cbf; border: 1px solid rgba(124,92,191,0.15); }
+  .flow-arrow { font-size: 0.9rem; color: #ddd; }
+
+  .mode-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+  .mode-card {
+    background: white; border-radius: 12px; border: 1px solid #eee; padding: 1.2rem;
+    text-align: center;
+  }
+  .mode-card .mc-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .mode-card .mc-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .mode-card .mc-desc { font-size: 0.7rem; color: #888; line-height: 1.4; }
+  .mode-card .mc-when { font-size: 0.6rem; color: #fabb43; font-weight: 500; margin-top: 0.5rem; }
+
+  .timing-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.75rem; }
+  .timing-table th { text-align: left; padding: 0.5rem 0.8rem; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: #999; border-bottom: 2px solid #eee; }
+  .timing-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #f5f5f5; color: #555; }
+  .timing-table td:first-child { font-weight: 600; color: #333; }
+  .timing-table .speed { font-variant-numeric: tabular-nums; color: #fabb43; font-weight: 600; }
+
+  .color-row { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+  .color-chip {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0.8rem; border-radius: 8px; border: 1px solid #eee;
+    background: white; font-size: 0.7rem;
+  }
+  .color-dot { width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; }
+
+  .slide-map { margin-top: 1rem; background: white; border-radius: 14px; border: 1px solid #eee; padding: 1.2rem; overflow-x: auto; }
+  .map-row { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.4rem; }
+  .map-cell {
+    width: 28px; height: 22px; border-radius: 4px; font-size: 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; color: white; flex-shrink: 0;
+  }
+  .map-cell.w { background: #e0e0e0; color: #999; }
+  .map-cell.m { background: #7c5cbf; }
+  .map-cell.x { background: #1a1a1a; }
+  .map-cell.o { background: #fabb43; }
+  .map-cell.s { background: #555; }
+  .map-label { font-size: 0.55rem; color: #999; width: 80px; text-align: right; margin-right: 0.5rem; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="label">Design System</div>
+  <h1>Animation & Transition Guide</h1>
+  <p>Die Regeln die dafür sorgen, dass alles wie EIN Erlebnis wirkt — nicht 31 zusammengesteckte Folien.</p>
+</div>
+
+<!-- PRINCIPLES -->
+<div class="section">
+  <h2>Grundprinzipien</h2>
+  <div class="principle-grid">
+    <div class="principle">
+      <div class="p-title"><span class="num">1</span> Kontinuität statt Slides</div>
+      <div class="p-body">Elemente morphen, bewegen sich, transformieren. Kein harter Schnitt zwischen "Folien". Das Publikum soll das Gefühl haben, dass alles eine zusammenhängende Animation ist.</div>
+      <div class="p-example">→ Die Token-Wörter aus Teil 1 reisen durch alle Konzepte</div>
+    </div>
+    <div class="principle">
+      <div class="p-title"><span class="num">2</span> Presenter-gesteuert</div>
+      <div class="p-body">Jeder Animationsschritt wird per Klick ausgelöst — nichts läuft automatisch. Der Presenter bestimmt das Tempo. Nur Loop-Animationen (NN-Bolts) laufen selbstständig.</div>
+      <div class="p-example">→ Klick für nächsten Token, Klick für nächste Technik</div>
+    </div>
+    <div class="principle">
+      <div class="p-title"><span class="num">3</span> Atmen lassen</div>
+      <div class="p-body">Zwischen Animationsschritten gibt es immer eine Pause. Nichts passiert sofort nach dem vorherigen Schritt. Das Publikum braucht Zeit zum Verarbeiten.</div>
+      <div class="p-example">→ Min. 0.3s Pause zwischen Stagger-Elementen, 0.5s zwischen Phasen</div>
+    </div>
+    <div class="principle">
+      <div class="p-title"><span class="num">4</span> Weniger ist mehr</div>
+      <div class="p-body">Eine einzelne klare Animation pro Schritt. Nicht drei Dinge gleichzeitig bewegen. Das Auge soll immer wissen, wo es hinschauen soll.</div>
+      <div class="p-example">→ Erst Headline, dann Inhalt. Nicht beides gleichzeitig.</div>
+    </div>
+  </div>
+</div>
+
+<!-- THREE MODES -->
+<div class="section">
+  <h2>Drei Darstellungs-Modi</h2>
+  <p>Die Präsentation wechselt zwischen drei visuellen Modi. Der Wechsel selbst ist ein Effekt.</p>
+
+  <div class="mode-cards">
+    <div class="mode-card">
+      <div class="mc-icon">☀️</div>
+      <div class="mc-title">Normal-Modus</div>
+      <div class="mc-desc">Weißer Hintergrund, dunkler Text. Saubere Typografie. Für Erklärungen, Techniken, Vergleiche, Übungen.</div>
+      <div class="mc-when">~70% der Präsentation</div>
+    </div>
+    <div class="mode-card" style="background:#0a0a0a; border-color:#333;">
+      <div class="mc-icon">⚡</div>
+      <div class="mc-title" style="color:#fabb43;">X-Ray-Modus</div>
+      <div class="mc-desc" style="color:rgba(255,255,255,0.4);">Schwarzer Hintergrund, leuchtende Dots. Für "Schauen wir rein" Momente — neuronale Netzwerk-Visualisierungen.</div>
+      <div class="mc-when">~15% — Hero-Moments</div>
+    </div>
+    <div class="mode-card">
+      <div class="mc-icon">🔄</div>
+      <div class="mc-title">Morph-Modus</div>
+      <div class="mc-desc">Elemente transformieren sich auf der gleichen Seite. Kein Slide-Wechsel, nur Veränderung. Für zusammenhängende Konzept-Flows.</div>
+      <div class="mc-when">~15% — Teil 1 Flow, Teil 2 Mechanismus</div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSITION TYPES -->
+<div class="section">
+  <h2>Übergangs-Typen</h2>
+
+  <h3>Zwischen Teilen (Teil 1 → Teil 2)</h3>
+  <div class="flow-row">
+    <div class="flow-block white">Letzte Slide Teil 1</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block orange">Section-Opener fade</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block white">Erste Inhalt-Slide Teil 2</div>
+  </div>
+  <p>Sauberer Schnitt mit Fade. Section-Opener erscheint zentriert, groß, hält 2-3 Sekunden.</p>
+
+  <h3>Innerhalb eines Morph-Flows</h3>
+  <div class="flow-row">
+    <div class="flow-block morph">Tokenisierung</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block morph">Embeddings</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block morph">Attention</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block morph">Netz</div>
+  </div>
+  <p>KEIN Slide-Wechsel. Die gleichen Elemente transformieren sich. Label wechselt oben links. Alles auf einer Seite.</p>
+
+  <h3>Normal → X-Ray Toggle</h3>
+  <div class="flow-row">
+    <div class="flow-block white">Normale Erklärung</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block dark">⚡ X-Ray aktiviert</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block white">Zurück zu Normal</div>
+  </div>
+  <p>Smooth 0.8s Fade. Background, Text, alles wechselt gleichzeitig. "Schauen wir mal rein..."</p>
+
+  <h3>Zwischen normalen Slides</h3>
+  <div class="flow-row">
+    <div class="flow-block white">Slide A: fade out links</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-block white">Slide B: fade in + stagger</div>
+  </div>
+  <p>Alte Elemente faden nach links aus (0.3s). Neue Elemente faden von unten ein mit Stagger (0.1s zwischen Elementen).</p>
+</div>
+
+<!-- TIMING -->
+<div class="section">
+  <h2>Timing-Referenz</h2>
+  <table class="timing-table">
+    <tr><th>Animation</th><th>Dauer</th><th>Easing</th><th>Kontext</th></tr>
+    <tr><td>Element fade-in</td><td class="speed">0.6–0.7s</td><td>power2.out</td><td>Headlines, Boxen, Karten</td></tr>
+    <tr><td>Stagger zwischen Elementen</td><td class="speed">0.1–0.12s</td><td>—</td><td>Listen, Karten, Check-Items</td></tr>
+    <tr><td>Slide-Wechsel (aus)</td><td class="speed">0.3s</td><td>power2.in</td><td>Alte Elemente verschwinden</td></tr>
+    <tr><td>Morph-Bewegung</td><td class="speed">0.8–1.2s</td><td>power2.inOut</td><td>Token-Position ändert sich</td></tr>
+    <tr><td>X-Ray Toggle</td><td class="speed">0.8s</td><td>ease</td><td>Background + alle Elemente</td></tr>
+    <tr><td>Typewriter (pro Zeichen)</td><td class="speed">50ms</td><td>linear</td><td>Text tippt sich</td></tr>
+    <tr><td>Bolt (pro Layer)</td><td class="speed">140ms</td><td>—</td><td>Netzwerk-Signal</td></tr>
+    <tr><td>Node fade-back</td><td class="speed">450ms</td><td>CSS transition</td><td>Nach Bolt-Pass</td></tr>
+    <tr><td>Poof-Dissolve</td><td class="speed">~1.1s total</td><td>power2.in</td><td>Kontext-Fenster Message</td></tr>
+    <tr><td>Glitch-Flash</td><td class="speed">~0.5s</td><td>steps</td><td>Halluzinations-Reveal</td></tr>
+  </table>
+</div>
+
+<!-- COLORS -->
+<div class="section">
+  <h2>Farb-Referenz</h2>
+  <div class="color-row">
+    <div class="color-chip"><div class="color-dot" style="background:#fabb43;"></div> #fabb43 — Accent / Highlight</div>
+    <div class="color-chip"><div class="color-dot" style="background:#ea580c;"></div> #ea580c — Hot / Intense</div>
+    <div class="color-chip"><div class="color-dot" style="background:#dc2626;"></div> #dc2626 — Error / Halluzination</div>
+    <div class="color-chip"><div class="color-dot" style="background:#16a34a;"></div> #16a34a — Correct / Positive</div>
+  </div>
+  <div class="color-row">
+    <div class="color-chip"><div class="color-dot" style="background:#7c5cbf;"></div> #7c5cbf — Rolle (Prompt-Baukasten)</div>
+    <div class="color-chip"><div class="color-dot" style="background:#4a90d9;"></div> #4a90d9 — Kontext</div>
+    <div class="color-chip"><div class="color-dot" style="background:#e8853d;"></div> #e8853d — Aufgabe</div>
+    <div class="color-chip"><div class="color-dot" style="background:#3daa8f;"></div> #3daa8f — Token-Farbe 4</div>
+  </div>
+  <div class="color-row">
+    <div class="color-chip"><div class="color-dot" style="background:#0a0a0a;"></div> #0a0a0a — X-Ray Background</div>
+    <div class="color-chip"><div class="color-dot" style="background:#ffffff; border:1px solid #eee;"></div> #ffffff — Normal Background</div>
+    <div class="color-chip"><div class="color-dot" style="background:#1a1a1a;"></div> #1a1a1a — Text Primary</div>
+    <div class="color-chip"><div class="color-dot" style="background:#999;"></div> #999 — Text Secondary</div>
+  </div>
+</div>
+
+<!-- SLIDE MAP -->
+<div class="section">
+  <h2>Mode-Map — Welche Slide nutzt welchen Modus?</h2>
+  <p>Übersicht welcher Darstellungsmodus wo eingesetzt wird.</p>
+
+  <div class="slide-map">
+    <div class="map-row">
+      <div class="map-label">Intro 1-3</div>
+      <div class="map-cell w">1</div><div class="map-cell w">2</div><div class="map-cell w">3</div>
+    </div>
+    <div class="map-row">
+      <div class="map-label">Teil 1: 4-13</div>
+      <div class="map-cell s">4</div>
+      <div class="map-cell m">5</div><div class="map-cell m">6</div><div class="map-cell m">7</div><div class="map-cell m">8</div>
+      <div class="map-cell w">9</div><div class="map-cell w">10</div><div class="map-cell w">11</div><div class="map-cell w">12</div><div class="map-cell w">13</div>
+    </div>
+    <div class="map-row">
+      <div class="map-label">Teil 2: 14-18</div>
+      <div class="map-cell s">14</div>
+      <div class="map-cell w">15</div><div class="map-cell m">16</div><div class="map-cell w">17</div><div class="map-cell w">18</div>
+    </div>
+    <div class="map-row">
+      <div class="map-label">Teil 3: 19-27</div>
+      <div class="map-cell s">19</div>
+      <div class="map-cell x">20</div>
+      <div class="map-cell w">21</div><div class="map-cell w">22</div><div class="map-cell w">23</div><div class="map-cell w">24</div>
+      <div class="map-cell w">25</div><div class="map-cell o">26</div><div class="map-cell w">27</div>
+    </div>
+    <div class="map-row">
+      <div class="map-label">Teil 4: 28-32</div>
+      <div class="map-cell s">28</div>
+      <div class="map-cell w">29</div><div class="map-cell w">30</div><div class="map-cell w">31</div>
+      <div class="map-cell x">32</div>
+    </div>
+
+    <div style="display:flex; gap:1rem; margin-top:1rem; font-size:0.6rem; color:#999;">
+      <span><span class="map-cell w" style="display:inline-flex; width:14px; height:14px; font-size:0; vertical-align:middle;"></span> Normal (weiß)</span>
+      <span><span class="map-cell m" style="display:inline-flex; width:14px; height:14px; font-size:0; vertical-align:middle;"></span> Morph-Flow</span>
+      <span><span class="map-cell x" style="display:inline-flex; width:14px; height:14px; font-size:0; vertical-align:middle;"></span> X-Ray (dunkel)</span>
+      <span><span class="map-cell s" style="display:inline-flex; width:14px; height:14px; font-size:0; vertical-align:middle;"></span> Section Opener</span>
+      <span><span class="map-cell o" style="display:inline-flex; width:14px; height:14px; font-size:0; vertical-align:middle;"></span> Interactive (Chat-Sim)</span>
+    </div>
+  </div>
+</div>
+
+<!-- PACING -->
+<div class="section">
+  <h2>Pacing-Leitfaden</h2>
+
+  <h3>Ruhige Momente</h3>
+  <p>Section-Opener, Zusammenfassungen, nach einer Demo. Wenig Animation, klare Typografie, Raum zum Atmen. Der Presenter spricht, die Slides unterstützen ruhig.</p>
+
+  <h3>Bau-Momente</h3>
+  <p>Prompt-Baukasten, Few-Shot Beispiele, Vorher/Nachher. Elemente erscheinen Stück für Stück. Jeder Klick fügt etwas hinzu. Das Publikum sieht wie sich etwas aufbaut.</p>
+
+  <h3>Wow-Momente</h3>
+  <p>X-Ray Toggle, Halluzinations-Glitch, Kontext-Poof, Neural-Network Bolts. Dramatische Animation. Sparsam einsetzen — max. 4-5 pro Präsentation. Das Publikum soll "wow" denken, nicht "schon wieder".</p>
+
+  <h3>Spannungskurve</h3>
+  <div style="background:white; border-radius:12px; border:1px solid #eee; padding:1.5rem; margin-top:0.8rem; font-family:'SF Mono','Fira Code',monospace; font-size:0.65rem; color:#999; line-height:2; white-space:pre;">
+Intro      ░░░░░░░░░░░░░  ruhig — Kontext setzen
+Teil 1     ░░░▓▓▓▓████░░  Morph-Flow baut auf → NN-Hero-Moment
+           ░░░░░░░░░░░░░  ruhig — Konzept-Slides
+Teil 2     ░░░░▓▓▓▓▓████  Mechanismus baut auf → Glitch-Wow
+           ░░░░░░░░░░░░░  ruhig — Ehrlichkeit
+Teil 3     ░░░░████░░░░░  X-Ray Wow → Techniken ruhig
+           ░░░▓▓▓▓▓████░  Baukasten baut → Chat-Sim-Wow
+Teil 4     ░░░░░░░░░░░░░  ruhig — Praxis, Übungen
+           ░░░████░░░░░░  NN als Abschluss-Background</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 2 — Revised Slide Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; padding: 2rem; overflow-y: auto; }
+
+  .header { max-width: 1000px; margin: 0 auto 2rem; }
+  .header .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #dc2626; margin-bottom: 0.4rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 600; }
+  .header p { font-size: 0.85rem; color: #888; margin-top: 0.3rem; line-height: 1.5; }
+
+  .slides { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .slide-card {
+    background: white; border-radius: 14px; border: 1px solid #eee;
+    overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  }
+
+  .slide-head {
+    padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .slide-badge {
+    font-size: 0.6rem; font-weight: 700; color: white; padding: 0.25rem 0.6rem;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .slide-badge.opener { background: #555; }
+  .slide-badge.new { background: #dc2626; }
+  .slide-badge.morph { background: #fabb43; }
+  .slide-badge.keep { background: #4a90d9; }
+  .slide-head-title { font-size: 1rem; font-weight: 600; flex: 1; }
+
+  .slide-body { padding: 1.2rem 1.5rem; }
+  .slide-body p { font-size: 0.82rem; color: #666; line-height: 1.55; margin-bottom: 0.6rem; }
+  .slide-body p:last-child { margin-bottom: 0; }
+
+  .visual-sketch {
+    background: #f8f8f8; border-radius: 10px; padding: 1.2rem 1.5rem;
+    margin-top: 0.8rem; border: 1px dashed #e0e0e0;
+  }
+  .visual-sketch .sketch-label {
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #fabb43; margin-bottom: 0.6rem;
+  }
+  .visual-sketch pre {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.7rem; color: #777; line-height: 1.6; white-space: pre-wrap;
+  }
+
+  .flow-arrow {
+    text-align: center; font-size: 1.5rem; color: #ddd; padding: 0.2rem;
+  }
+
+  .key-insight {
+    background: #fffbeb; border-left: 4px solid #fabb43; border-radius: 0 8px 8px 0;
+    padding: 0.8rem 1.2rem; margin-top: 0.8rem;
+    font-size: 0.82rem; color: #92400e; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="label">Teil 2 — Überarbeitet</div>
+  <h1>Grenzen & Halluzinationen — 6 Slides (~20 min)</h1>
+  <p>Erweiterter Teil mit Temperature-Erklärung und animiertem "Warum" — nicht nur zeigen DASS es passiert, sondern den Mechanismus sichtbar machen.</p>
+</div>
+
+<div class="slides">
+
+  <!-- SLIDE 13 -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge opener">13</span>
+      <span class="slide-head-title">Section Opener — "Was KI nicht kann"</span>
+    </div>
+    <div class="slide-body">
+      <p>Kurzer, zentraler Opener. Baut Spannung auf nach dem technischen Teil 1.</p>
+      <p><strong>Text:</strong> "Was KI nicht kann — und warum das unvermeidlich ist."</p>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- SLIDE 14: Temperature -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge new">14 — NEU</span>
+      <span class="slide-head-title">Temperature — Der Kreativitätsregler</span>
+    </div>
+    <div class="slide-body">
+      <p><strong>Baut direkt auf die Next-Token-Prediction aus Teil 1 auf.</strong> Die Wahrscheinlichkeitsbalken von vorhin kommen zurück — aber jetzt zeigen wir, was Temperature tut.</p>
+
+      <div class="visual-sketch">
+        <div class="sketch-label">Animation — Morphing Probability Bars</div>
+<pre>
+Die Balken von "Der Patent___" morphen live:
+
+┌─ Temperature = 0 (Deterministisch) ──────────┐
+│  anspruch  ████████████████████████████  100%  │  ← Immer #1
+│  inhaber                                  0%  │
+│  schutz                                   0%  │
+└───────────────────────────────────────────────┘
+        ↓ Slider bewegt sich ↓
+┌─ Temperature = 0.7 (Standard) ───────────────┐
+│  anspruch  ████████████████           34%     │
+│  inhaber   ██████████                 22%     │
+│  schutz    ████████                   18%     │
+│  anwalt    █████                      11%     │
+│  amt       ███                         7%     │
+└───────────────────────────────────────────────┘
+        ↓ Slider bewegt sich ↓
+┌─ Temperature = 2.0 (Chaos) ──────────────────┐
+│  anspruch  ██████                     18%     │
+│  inhaber   █████                      15%     │
+│  schutz    █████                      14%     │  ← Alles fast
+│  anwalt    ████                       13%     │    gleich wahrscheinlich!
+│  amt       ████                       12%     │
+│  ...       ████                       28%     │
+└───────────────────────────────────────────────┘
+
+Ein interaktiver Slider kontrolliert die Temperature.
+Die Balken morphen smooth (GSAP).
+</pre>
+      </div>
+
+      <div class="key-insight">
+        <strong>⚡ Key Insight:</strong> Höhere Temperature = mehr "Kreativität" = mehr Risiko für Fehler. Aber selbst bei Temperature 0 sind Halluzinationen möglich! Warum? → Nächste Slide.
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- SLIDE 15: WHY hallucinations happen -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge morph">15 — NEU ⭐ Morph</span>
+      <span class="slide-head-title">Nicht TROTZ sondern WEGEN — Der Mechanismus</span>
+    </div>
+    <div class="slide-body">
+      <p><strong>DER Erklärungs-Slide.</strong> Zeigt visuell, wie eine Halluzination entsteht — Schritt für Schritt. Wiederverwendet die Next-Token-Animation.</p>
+
+      <div class="visual-sketch">
+        <div class="sketch-label">Animation — Halluzination entsteht live</div>
+<pre>
+Phase 1: Normaler Prompt wird getippt
+  "Nenne mir die BGH-Entscheidung zu Softwarepatenten"
+
+Phase 2: Das Modell beginnt zu antworten (Token für Token)
+  "Gemäß" → "der" → "BGH" → "-" → "Entscheidung" → ...
+  (Balken zeigen Wahrscheinlichkeiten, alles normal)
+
+Phase 3: Jetzt kommt das Aktenzeichen...
+  "BGH-Entscheidung ___"
+
+  Balken zeigen:
+    X     ████████████  38%    ← Das MUSTER "X ZR xx/xx"
+    I     ████████      24%      ist statistisch häufig
+    V     ███           12%      nach "BGH-Entscheidung"
+
+  → "X" wird gewählt.
+
+Phase 4: Nächstes Token...
+  "X ___"
+    ZR    ████████████  45%    ← Wieder: MUSTER, nicht Fakt
+    ZB    ████████      28%
+    ...
+
+  → "ZR" wird gewählt.
+
+Phase 5: Die Ziffern...
+  "X ZR ___"
+    47    ████          12%    ← Irgendeine plausible Zahl
+    23    ████          11%      Keine davon ist "nachgeschlagen"
+    18    ███           10%      Alle sind gleich wahrscheinlich
+    ...
+
+  → "47/19" wird generiert.
+
+Phase 6: REVEAL
+  ┌────────────────────────────────────────┐
+  │  "X ZR 47/19"                         │
+  │                                        │
+  │  ⚠ Dieses Aktenzeichen wurde nicht    │
+  │    nachgeschlagen. Es wurde GENERIERT  │
+  │    — Wort für Wort, basierend auf      │
+  │    Mustern.                            │
+  │                                        │
+  │  Das Modell hat kein Bücherregal.     │
+  │  Es hat Muster.                        │
+  └────────────────────────────────────────┘
+</pre>
+      </div>
+
+      <div class="key-insight">
+        <strong>⚡ Das ist der Kern:</strong> Das Modell halluziniert nicht, weil es kaputt ist. Es halluziniert, weil es genau das tut, wofür es trainiert wurde: das plausibelste nächste Wort vorhersagen. Plausibel ≠ wahr.
+      </div>
+
+      <p style="margin-top:1rem;"><strong>Transition:</strong> Die generierten Tokens morphen zusammen zum vollständigen Fake-Zitat, das dann zur nächsten Slide überleitet (Glitch-Reveal).</p>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- SLIDE 16: Hallucination demo -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge keep">16</span>
+      <span class="slide-head-title">Das Ergebnis — Halluzination in der Praxis</span>
+    </div>
+    <div class="slide-body">
+      <p>Das Fake-Zitat von der vorigen Slide steht jetzt vollständig da — und sieht überzeugend aus. Dann: Glitch-Effekt, rote Markierungen, Reveal.</p>
+      <p><strong>Jetzt verstehen die Zuhörer WARUM</strong> jedes Detail falsch ist — nicht nur DASS es falsch ist. Der Glitch-Effekt hat eine ganz andere Wirkung, nachdem man gesehen hat, wie die Tokens generiert wurden.</p>
+      <p><strong>Abschluss-Zitat:</strong> "Die KI halluziniert nicht TROTZ ihrer Funktionsweise — sondern WEGEN."</p>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- SLIDE 17: What we know -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge keep">17</span>
+      <span class="slide-head-title">Was wir wissen — und was nicht</span>
+    </div>
+    <div class="slide-body">
+      <p>Zwei Spalten. Links: ✓ Was wir verstehen. Rechts: ? Was wir nicht verstehen.</p>
+      <p>Kommt nach der Halluzinations-Erklärung — gibt dem Publikum den ehrlichen Stand der Forschung.</p>
+    </div>
+  </div>
+
+  <div class="flow-arrow">↓</div>
+
+  <!-- SLIDE 18: Risks -->
+  <div class="slide-card">
+    <div class="slide-head">
+      <span class="slide-badge keep">18</span>
+      <span class="slide-head-title">Risiken für Patentanwälte</span>
+    </div>
+    <div class="slide-body">
+      <p>4 konkrete Risiken mit ⚠-Icons. Erfundene Rechtsprechung, falsche Technik, subtile Anspruchsfehler, falsche Sicherheit durch perfektes Fachdeutsch.</p>
+      <p><strong>Regel #1:</strong> KI-Output ist ein Entwurf, niemals ein Ergebnis. IMMER verifizieren.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:1000px; margin:2rem auto; padding:1.5rem; background:white; border-radius:14px; border:1px solid #eee;">
+  <h3 style="font-size:1rem; margin-bottom:0.8rem;">Die Story von Teil 2</h3>
+  <div style="font-size:0.82rem; color:#555; line-height:1.6;">
+    <p><strong>Opener</strong> → Was KI nicht kann</p>
+    <p><strong>Temperature</strong> → Aufbau auf Teil 1: "Erinnerst du dich an die Wahrscheinlichkeitsbalken? Es gibt einen Regler..." → Verständnis dass höhere Temperature = mehr Risiko, aber SELBST bei 0 passieren Halluzinationen</p>
+    <p><strong>Der Mechanismus</strong> → LIVE sehen wie eine Halluzination Token für Token entsteht. "BGH-Entscheidung" → Muster "X ZR" → zufällige aber plausible Ziffern. Kein Nachschlagen, nur Muster.</p>
+    <p><strong>Das Ergebnis</strong> → Das fertige Fake-Zitat. Jetzt VERSTEHEN sie, warum jedes Detail erfunden ist. Glitch-Reveal. "Nicht TROTZ sondern WEGEN."</p>
+    <p><strong>Ehrlichkeit</strong> → Was wir wissen und was nicht. Zeigt dass die Forschung selbst noch Fragen hat.</p>
+    <p><strong>Praxis</strong> → Konkrete Risiken für ihren Alltag. Regel #1.</p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network — Animated Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+  }
+
+  .overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 10;
+  }
+
+  .text-box {
+    position: absolute; top: 3rem; left: 3.5rem;
+    transition: opacity 0.6s ease;
+  }
+  .overline {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.6rem;
+  }
+  .headline {
+    font-size: 2.4rem; font-weight: 600; line-height: 1.2;
+    max-width: 500px;
+  }
+  .headline .hl { color: #fabb43; }
+  .sub {
+    font-size: 1rem; color: #888; margin-top: 0.6rem; max-width: 420px; line-height: 1.5;
+  }
+
+  .counter-box {
+    position: absolute; bottom: 3rem; right: 3.5rem;
+    background: rgba(250,187,67,0.08); border: 1px solid rgba(250,187,67,0.25);
+    border-radius: 12px; padding: 0.8rem 1.2rem;
+    transition: opacity 0.6s ease;
+    opacity: 0;
+  }
+  .counter-box.visible { opacity: 1; }
+  .counter-big { font-size: 1.6rem; font-weight: 700; color: #ea580c; }
+  .counter-label { font-size: 0.7rem; color: #999; margin-top: 0.15rem; }
+
+  .prompt-box {
+    position: absolute; bottom: 3rem; left: 3.5rem;
+    opacity: 0; transition: opacity 0.8s ease;
+    max-width: 500px;
+  }
+  .prompt-box.visible { opacity: 1; }
+  .prompt-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #fabb43; margin-bottom: 0.4rem; }
+  .prompt-text {
+    font-size: 0.95rem; color: #555; line-height: 1.5;
+    background: #f8f8f8; border: 1px solid #eee; border-radius: 8px;
+    padding: 0.8rem 1rem;
+  }
+
+  .hint {
+    position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.75rem; color: #ccc; pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  .step-indicator {
+    position: absolute; top: 1.2rem; right: 3.5rem;
+    display: flex; gap: 0.5rem;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ddd; transition: background 0.4s, transform 0.4s;
+  }
+  .step-dot.active { background: #fabb43; transform: scale(1.3); }
+  .step-dot.done { background: #e5a530; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="overlay" id="overlay">
+  <div class="text-box" id="textBox">
+    <div class="overline" id="overline">Das Neuronale Netz</div>
+    <div class="headline" id="headline">So sieht es <span class="hl">vereinfacht</span> aus</div>
+    <div class="sub" id="sub">7 Schichten — Daten fließen von links nach rechts.</div>
+  </div>
+
+  <div class="counter-box" id="counterBox">
+    <div class="counter-big" id="counterBig">96</div>
+    <div class="counter-label" id="counterLabel">Schichten in GPT-4</div>
+  </div>
+
+  <div class="prompt-box" id="promptBox">
+    <div class="prompt-label">Ihr Prompt</div>
+    <div class="prompt-text">"Schreibe einen Patentanspruch für eine Vorrichtung zum drahtlosen Laden..."</div>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="s0"></div>
+    <div class="step-dot" id="s1"></div>
+    <div class="step-dot" id="s2"></div>
+  </div>
+
+  <div class="hint" id="hint">Klicken zum Weiter →</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H, cx, cy;
+function resize() {
+  W = canvas.width = window.innerWidth * devicePixelRatio;
+  H = canvas.height = window.innerHeight * devicePixelRatio;
+  cx = W / 2;
+  cy = H / 2;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== NODE DATA =====
+const LAYERS_X = 7;
+const LAYERS_Z = 40;
+const NODES_Y = 10;
+const SPACING_X = 48 * devicePixelRatio;
+const SPACING_Y = 28 * devicePixelRatio;
+const SPACING_Z = 22 * devicePixelRatio;
+
+const nodes = [];
+for (let lx = 0; lx < LAYERS_X; lx++) {
+  // More nodes in middle layers
+  const count = Math.max(4, NODES_Y - Math.abs(lx - 3) * 1.5);
+  for (let lz = 0; lz < LAYERS_Z; lz++) {
+    for (let ny = 0; ny < count; ny++) {
+      nodes.push({
+        // 3D position (centered)
+        bx: (lx - LAYERS_X / 2 + 0.5) * SPACING_X,
+        by: (ny - count / 2 + 0.5) * SPACING_Y,
+        bz: (lz - LAYERS_Z / 2 + 0.5) * SPACING_Z,
+        lx, lz, ny,
+        activation: 0,
+      });
+    }
+  }
+}
+
+// ===== ANIMATION STATE =====
+let currentStep = 0;
+let angleY = 0;        // target: 0 → ~0.65
+let angleX = 0;        // target: 0 → ~0.12
+let currentAngleY = 0;
+let currentAngleX = 0;
+let activationWave = -1; // 0..1 progress, -1 = off
+let activationSpeed = 0;
+let fov = 700 * devicePixelRatio;
+let time = 0;
+
+// Text content per step
+const steps = [
+  {
+    overline: 'Das Neuronale Netz',
+    headline: 'So sieht es <span class="hl">vereinfacht</span> aus',
+    sub: '7 Schichten — Daten fließen von links nach rechts.',
+    showCounter: false,
+    showPrompt: false,
+    targetAngleY: 0,
+    targetAngleX: 0,
+  },
+  {
+    overline: 'Die Realität',
+    headline: 'In Wirklichkeit stecken <span class="hl">Hunderte</span> Schichten dahinter',
+    sub: 'Was wie 7 Schichten aussah, hat enorme Tiefe.',
+    showCounter: true,
+    counterBig: '96',
+    counterLabel: 'Schichten in GPT-4 (geschätzt)',
+    showPrompt: false,
+    targetAngleY: 0.62,
+    targetAngleX: 0.12,
+  },
+  {
+    overline: 'Aktivierung',
+    headline: 'Ihr Prompt <span class="hl">feuert</span> durch das Netz',
+    sub: '',
+    showCounter: true,
+    counterBig: '1.800 Mrd.',
+    counterLabel: 'Parameter in GPT-4',
+    showPrompt: true,
+    targetAngleY: 0.62,
+    targetAngleX: 0.12,
+  }
+];
+
+function setStep(step) {
+  const s = steps[step];
+  document.getElementById('overline').textContent = s.overline;
+  document.getElementById('headline').innerHTML = s.headline;
+  document.getElementById('sub').textContent = s.sub;
+
+  const cb = document.getElementById('counterBox');
+  cb.classList.toggle('visible', s.showCounter);
+  if (s.showCounter) {
+    document.getElementById('counterBig').textContent = s.counterBig;
+    document.getElementById('counterLabel').textContent = s.counterLabel;
+  }
+
+  document.getElementById('promptBox').classList.toggle('visible', s.showPrompt);
+
+  // Step dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('s' + i);
+    dot.className = 'step-dot' + (i === step ? ' active' : i < step ? ' done' : '');
+  }
+
+  angleY = s.targetAngleY;
+  angleX = s.targetAngleX;
+
+  if (step === 2) {
+    activationWave = 0;
+    activationSpeed = 0.004;
+  }
+
+  document.getElementById('hint').textContent =
+    step < 2 ? 'Klicken zum Weiter →' : 'Klicken zum Neustart ↺';
+}
+
+// Click to advance
+document.addEventListener('click', () => {
+  currentStep = (currentStep + 1) % 3;
+  if (currentStep === 0) {
+    activationWave = -1;
+    nodes.forEach(n => n.activation = 0);
+  }
+  setStep(currentStep);
+});
+
+// ===== PROJECTION =====
+function project3D(x, y, z) {
+  const scale = fov / (fov + z);
+  return { x: cx + x * scale, y: cy + y * scale, s: scale, z };
+}
+
+// ===== RENDER LOOP =====
+function render() {
+  time += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  // Smooth angle interpolation
+  currentAngleY += (angleY - currentAngleY) * 0.035;
+  currentAngleX += (angleX - currentAngleX) * 0.035;
+
+  const cosY = Math.cos(currentAngleY), sinY = Math.sin(currentAngleY);
+  const cosX = Math.cos(currentAngleX), sinX = Math.sin(currentAngleX);
+
+  // Activation wave
+  if (activationWave >= 0 && activationWave < 1.6) {
+    activationWave += activationSpeed;
+  }
+
+  // Project all nodes
+  const projected = nodes.map((n, i) => {
+    // Rotate around Y
+    const x1 = n.bx * cosY - n.bz * sinY;
+    const z1 = n.bx * sinY + n.bz * cosY;
+    // Rotate around X
+    const y1 = n.by * cosX - z1 * sinX;
+    const z2 = n.by * sinX + z1 * cosX;
+
+    const p = project3D(x1, y1, z2);
+
+    // Compute activation
+    if (activationWave >= 0) {
+      const normProgress = (n.lx / LAYERS_X) * 0.4 + (n.lz / LAYERS_Z) * 0.6;
+      const dist = activationWave - normProgress;
+      if (dist > 0 && dist < 0.25) {
+        n.activation = Math.min(1, n.activation + 0.08);
+      } else if (dist >= 0.25) {
+        n.activation = Math.max(0, n.activation - 0.01);
+      }
+    }
+
+    return { ...p, idx: i, lx: n.lx, lz: n.lz, activation: n.activation };
+  });
+
+  // Sort by z (back to front)
+  projected.sort((a, b) => a.z - b.z);
+
+  // Determine visible z range for flat view
+  const isFlat = Math.abs(currentAngleY) < 0.05;
+
+  // Draw connections (only nearby in screen space, sampled)
+  ctx.lineWidth = 0.8 * devicePixelRatio;
+  for (let i = 0; i < projected.length; i += 3) {
+    const a = projected[i];
+    for (let j = i + 3; j < Math.min(i + 30, projected.length); j += 3) {
+      const b = projected[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const maxD = 45 * devicePixelRatio;
+      if (dist < maxD) {
+        const alpha = (1 - dist / maxD) * 0.08 * Math.min(a.s, b.s);
+        if (a.activation > 0.3 && b.activation > 0.3) {
+          ctx.strokeStyle = `rgba(250, 187, 67, ${alpha * 4})`;
+        } else {
+          ctx.strokeStyle = `rgba(160, 180, 200, ${alpha})`;
+        }
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw nodes
+  for (const p of projected) {
+    const baseSize = 3.5 * devicePixelRatio * p.s;
+    const size = baseSize * (1 + p.activation * 0.5);
+
+    // In flat mode, only show front layer (lz ≈ middle)
+    let alpha;
+    if (isFlat) {
+      const distFromFront = Math.abs(nodes[p.idx].lz - LAYERS_Z / 2);
+      alpha = distFromFront < 1.5 ? 1 : 0;
+    } else {
+      // Perspective fade
+      alpha = Math.max(0.08, Math.min(1, (p.s - 0.3) * 1.5));
+    }
+
+    if (alpha <= 0) continue;
+
+    let r, g, b;
+    if (p.activation > 0.6) {
+      // Hot
+      r = 234; g = 88; b = 12;
+    } else if (p.activation > 0.2) {
+      // Active orange
+      const t = p.activation / 0.6;
+      r = Math.round(74 + (250 - 74) * t);
+      g = Math.round(144 + (187 - 144) * t);
+      b = Math.round(217 + (67 - 217) * t);
+    } else {
+      // Idle blue
+      r = 74; g = 144; b = 217;
+    }
+
+    // Subtle breathing
+    const breathe = 1 + Math.sin(time * 1.5 + p.idx * 0.1) * 0.08;
+    const finalSize = size * breathe;
+
+    // Glow for active nodes
+    if (p.activation > 0.3) {
+      const glowSize = finalSize * 3;
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.25 * p.activation * alpha})`);
+      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Node dot
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, finalSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Input/output arrows
+  const arrowY = cy;
+  const arrowAlpha = 0.4 + Math.sin(time * 2) * 0.2;
+
+  // Left arrow
+  ctx.fillStyle = `rgba(250, 187, 67, ${arrowAlpha})`;
+  ctx.beginPath();
+  ctx.moveTo(30 * devicePixelRatio, arrowY);
+  ctx.lineTo(55 * devicePixelRatio, arrowY - 12 * devicePixelRatio);
+  ctx.lineTo(55 * devicePixelRatio, arrowY + 12 * devicePixelRatio);
+  ctx.fill();
+
+  // Right arrow
+  ctx.beginPath();
+  ctx.moveTo(W - 30 * devicePixelRatio, arrowY);
+  ctx.lineTo(W - 55 * devicePixelRatio, arrowY - 12 * devicePixelRatio);
+  ctx.lineTo(W - 55 * devicePixelRatio, arrowY + 12 * devicePixelRatio);
+  ctx.fill();
+
+  requestAnimationFrame(render);
+}
+
+setStep(0);
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>

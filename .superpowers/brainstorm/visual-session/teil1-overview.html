@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 1 — Slide Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif; background: #f8f8f8;
+    color: #1a1a1a; padding: 2.5rem; line-height: 1.5;
+  }
+
+  .header {
+    max-width: 1100px; margin: 0 auto 2rem;
+  }
+  .header .label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #fabb43; margin-bottom: 0.4rem;
+  }
+  .header h1 { font-size: 1.6rem; font-weight: 600; }
+  .header p { font-size: 0.9rem; color: #888; margin-top: 0.3rem; }
+
+  .slides-grid {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+
+  .slide-row {
+    display: flex; gap: 1rem; align-items: stretch;
+  }
+
+  .slide-card {
+    flex: 1; background: white; border-radius: 12px;
+    border: 1px solid #eee; overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .slide-card:hover {
+    border-color: rgba(250,187,67,0.4);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  .slide-preview {
+    aspect-ratio: 16/9; background: #fff; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.2rem; overflow: hidden; border-bottom: 1px solid #f0f0f0;
+  }
+  .slide-preview .mini-overline {
+    position: absolute; top: 0.6rem; left: 0.8rem;
+    font-size: 0.45rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #fabb43;
+  }
+  .slide-preview .mini-h1 {
+    font-size: 0.85rem; font-weight: 600; text-align: center;
+    line-height: 1.25; max-width: 90%;
+  }
+  .slide-preview .mini-h1 .hl { color: #fabb43; }
+  .slide-preview .mini-visual {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 45%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; color: #bbb;
+  }
+
+  .slide-info { padding: 0.8rem 1rem; }
+  .slide-num {
+    font-size: 0.6rem; font-weight: 700; color: #fabb43;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem;
+  }
+  .slide-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .slide-desc { font-size: 0.72rem; color: #888; line-height: 1.45; }
+  .slide-anim {
+    margin-top: 0.4rem; font-size: 0.65rem; color: #fabb43;
+    font-weight: 500; font-style: italic;
+  }
+
+  .section-divider {
+    max-width: 1100px; margin: 1.5rem auto 0.5rem;
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #ccc;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: #eee;
+  }
+
+  /* Visual sketches inside previews */
+  .tokens-mini { display: flex; gap: 3px; }
+  .tok { padding: 2px 5px; border-radius: 3px; font-size: 0.5rem; color: white; font-weight: 500; }
+  .tok.c1 { background: #4a90d9; } .tok.c2 { background: #7c5cbf; }
+  .tok.c3 { background: #e8853d; } .tok.c4 { background: #3daa8f; }
+
+  .dots-mini { display: flex; gap: 2px; flex-wrap: wrap; width: 60px; }
+  .dot-m { width: 4px; height: 4px; border-radius: 50%; background: #ccc; }
+  .dot-m.on { background: #fabb43; }
+
+  .bars-mini { display: flex; flex-direction: column; gap: 2px; width: 80px; }
+  .bar-m { height: 5px; border-radius: 2px; }
+  .bar-m.b1 { width: 70%; background: linear-gradient(90deg, #fabb43, #ea580c); }
+  .bar-m.b2 { width: 45%; background: #fabb43; opacity: 0.6; }
+  .bar-m.b3 { width: 30%; background: #e0d5c0; }
+  .bar-m.b4 { width: 18%; background: #e0d5c0; }
+
+  .arc-word { font-size: 0.5rem; color: #555; display: inline-block; margin: 0 2px; }
+  .arc-container { position: relative; display: flex; align-items: flex-end; height: 30px; }
+  .arc-line {
+    position: absolute; border: 1.5px solid #fabb43; border-bottom: none;
+    border-radius: 50% 50% 0 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="label">Teil 1 — Wie KI funktioniert</div>
+  <h1>Slide-Übersicht (~30 Minuten)</h1>
+  <p>9 Slides vom Section-Opener bis zur Zusammenfassung. Jede Slide baut auf der vorherigen auf.</p>
+</div>
+
+<div class="section-divider">Opener</div>
+
+<div class="slides-grid">
+
+  <div class="slide-row">
+    <!-- Slide 4: Section Opener -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Teil 1</div>
+        <div class="mini-h1">Was passiert, wenn Sie<br><span class="hl">Enter</span> drücken?</div>
+        <div class="mini-visual" style="font-size: 0.7rem; color: #999;">
+          ▎ Schreibe einen Patentanspruch für...█
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 4 — Section Opener</div>
+        <div class="slide-title">Was passiert, wenn Sie Enter drücken?</div>
+        <div class="slide-desc">Teaser mit blinkender Cursor-Animation. Stellt die zentrale Frage, die der gesamte Teil 1 beantwortet.</div>
+        <div class="slide-anim">Animation: Cursor blinkt, Text-Typewriter-Effekt</div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Pipeline Overview -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Die Pipeline</div>
+        <div style="display: flex; gap: 6px; align-items: center; font-size: 0.5rem;">
+          <div style="padding: 4px 6px; background: #f0f0f0; border-radius: 4px;">Text</div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f0f0f0; border-radius: 4px;">Tokens</div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f0f0f0; border-radius: 4px;">Vektoren</div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f0f0f0; border-radius: 4px;">Netz</div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f0f0f0; border-radius: 4px;">Text</div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 5 — Die Pipeline</div>
+        <div class="slide-title">Der Weg vom Text zur Antwort</div>
+        <div class="slide-desc">Überblick über die 4 Schritte: Text → Tokens → Vektoren → Neuronales Netz → Antwort. Gibt dem Publikum eine Karte für die nächsten Slides.</div>
+        <div class="slide-anim">Animation: Boxen leuchten nacheinander auf, Partikel fließen zwischen ihnen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider">Die vier Schritte</div>
+
+  <div class="slide-row">
+    <!-- Slide 6: Tokenisierung -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Schritt 1</div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <div style="font-size: 0.55rem; color: #999; font-style: italic;">"Der Patentanspruch betrifft..."</div>
+          <div style="color: #ccc;">↓</div>
+          <div class="tokens-mini">
+            <span class="tok c1">Der</span>
+            <span class="tok c2">Patent</span>
+            <span class="tok c3">anspruch</span>
+            <span class="tok c4">betrifft</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 6 — Tokenisierung</div>
+        <div class="slide-title">Text wird in Bausteine zerlegt</div>
+        <div class="slide-desc">Deutscher Satz bricht in farbige Token-Blöcke auf. Zeigt Token-IDs. Fun fact: Deutsch braucht ~30% mehr Tokens als Englisch.</div>
+        <div class="slide-anim">Animation: Text bricht mit Spring-Physik auseinander, IDs erscheinen darunter</div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Embeddings -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Schritt 2</div>
+        <div style="position: relative; width: 100px; height: 60px;">
+          <span style="position: absolute; top: 5px; left: 10px; font-size: 0.45rem; color: #4a90d9;">·Patent</span>
+          <span style="position: absolute; top: 12px; left: 30px; font-size: 0.45rem; color: #4a90d9;">·Erfindung</span>
+          <span style="position: absolute; top: 8px; left: 5px; font-size: 0.45rem; color: #4a90d9;">·Anspruch</span>
+          <span style="position: absolute; top: 35px; left: 50px; font-size: 0.45rem; color: #e8853d;">·Katze</span>
+          <span style="position: absolute; top: 42px; left: 55px; font-size: 0.45rem; color: #e8853d;">·Hund</span>
+          <span style="position: absolute; top: 48px; left: 15px; font-size: 0.45rem; color: #7c5cbf;">·König</span>
+          <span style="position: absolute; top: 53px; left: 25px; font-size: 0.45rem; color: #7c5cbf;">·Königin</span>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 7 — Embeddings</div>
+        <div class="slide-title">Wörter im Raum</div>
+        <div class="slide-desc">Tokens werden zu Punkten im Raum. Ähnliche Bedeutung = nahe beieinander. Patent-Begriffe clustern zusammen.</div>
+        <div class="slide-anim">Animation: Canvas 2D — Punkte schweben, Cluster leuchten mit farbigen Halos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-row">
+    <!-- Slide 8: Attention -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Schritt 3</div>
+        <div style="position: relative; padding-top: 15px;">
+          <svg width="160" height="35" viewBox="0 0 160 35" style="overflow: visible;">
+            <path d="M 75 30 Q 55 5 25 30" fill="none" stroke="#fabb43" stroke-width="1.5" opacity="0.7"/>
+            <path d="M 135 30 Q 90 0 25 30" fill="none" stroke="#fabb43" stroke-width="2.5" opacity="0.9"/>
+            <path d="M 135 30 Q 115 15 95 30" fill="none" stroke="#e0d5c0" stroke-width="1" opacity="0.4"/>
+          </svg>
+          <div style="display: flex; gap: 8px; font-size: 0.5rem; color: #555;">
+            <span>Die</span><span style="font-weight:700;">Katze</span><span>die</span><span>auf</span><span>der</span><span>Matte</span><span>saß</span><span style="font-weight:700;">schlief</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 8 — Attention</div>
+        <div class="slide-title">Wörter beobachten einander</div>
+        <div class="slide-desc">Kurvierte Linien verbinden Wörter, die aufeinander "achten". "schlief" achtet stark auf "Katze", nicht "Matte". So versteht das Modell Kontext.</div>
+        <div class="slide-anim">Animation: Bögen zeichnen sich selbst, Dicke = Aufmerksamkeitsgewicht</div>
+      </div>
+    </div>
+
+    <!-- Slide 9: Neural Network -->
+    <div class="slide-card">
+      <div class="slide-preview" style="background: #fff;">
+        <div class="mini-overline">Schritt 4</div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: #fabb43; font-size: 0.6rem;">→</span>
+          <div class="dots-mini">
+            <div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div>
+            <div class="dot-m"></div><div class="dot-m on"></div><div class="dot-m on"></div><div class="dot-m"></div><div class="dot-m"></div>
+            <div class="dot-m"></div><div class="dot-m on"></div><div class="dot-m on"></div><div class="dot-m on"></div><div class="dot-m"></div>
+            <div class="dot-m"></div><div class="dot-m"></div><div class="dot-m on"></div><div class="dot-m"></div><div class="dot-m"></div>
+            <div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div><div class="dot-m"></div>
+          </div>
+          <span style="color: #fabb43; font-size: 0.6rem;">→</span>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 9 — Neuronales Netz</div>
+        <div class="slide-title">Die Hero-Visualisierung</div>
+        <div class="slide-desc">Das 3D-Netzwerk aus dem Playground. Flat View → Rotation zeigt Tiefe → Prompt-Aktivierung feuert durch spezifische Pfade.</div>
+        <div class="slide-anim">Animation: Canvas — 3D-Grid, Rotation, Aktivierungswelle (der Star des Workshops)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider">Das Kernprinzip</div>
+
+  <div class="slide-row">
+    <!-- Slide 10: Parameters -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Parameter</div>
+        <div style="text-align: center;">
+          <div style="font-size: 1.2rem; font-weight: 700; color: #ea580c;">70.000.000.000</div>
+          <div style="font-size: 0.5rem; color: #999; margin-top: 2px;">Regler — eingestellt durch Training</div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 10 — Parameter</div>
+        <div class="slide-title">70 Milliarden Regler</div>
+        <div class="slide-desc">Zoom ins Netzwerk: Verbindungen mit Zahlen sichtbar. Zoom zurück: überwältigende Skala. Analogie: Mischpult mit 70 Mrd. Reglern.</div>
+        <div class="slide-anim">Animation: Zoom rein → Zahlen auf Verbindungen → Zoom raus</div>
+      </div>
+    </div>
+
+    <!-- Slide 11: Next Token Prediction -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Das Kernprinzip</div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+          <div style="font-size: 0.6rem; color: #333;">Der Patent<span style="display:inline-block;width:2px;height:0.7em;background:#fabb43;vertical-align:text-bottom;margin-left:1px;"></span></div>
+          <div class="bars-mini">
+            <div class="bar-m b1"></div>
+            <div class="bar-m b2"></div>
+            <div class="bar-m b3"></div>
+            <div class="bar-m b4"></div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 11 — Next-Token-Prediction ⭐</div>
+        <div class="slide-title">Das wahrscheinlichste nächste Wort</div>
+        <div class="slide-desc">DAS Key-Insight. Wahrscheinlichkeits-Balken animieren sich. Wort wird gewählt, Satz baut sich auf. "Das Modell WEISS die Antwort nicht."</div>
+        <div class="slide-anim">Animation: Balken wachsen dynamisch, Wort snappt in den Satz ein</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-row">
+    <!-- Slide 12: Training -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Training</div>
+        <div style="display: flex; gap: 6px; align-items: center; font-size: 0.5rem;">
+          <div style="padding: 4px; background: #f5f5f5; border-radius: 3px; text-align: center; line-height: 1.3;">
+            Bücher<br>Web<br>Papers
+          </div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f5f5f5; border-radius: 3px; text-align: center;">
+            Training<br><span style="font-size: 0.4rem; color: #999;">Monate, Mio. €</span>
+          </div>
+          <span style="color: #fabb43;">→</span>
+          <div style="padding: 4px 6px; background: #f5f5f5; border-radius: 3px; text-align: center;">
+            Modell<br><span style="font-size: 0.4rem; color: #999;">70B+ Params</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 12 — Training</div>
+        <div class="slide-title">Woher kommt das "Wissen"?</div>
+        <div class="slide-desc">Trainingsdaten → Modell. NICHT eine Datenbank — komprimierte Muster. Analogie: Student der alles gelesen hat, aber kein Buch nachschlagen kann.</div>
+        <div class="slide-anim">Animation: Datenquellen fließen zusammen, Zahlen-Counter dreht hoch</div>
+      </div>
+    </div>
+
+    <!-- Slide 13: Teil 1 Summary -->
+    <div class="slide-card">
+      <div class="slide-preview">
+        <div class="mini-overline">Zusammenfassung</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; font-size: 0.45rem; color: #555; max-width: 120px;">
+          <div>✓ Text → Tokens → Vektoren</div>
+          <div>✓ Attention = Kontext verstehen</div>
+          <div>✓ Neuronales Netz verarbeitet</div>
+          <div style="color: #fabb43; font-weight: 600;">✓ Nächstes Wort vorhersagen</div>
+          <div>✓ Training ≠ Datenbank</div>
+        </div>
+      </div>
+      <div class="slide-info">
+        <div class="slide-num">Slide 13 — Zwischenfazit</div>
+        <div class="slide-title">Was wir jetzt wissen</div>
+        <div class="slide-desc">Kurze Zusammenfassung der 5 Konzepte aus Teil 1 bevor es zu den Grenzen und Halluzinationen geht. Brücke zu Teil 2.</div>
+        <div class="slide-anim">Animation: Punkte erscheinen nacheinander mit Checkmark</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

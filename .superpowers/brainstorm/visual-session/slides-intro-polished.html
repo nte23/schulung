@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intro Slides — Polished</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff; color: #1a1a1a;
+    overflow: hidden; height: 100vh;
+  }
+
+  /* === Progress === */
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #fabb43, #ea580c); z-index: 1000; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+  /* === Nav === */
+  .nav { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.5rem; z-index: 100; }
+  .nav-counter { font-size: 0.7rem; color: #ccc; font-variant-numeric: tabular-nums; margin-right: 0.3rem; }
+  .nav-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e8e8e8;
+    background: white; color: #999; cursor: pointer; font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: #fabb43; border-color: #fabb43; color: white; }
+  .nav-btn:disabled { opacity: 0.15; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: white; border-color: #e8e8e8; color: #999; }
+
+  /* === Slides === */
+  .slide {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem; opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  .slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+  .si { max-width: 900px; width: 100%; }
+
+  /* === Typography === */
+  .overline {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43; margin-bottom: 1.2rem;
+  }
+  h1 {
+    font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 600;
+    line-height: 1.1; margin-bottom: 1.2rem; letter-spacing: -0.03em;
+  }
+  h1 .hl { color: #fabb43; }
+  .subtitle {
+    font-size: 1.2rem; color: #888; max-width: 500px; line-height: 1.55;
+  }
+
+  /* === Check List (Slide 2) === */
+  .check-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .check-item { display: flex; align-items: center; gap: 0.8rem; font-size: 1.3rem; }
+  .check-icon {
+    font-size: 1.5rem; font-weight: 700; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .check-item.neg .check-icon { color: #dc2626; background: rgba(220,38,38,0.06); }
+  .check-item.pos .check-icon { color: #16a34a; background: rgba(22,163,74,0.06); }
+  .check-item.neg .check-text { color: #bbb; text-decoration: line-through; }
+  .check-item.pos .check-text { color: #1a1a1a; }
+
+  /* === Roadmap (Slide 3) === */
+  .roadmap { display: flex; gap: 1.2rem; margin-top: 2.5rem; }
+  .rm-item {
+    flex: 1; background: #fafafa; border: 1px solid #eee;
+    border-radius: 14px; padding: 1.5rem 1.3rem;
+    display: flex; flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .rm-item:hover { border-color: rgba(250,187,67,0.3); box-shadow: 0 4px 16px rgba(250,187,67,0.06); }
+  .rm-num { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.6rem; }
+  .rm-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; line-height: 1.3; }
+  .rm-desc { font-size: 0.78rem; color: #999; line-height: 1.45; flex: 1; }
+  .rm-time { margin-top: 0.8rem; font-size: 0.6rem; font-weight: 600; color: #ccc; text-transform: uppercase; letter-spacing: 0.06em; }
+  .rm-connector { display: flex; align-items: center; color: #e0e0e0; font-size: 1rem; flex-shrink: 0; }
+
+  /* === Section Opener (Slide 4) === */
+  .opener-center { text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+  /* === Typewriter area (Slide 4→5 transition) === */
+  .type-area {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 1.8rem; font-weight: 500; color: #1a1a1a;
+    z-index: 50; text-align: center; white-space: nowrap; opacity: 0;
+  }
+  .cursor {
+    display: inline-block; width: 2px; height: 1.1em;
+    background: #fabb43; vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- SLIDE 1: Title -->
+<div class="slide active" id="s0">
+  <div class="si">
+    <div class="overline">Workshop</div>
+    <h1>Grundlagen der<br><span class="hl">generativen KI</span></h1>
+    <div class="subtitle">Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie du sie effektiv einsetzt.</div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Goal -->
+<div class="slide" id="s1">
+  <div class="si">
+    <div class="overline">Ziel dieses Workshops</div>
+    <h1>Selbst prompten können</h1>
+    <div class="check-list">
+      <div class="check-item neg">
+        <span class="check-icon">✗</span>
+        <span class="check-text">Prompt-Sammlung zum Kopieren</span>
+      </div>
+      <div class="check-item pos">
+        <span class="check-icon">✓</span>
+        <span class="check-text">Technisch verstehen, wie es funktioniert</span>
+      </div>
+      <div class="check-item pos">
+        <span class="check-icon">✓</span>
+        <span class="check-text">Eigene Prompts entwickeln können</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Roadmap -->
+<div class="slide" id="s2">
+  <div class="si">
+    <div class="overline">Fahrplan</div>
+    <h1>Unser Weg <span class="hl">heute</span></h1>
+    <div class="roadmap">
+      <div class="rm-item">
+        <div class="rm-num">Teil 1</div>
+        <div class="rm-title">Wie KI funktioniert</div>
+        <div class="rm-desc">Von Text zu Tokens, neuronales Netz, Next-Token-Prediction.</div>
+        <div class="rm-time">~35 min</div>
+      </div>
+      <div class="rm-connector">→</div>
+      <div class="rm-item">
+        <div class="rm-num">Teil 2</div>
+        <div class="rm-title">Grenzen & Halluzinationen</div>
+        <div class="rm-desc">Warum KI überzeugend falsch liegt und Risiken für die Praxis.</div>
+        <div class="rm-time">~15 min</div>
+      </div>
+      <div class="rm-connector">→</div>
+      <div class="rm-item">
+        <div class="rm-num">Teil 3</div>
+        <div class="rm-title">Prompting-Techniken</div>
+        <div class="rm-desc">Zero-Shot, Few-Shot, Chain-of-Thought, Prompt-Baukasten.</div>
+        <div class="rm-time">~30 min</div>
+      </div>
+      <div class="rm-connector">→</div>
+      <div class="rm-item">
+        <div class="rm-num">Teil 4</div>
+        <div class="rm-title">Praxis</div>
+        <div class="rm-desc">Prompts verbessern, Halluzinationen erkennen, Patent-Prompts bauen.</div>
+        <div class="rm-time">~30 min</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Section Opener Teil 1 -->
+<div class="slide" id="s3">
+  <div class="si opener-center">
+    <div class="overline">Teil 1</div>
+    <h1>Was passiert, wenn du<br><span class="hl">Enter</span> drückst?</h1>
+  </div>
+</div>
+
+<!-- SLIDE 5: Typewriter → Token start -->
+<div class="slide" id="s4">
+  <div class="si">
+    <div class="overline">Schritt 1: Tokenisierung</div>
+    <h1>Text wird in <span class="hl">Bausteine</span> zerlegt</h1>
+    <div class="subtitle">Computer können nicht mit Text arbeiten — zuerst wird er in nummerierte Bausteine zerlegt.</div>
+  </div>
+</div>
+
+<!-- Typewriter overlay (between slide 4 and 5) -->
+<div class="type-area" id="typeArea">
+  <span id="typedText"></span><span class="cursor" id="typeCursor"></span>
+</div>
+
+<div class="nav">
+  <span class="nav-counter"><span id="cur">1</span>/5</span>
+  <button class="nav-btn" id="prevBtn" disabled>←</button>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const TOTAL = slides.length;
+let cur = 0, animating = false;
+
+// Animation elements per slide (what to stagger in)
+function getAnimEls(s) {
+  return s.querySelectorAll('.overline, h1, .subtitle, .check-item, .rm-item, .rm-connector');
+}
+
+function animateIn(idx) {
+  const s = slides[idx];
+  const els = getAnimEls(s);
+  gsap.set(els, { opacity: 0, y: 30 });
+  gsap.to(els, {
+    opacity: 1, y: 0,
+    duration: 0.7,
+    stagger: 0.1,
+    ease: 'power3.out',
+    delay: 0.2,
+  });
+
+  // Special: slide 3→4 typewriter transition handled in goTo
+}
+
+function animateOut(idx, dir) {
+  const s = slides[idx];
+  const els = getAnimEls(s);
+  return gsap.to(els, {
+    opacity: 0,
+    x: -40 * dir,
+    duration: 0.35,
+    stagger: 0.03,
+    ease: 'power2.in',
+  });
+}
+
+// Special transition: slide 3 (opener) → slide 4 (tokenization) via typewriter
+let typewriterPlayed = false;
+
+function playTypewriter(callback) {
+  const typeArea = document.getElementById('typeArea');
+  const typedText = document.getElementById('typedText');
+  const prompt = 'Der Patentanspruch betrifft eine Vorrichtung';
+
+  gsap.to(typeArea, { opacity: 1, duration: 0.4 });
+
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < prompt.length) {
+      typedText.textContent = prompt.substring(0, ++i);
+    } else {
+      clearInterval(iv);
+      gsap.to('#typeCursor', { opacity: 0, duration: 0.2, delay: 0.5 });
+      setTimeout(() => {
+        gsap.to(typeArea, { opacity: 0, duration: 0.4, onComplete: callback });
+      }, 1000);
+    }
+  }, 45);
+}
+
+function goTo(idx) {
+  if (idx === cur || animating || idx < 0 || idx >= TOTAL) return;
+  animating = true;
+  const dir = idx > cur ? 1 : -1;
+  const old = cur;
+
+  // Special: opener → tokenization (slide 3→4) gets typewriter
+  if (old === 3 && idx === 4 && !typewriterPlayed) {
+    typewriterPlayed = true;
+    animateOut(old, dir).then(() => {
+      slides[old].classList.remove('active');
+      // Play typewriter in between
+      playTypewriter(() => {
+        slides[idx].classList.add('active');
+        cur = idx;
+        updateNav();
+        animateIn(idx);
+        setTimeout(() => animating = false, 700);
+      });
+    });
+    return;
+  }
+
+  animateOut(old, dir).then(() => {
+    slides[old].classList.remove('active');
+    slides[idx].classList.add('active');
+    cur = idx;
+    updateNav();
+    animateIn(idx);
+    setTimeout(() => animating = false, 700);
+  });
+}
+
+function updateNav() {
+  document.getElementById('cur').textContent = cur + 1;
+  document.getElementById('progress').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === TOTAL - 1;
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(cur - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(cur + 1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(cur + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(cur - 1); }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('.nav')) return;
+  goTo(cur + 1);
+});
+
+// Init
+animateIn(0);
+</script>
+
+</body>
+</html>

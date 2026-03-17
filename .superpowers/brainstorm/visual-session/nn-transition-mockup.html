@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network — B → 3D Reveal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 2rem; }
+  h1 { text-align: center; font-size: 1.4rem; color: #555; margin-bottom: 0.5rem; font-weight: 400; }
+  .subtitle { text-align: center; font-size: 0.9rem; color: #999; margin-bottom: 2rem; }
+
+  .stages { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
+
+  .stage-label {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;
+  }
+  .stage-badge {
+    background: #fabb43; color: white; font-size: 0.7rem; font-weight: 700;
+    padding: 0.3rem 0.8rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .stage-title { font-size: 1rem; font-weight: 600; }
+  .stage-desc { font-size: 0.8rem; color: #888; margin-bottom: 1rem; line-height: 1.5; }
+
+  .slide-frame {
+    background: #ffffff; border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    aspect-ratio: 16/9; position: relative; overflow: hidden;
+  }
+  .slide-canvas { width: 100%; height: 100%; position: relative; }
+
+  .dot {
+    position: absolute; border-radius: 50%;
+    transition: all 0.3s;
+  }
+  .dot.idle { background: #dde4ed; }
+  .dot.blue { background: #4a90d9; box-shadow: 0 0 4px rgba(74,144,217,0.3); }
+  .dot.active { background: #fabb43; box-shadow: 0 0 8px rgba(250,187,67,0.5); }
+  .dot.hot { background: #ea580c; box-shadow: 0 0 12px rgba(234,88,12,0.6); }
+  .dot.faded { background: #e8ecf1; }
+
+  .connections {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .slide-text {
+    position: absolute; top: 2.5rem; left: 3rem; z-index: 10;
+  }
+  .slide-text .overline {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.5rem;
+  }
+  .slide-text h2 {
+    font-size: 1.6rem; font-weight: 600; line-height: 1.2;
+  }
+  .slide-text h2 .hl { color: #fabb43; }
+  .slide-text .note {
+    font-size: 0.8rem; color: #999; margin-top: 0.5rem; max-width: 350px;
+  }
+
+  .transition-arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0.5rem; color: #fabb43; font-size: 2rem;
+  }
+  .transition-note {
+    text-align: center; font-size: 0.8rem; color: #999; font-style: italic;
+  }
+
+  .counter-box {
+    position: absolute; bottom: 2rem; right: 3rem;
+    background: rgba(250,187,67,0.1); border: 1px solid rgba(250,187,67,0.3);
+    border-radius: 10px; padding: 0.6rem 1rem; z-index: 10;
+  }
+  .counter-box .big { font-size: 1.4rem; font-weight: 700; color: #ea580c; }
+  .counter-box .label { font-size: 0.65rem; color: #999; margin-top: 0.15rem; }
+</style>
+</head>
+<body>
+
+<h1>Neural Network — The Reveal Transition</h1>
+<p class="subtitle">Step 1: Familiar layer view → Step 2: Rotate to reveal 50 layers of depth → Step 3: Zoom out for full scale</p>
+
+<div class="stages">
+
+  <!-- STAGE 1: Front view (Classic NN) -->
+  <div>
+    <div class="stage-label">
+      <span class="stage-badge">Step 1</span>
+      <span class="stage-title">Front View — "Das kennen Sie vielleicht"</span>
+    </div>
+    <div class="stage-desc">Classic neural network diagram. Familiar, approachable. The audience nods — "ah yes, I've seen this". Data flows left to right through layers. Then you click...</div>
+    <div class="slide-frame">
+      <div class="slide-canvas" id="stage1">
+        <div class="slide-text">
+          <div class="overline">Das Neuronale Netz</div>
+          <h2>So sieht es <span class="hl">vereinfacht</span> aus</h2>
+          <div class="note">Daten fließen von links nach rechts durch Schichten von Neuronen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transition-arrow">↓</div>
+  <div class="transition-note">Click / Next slide → Camera rotates 45° revealing depth (GSAP 2s animation)</div>
+
+  <!-- STAGE 2: Perspective rotation revealing depth -->
+  <div>
+    <div class="stage-label">
+      <span class="stage-badge">Step 2</span>
+      <span class="stage-title">Perspective Rotate — "Aber in Wirklichkeit..."</span>
+    </div>
+    <div class="stage-desc">The flat diagram rotates in 3D revealing row after row after row of columns behind. What looked like 7 layers is actually 7 × 50 deep. The "oh wow" moment.</div>
+    <div class="slide-frame">
+      <div class="slide-canvas" id="stage2">
+        <div class="slide-text">
+          <div class="overline">Die Realität</div>
+          <h2>Aber in Wirklichkeit sind es <span class="hl">Hunderte</span> Schichten</h2>
+        </div>
+        <div class="counter-box">
+          <div class="big">96 Schichten</div>
+          <div class="label">GPT-4 (geschätzt)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transition-arrow">↓</div>
+  <div class="transition-note">Continue → Activation wave fires through the full 3D grid (GSAP stagger animation)</div>
+
+  <!-- STAGE 3: Full 3D with activation -->
+  <div>
+    <div class="stage-label">
+      <span class="stage-badge">Step 3</span>
+      <span class="stage-title">Activation Wave — "Und so verarbeitet es Ihren Prompt"</span>
+    </div>
+    <div class="stage-desc">A prompt enters from the left. An activation wave sweeps through the 3D grid — front to back, left to right. Nodes light up orange→hot as the wave passes. Connections flash. Output emerges right.</div>
+    <div class="slide-frame">
+      <div class="slide-canvas" id="stage3">
+        <div class="slide-text">
+          <div class="overline">Aktivierung</div>
+          <h2>Ihr Prompt <span class="hl">aktiviert</span> das Netzwerk</h2>
+          <div class="note">"Schreibe einen Patentanspruch für eine Vorrichtung zum..."</div>
+        </div>
+        <div class="counter-box">
+          <div class="big">1.800.000.000.000</div>
+          <div class="label">Parameter (GPT-4)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function project(x, y, z, cx, cy, fov) {
+  const scale = fov / (fov + z);
+  return { x: cx + x * scale, y: cy + y * scale, s: scale, z: z };
+}
+
+function makeDot(container, x, y, size, cls, zIndex) {
+  const d = document.createElement('div');
+  d.className = 'dot ' + cls;
+  d.style.left = (x - size/2) + 'px';
+  d.style.top = (y - size/2) + 'px';
+  d.style.width = size + 'px';
+  d.style.height = size + 'px';
+  if (zIndex !== undefined) d.style.zIndex = zIndex;
+  container.appendChild(d);
+}
+
+function makeLines(container, points, maxDist, w, h) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'connections');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      if (points[i].layer !== undefined && Math.abs(points[i].layer - points[j].layer) !== 1) continue;
+      const dx = points[i].x - points[j].x;
+      const dy = points[i].y - points[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < maxDist && Math.random() < 0.12) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', points[i].x);
+        line.setAttribute('y1', points[i].y);
+        line.setAttribute('x2', points[j].x);
+        line.setAttribute('y2', points[j].y);
+        const active = points[i].active && points[j].active;
+        line.setAttribute('stroke', active ? 'rgba(250,187,67,0.3)' : 'rgba(200,210,225,0.15)');
+        line.setAttribute('stroke-width', active ? '1' : '0.5');
+        svg.appendChild(line);
+      }
+    }
+  }
+  container.insertBefore(svg, container.firstChild);
+}
+
+// ===== STAGE 1: Classic flat NN =====
+(function() {
+  const c = document.getElementById('stage1');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const layers = [8, 12, 16, 20, 16, 12, 8];
+  const startX = W * 0.25;
+  const layerSpacing = (W * 0.6) / (layers.length - 1);
+  const points = [];
+
+  layers.forEach((count, li) => {
+    const x = startX + layerSpacing * li;
+    const ySpacing = Math.min(24, (H * 0.75) / count);
+    const startY = (H - (count - 1) * ySpacing) / 2;
+
+    for (let ni = 0; ni < count; ni++) {
+      const y = startY + ni * ySpacing;
+      makeDot(c, x, y, 5, 'blue', 10);
+      points.push({ x, y, layer: li, active: false });
+    }
+  });
+  makeLines(c, points, 200, W, H);
+})();
+
+// ===== STAGE 2: Rotated perspective showing depth =====
+(function() {
+  const c = document.getElementById('stage2');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const cx = W * 0.5, cy = H * 0.55;
+  const fov = 600;
+
+  const numLayersX = 7;   // left-right layers (what was visible before)
+  const numLayersZ = 30;  // depth layers (THE REVEAL)
+  const nodesPerLayer = 8;
+  const spacingX = 40;
+  const spacingY = 20;
+  const spacingZ = 18;
+
+  const angleY = 0.55;  // rotation revealing depth
+  const angleX = 0.15;
+
+  const allDots = [];
+
+  for (let lx = 0; lx < numLayersX; lx++) {
+    for (let lz = 0; lz < numLayersZ; lz++) {
+      const nodesY = Math.max(4, nodesPerLayer - Math.abs(lx - 3));
+      for (let ny = 0; ny < nodesY; ny++) {
+        if (Math.random() < 0.55) continue; // thin out for perf
+
+        let x = (lx - numLayersX/2) * spacingX;
+        let y = (ny - nodesY/2) * spacingY;
+        let z = (lz - numLayersZ/2) * spacingZ;
+
+        // Rotate Y (reveals depth)
+        let x1 = x * Math.cos(angleY) - z * Math.sin(angleY);
+        let z1 = x * Math.sin(angleY) + z * Math.cos(angleY);
+        // Slight X rotation
+        let y1 = y * Math.cos(angleX) - z1 * Math.sin(angleX);
+        let z2 = y * Math.sin(angleX) + z1 * Math.cos(angleX);
+
+        const p = project(x1, y1, z2, cx, cy, fov);
+        const size = Math.max(2, p.s * 5);
+
+        // Fade by depth
+        const depthFade = Math.max(0.15, (fov + z2) / (fov + numLayersZ * spacingZ / 2));
+        const isFront = lz < 5;
+        const cls = isFront ? 'blue' : 'faded';
+
+        const dot = document.createElement('div');
+        dot.className = 'dot ' + cls;
+        dot.style.left = (p.x - size/2) + 'px';
+        dot.style.top = (p.y - size/2) + 'px';
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.opacity = depthFade;
+        dot.style.zIndex = Math.round(500 + z2);
+        c.appendChild(dot);
+      }
+    }
+  }
+})();
+
+// ===== STAGE 3: Full 3D with activation wave =====
+(function() {
+  const c = document.getElementById('stage3');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const cx = W * 0.5, cy = H * 0.55;
+  const fov = 600;
+
+  const numLayersX = 7;
+  const numLayersZ = 30;
+  const nodesPerLayer = 8;
+  const spacingX = 40;
+  const spacingY = 20;
+  const spacingZ = 18;
+
+  const angleY = 0.55;
+  const angleX = 0.15;
+
+  for (let lx = 0; lx < numLayersX; lx++) {
+    for (let lz = 0; lz < numLayersZ; lz++) {
+      const nodesY = Math.max(4, nodesPerLayer - Math.abs(lx - 3));
+      for (let ny = 0; ny < nodesY; ny++) {
+        if (Math.random() < 0.55) continue;
+
+        let x = (lx - numLayersX/2) * spacingX;
+        let y = (ny - nodesY/2) * spacingY;
+        let z = (lz - numLayersZ/2) * spacingZ;
+
+        let x1 = x * Math.cos(angleY) - z * Math.sin(angleY);
+        let z1 = x * Math.sin(angleY) + z * Math.cos(angleY);
+        let y1 = y * Math.cos(angleX) - z1 * Math.sin(angleX);
+        let z2 = y * Math.sin(angleX) + z1 * Math.cos(angleX);
+
+        const p = project(x1, y1, z2, cx, cy, fov);
+        const size = Math.max(2, p.s * 5);
+        const depthFade = Math.max(0.15, (fov + z2) / (fov + numLayersZ * spacingZ / 2));
+
+        // Activation wave: moves from left (low lx) and front (low lz)
+        const waveProgress = (lx / numLayersX) * 0.5 + (lz / numLayersZ) * 0.5;
+        const waveCutoff = 0.45; // how far the wave has progressed
+
+        let cls, opacity;
+        if (waveProgress < waveCutoff * 0.6) {
+          cls = 'hot';
+          opacity = Math.max(0.4, depthFade);
+        } else if (waveProgress < waveCutoff) {
+          cls = 'active';
+          opacity = Math.max(0.3, depthFade);
+        } else if (waveProgress < waveCutoff + 0.1) {
+          cls = 'blue';
+          opacity = depthFade;
+        } else {
+          cls = 'faded';
+          opacity = depthFade * 0.7;
+        }
+
+        const dot = document.createElement('div');
+        dot.className = 'dot ' + cls;
+        dot.style.left = (p.x - size/2) + 'px';
+        dot.style.top = (p.y - size/2) + 'px';
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.opacity = opacity;
+        dot.style.zIndex = Math.round(500 + z2);
+        c.appendChild(dot);
+      }
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

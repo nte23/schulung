@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0a0a;
+    color: #ffffff;
+    overflow: hidden;
+    height: 100vh;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  canvas { display: block; position: fixed; top: 0; left: 0; }
+
+  .overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 10;
+  }
+  .text-box {
+    position: absolute; top: 3rem; left: 3.5rem;
+    transition: opacity 0.8s ease;
+  }
+  .overline {
+    font-size: 0.7rem; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.15em; color: rgba(255,255,255,0.35); margin-bottom: 0.6rem;
+  }
+  .headline {
+    font-size: 2rem; font-weight: 300; line-height: 1.3;
+    max-width: 440px; color: rgba(255,255,255,0.85);
+  }
+  .headline .hl { color: #fabb43; font-weight: 500; }
+  .sub {
+    font-size: 0.85rem; color: rgba(255,255,255,0.3); margin-top: 0.6rem;
+    max-width: 380px; line-height: 1.5;
+  }
+
+  .counter-box {
+    position: absolute; bottom: 3rem; right: 3.5rem;
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .counter-box.visible { opacity: 1; }
+  .counter-big { font-size: 1.8rem; font-weight: 300; color: #fabb43; }
+  .counter-label { font-size: 0.65rem; color: rgba(255,255,255,0.25); margin-top: 0.2rem; letter-spacing: 0.05em; }
+
+  .prompt-box {
+    position: absolute; bottom: 3rem; left: 3.5rem;
+    opacity: 0; transition: opacity 0.8s ease; max-width: 460px;
+  }
+  .prompt-box.visible { opacity: 1; }
+  .prompt-label { font-size: 0.6rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.25); margin-bottom: 0.4rem; }
+  .prompt-text {
+    font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.5;
+    border-left: 2px solid rgba(250,187,67,0.4); padding-left: 1rem;
+  }
+
+  .hint {
+    position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; color: rgba(255,255,255,0.15);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+  .steps {
+    position: absolute; top: 1.5rem; right: 3.5rem;
+    display: flex; gap: 6px;
+  }
+  .step-pip {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); transition: all 0.4s;
+  }
+  .step-pip.on { background: #fabb43; box-shadow: 0 0 8px rgba(250,187,67,0.4); }
+  .step-pip.done { background: rgba(250,187,67,0.3); }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="overlay">
+  <div class="text-box" id="textBox">
+    <div class="overline" id="overline">Das Neuronale Netz</div>
+    <div class="headline" id="headline">So sieht es <span class="hl">vereinfacht</span> aus</div>
+    <div class="sub" id="sub">7 Schichten. Daten fließen von links nach rechts.</div>
+  </div>
+
+  <div class="counter-box" id="counterBox">
+    <div class="counter-big" id="counterBig">96</div>
+    <div class="counter-label" id="counterLabel">Schichten in GPT-4</div>
+  </div>
+
+  <div class="prompt-box" id="promptBox">
+    <div class="prompt-label">Prompt</div>
+    <div class="prompt-text">"Schreibe einen Patentanspruch für eine Vorrichtung zum drahtlosen Laden..."</div>
+  </div>
+
+  <div class="steps">
+    <div class="step-pip on" id="p0"></div>
+    <div class="step-pip" id="p1"></div>
+    <div class="step-pip" id="p2"></div>
+  </div>
+
+  <div class="hint">click to continue</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const dpr = Math.min(devicePixelRatio, 2);
+
+let W, H, cx, cy;
+function resize() {
+  W = canvas.width = window.innerWidth * dpr;
+  H = canvas.height = window.innerHeight * dpr;
+  cx = W / 2; cy = H / 2;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== BUILD GRID =====
+const LX = 7;    // visible layers (left-right)
+const LZ = 50;   // depth layers (the reveal)
+const NY = 14;    // nodes per column
+
+const SX = 52 * dpr;
+const SY = 18 * dpr;
+const SZ = 14 * dpr;
+const FOV = 800 * dpr;
+
+// Pre-generate activation paths (sparse clusters that light up)
+// These simulate "regions" in the network that respond to a specific prompt
+const activePaths = [];
+// Path 1: a thick diagonal band
+for (let i = 0; i < 200; i++) {
+  const lx = Math.floor(Math.random() * LX);
+  const lz = Math.floor(lx * 5 + Math.random() * 15);
+  const ny = Math.floor(3 + Math.random() * 5);
+  if (lz < LZ) activePaths.push({ lx, lz, ny, strength: 0.7 + Math.random() * 0.3 });
+}
+// Path 2: a concentrated cluster in middle-back
+for (let i = 0; i < 120; i++) {
+  const lx = Math.floor(2 + Math.random() * 3);
+  const lz = Math.floor(20 + Math.random() * 15);
+  const ny = Math.floor(6 + Math.random() * 4);
+  activePaths.push({ lx, lz, ny, strength: 0.5 + Math.random() * 0.5 });
+}
+// Path 3: sparse outliers
+for (let i = 0; i < 60; i++) {
+  activePaths.push({
+    lx: Math.floor(Math.random() * LX),
+    lz: Math.floor(Math.random() * LZ),
+    ny: Math.floor(Math.random() * NY),
+    strength: 0.3 + Math.random() * 0.4
+  });
+}
+
+// Build lookup for activation
+const activeSet = new Map();
+for (const p of activePaths) {
+  const key = `${p.lx},${p.lz},${p.ny}`;
+  activeSet.set(key, p.strength);
+}
+
+// Build nodes
+const nodes = [];
+for (let lx = 0; lx < LX; lx++) {
+  for (let lz = 0; lz < LZ; lz++) {
+    for (let ny = 0; ny < NY; ny++) {
+      const key = `${lx},${lz},${ny}`;
+      nodes.push({
+        bx: (lx - LX / 2 + 0.5) * SX,
+        by: (ny - NY / 2 + 0.5) * SY,
+        bz: (lz - LZ / 2 + 0.5) * SZ,
+        lx, lz, ny,
+        activation: 0,
+        targetActivation: activeSet.has(key) ? activeSet.get(key) : 0,
+      });
+    }
+  }
+}
+
+// ===== STATE =====
+let step = 0;
+let targetAngleY = 0, targetAngleX = 0;
+let curAngleY = 0, curAngleX = 0;
+let waveProgress = -1;
+let time = 0;
+
+const stepData = [
+  {
+    overline: 'Das Neuronale Netz',
+    headline: 'So sieht es <span class="hl">vereinfacht</span> aus',
+    sub: '7 Schichten. Daten fließen von links nach rechts.',
+    aY: 0, aX: 0, showCounter: false, showPrompt: false,
+  },
+  {
+    overline: 'Die Realität',
+    headline: 'Dahinter stecken <span class="hl">Hunderte</span> Schichten',
+    sub: 'Jede Schicht verarbeitet die Information weiter.',
+    aY: 0.58, aX: 0.1, showCounter: true,
+    counterBig: '96', counterLabel: 'Schichten in GPT-4 (geschätzt)',
+    showPrompt: false,
+  },
+  {
+    overline: 'Aktivierung',
+    headline: 'Nur <span class="hl">bestimmte Pfade</span> feuern',
+    sub: 'Verschiedene Prompts aktivieren verschiedene Regionen.',
+    aY: 0.58, aX: 0.1, showCounter: true,
+    counterBig: '1.800 Mrd.', counterLabel: 'Parameter in GPT-4',
+    showPrompt: true,
+  }
+];
+
+function applyStep(s) {
+  const d = stepData[s];
+  document.getElementById('overline').textContent = d.overline;
+  document.getElementById('headline').innerHTML = d.headline;
+  document.getElementById('sub').textContent = d.sub;
+  targetAngleY = d.aY;
+  targetAngleX = d.aX;
+
+  const cb = document.getElementById('counterBox');
+  cb.classList.toggle('visible', d.showCounter);
+  if (d.showCounter) {
+    document.getElementById('counterBig').textContent = d.counterBig;
+    document.getElementById('counterLabel').textContent = d.counterLabel;
+  }
+  document.getElementById('promptBox').classList.toggle('visible', d.showPrompt);
+
+  for (let i = 0; i < 3; i++) {
+    const p = document.getElementById('p' + i);
+    p.className = 'step-pip' + (i === s ? ' on' : i < s ? ' done' : '');
+  }
+
+  if (s === 2) {
+    waveProgress = -0.1;
+  }
+}
+
+document.addEventListener('click', () => {
+  step = (step + 1) % 3;
+  if (step === 0) {
+    waveProgress = -1;
+    nodes.forEach(n => n.activation = 0);
+  }
+  applyStep(step);
+});
+
+applyStep(0);
+
+// ===== RENDER =====
+function project(x, y, z) {
+  const s = FOV / (FOV + z);
+  return { x: cx + x * s, y: cy + y * s, s, z };
+}
+
+function render() {
+  time += 0.016;
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Smooth rotation
+  curAngleY += (targetAngleY - curAngleY) * 0.03;
+  curAngleX += (targetAngleX - curAngleX) * 0.03;
+
+  const cosY = Math.cos(curAngleY), sinY = Math.sin(curAngleY);
+  const cosX = Math.cos(curAngleX), sinX = Math.sin(curAngleX);
+  const isFlat = Math.abs(curAngleY) < 0.04;
+
+  // Advance wave
+  if (waveProgress >= -0.1 && waveProgress < 1.8) {
+    waveProgress += 0.005;
+  }
+
+  // Update activations
+  if (waveProgress >= 0) {
+    for (const n of nodes) {
+      const nodeWavePos = (n.lx / LX) * 0.3 + (n.lz / LZ) * 0.7;
+      const dist = waveProgress - nodeWavePos;
+      if (dist > 0 && dist < 0.3 && n.targetActivation > 0) {
+        n.activation = Math.min(n.targetActivation, n.activation + 0.04 * n.targetActivation);
+      } else if (dist > 0.5) {
+        n.activation = Math.max(0, n.activation - 0.003);
+      }
+    }
+  }
+
+  // Project
+  const projected = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+
+    // In flat mode, only show the middle z-slice
+    if (isFlat) {
+      const distZ = Math.abs(n.lz - LZ / 2);
+      if (distZ > 0.8) continue;
+    }
+
+    const x1 = n.bx * cosY - n.bz * sinY;
+    const z1 = n.bx * sinY + n.bz * cosY;
+    const y1 = n.by * cosX - z1 * sinX;
+    const z2 = n.by * sinX + z1 * cosX;
+
+    const p = project(x1, y1, z2);
+    projected.push({ ...p, i, n });
+  }
+
+  projected.sort((a, b) => a.z - b.z);
+
+  // ===== DRAW CONNECTIONS =====
+  // Only draw connections between adjacent nodes in the grid
+  // For performance, draw a subset
+  ctx.lineWidth = 0.5 * dpr;
+  for (let pi = 0; pi < projected.length; pi++) {
+    const a = projected[pi];
+    // Connect to ~3 nearby projected nodes (cheaper than full N^2)
+    for (let pj = pi + 1; pj < Math.min(pi + 8, projected.length); pj++) {
+      const b = projected[pj];
+
+      // Only connect if they're in adjacent layers
+      const dlx = Math.abs(a.n.lx - b.n.lx);
+      const dlz = Math.abs(a.n.lz - b.n.lz);
+      const dny = Math.abs(a.n.ny - b.n.ny);
+      if (!((dlx === 1 && dlz === 0 && dny <= 1) || (dlx === 0 && dlz <= 1 && dny === 1))) continue;
+
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 60 * dpr) continue;
+
+      const bothActive = a.n.activation > 0.2 && b.n.activation > 0.2;
+      const minScale = Math.min(a.s, b.s);
+      const baseAlpha = (1 - dist / (60 * dpr)) * minScale;
+
+      if (bothActive) {
+        const intensity = Math.min(a.n.activation, b.n.activation);
+        ctx.strokeStyle = `rgba(250, 187, 67, ${baseAlpha * intensity * 0.8})`;
+        ctx.lineWidth = 1 * dpr;
+      } else {
+        ctx.strokeStyle = `rgba(255, 255, 255, ${baseAlpha * 0.04})`;
+        ctx.lineWidth = 0.5 * dpr;
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+
+  // ===== DRAW NODES =====
+  for (const p of projected) {
+    const baseR = 1.8 * dpr * p.s;
+    const act = p.n.activation;
+
+    // Visibility
+    let alpha = Math.max(0.06, Math.min(0.9, (p.s - 0.3) * 1.2));
+
+    // Colors
+    let r, g, b;
+    if (act > 0.5) {
+      // Hot orange
+      const t = (act - 0.5) * 2;
+      r = Math.round(250 + (255 - 250) * t);
+      g = Math.round(187 - 100 * t);
+      b = Math.round(67 - 50 * t);
+    } else if (act > 0.1) {
+      // Warming
+      const t = act / 0.5;
+      r = Math.round(100 + 150 * t);
+      g = Math.round(100 + 87 * t);
+      b = Math.round(120 - 53 * t);
+    } else {
+      // Idle: very dim white/grey
+      r = 100; g = 105; b = 115;
+    }
+
+    const breathe = 1 + Math.sin(time * 1.2 + p.i * 0.07) * 0.06;
+    const finalR = baseR * breathe * (1 + act * 0.6);
+
+    // Glow for active
+    if (act > 0.3) {
+      const glowR = finalR * 4;
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${act * 0.35 * alpha})`);
+      grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dot
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, finalR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>

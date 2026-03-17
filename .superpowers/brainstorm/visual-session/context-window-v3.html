@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window v3 — Dissolve</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2rem; left: 3rem; z-index: 100; max-width: 300px; }
+  .label .ol { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub { font-size: 0.8rem; color: #999; margin-top: 0.3rem; line-height: 1.5; }
+  .hint { position: fixed; bottom: 1rem; right: 2rem; font-size: 0.6rem; color: #ccc; z-index: 100; }
+
+  /* The full conversation column */
+  .conv-column {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 500px; display: flex; flex-direction: column; gap: 0;
+  }
+
+  .conv-msg {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.65rem; line-height: 1.5;
+    border-left: 3px solid transparent;
+    position: relative;
+    transition: opacity 0.5s, filter 0.5s;
+  }
+  .conv-msg.system { border-left-color: #7c5cbf; background: rgba(124,92,191,0.04); color: #7c5cbf; font-weight: 500; }
+  .conv-msg.user { border-left-color: #1a1a1a; color: #333; }
+  .conv-msg.ai { border-left-color: #e0e0e0; color: #777; }
+  .conv-msg.user.angry { border-left-color: #dc2626; color: #dc2626; }
+
+  .conv-msg .sender { font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.15rem; color: #bbb; }
+  .conv-msg.system .sender { color: #7c5cbf; }
+  .conv-msg.user .sender { color: #555; }
+
+  /* Highlight for important content */
+  .conv-msg.important { background: rgba(250,187,67,0.06); border-left-color: #fabb43; }
+  .conv-msg.important::after {
+    content: '★ Wichtig'; position: absolute; right: 0.5rem; top: 0.5rem;
+    font-size: 0.45rem; color: #fabb43; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  /* The "viewport" — what the AI can see */
+  .viewport-bracket {
+    position: fixed; right: calc(50% - 270px); top: 0; bottom: 0;
+    width: 28px; z-index: 50; display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+  }
+  .vp-top-fade {
+    position: fixed; left: 0; right: 0; top: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.97) 0%, transparent 100%);
+    pointer-events: none; z-index: 40;
+    transition: height 0.8s ease;
+  }
+
+  /* The "lost" overlay that covers dissolved messages */
+  .lost-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px, rgba(220,38,38,0.03) 2px, rgba(220,38,38,0.03) 4px
+    );
+    opacity: 0; pointer-events: none; z-index: 2;
+  }
+
+  /* Dissolved state */
+  .conv-msg.dissolved {
+    opacity: 0.08 !important;
+    filter: blur(1px);
+  }
+  .conv-msg.dissolving {
+    animation: dissolveFlash 0.6s ease;
+  }
+  @keyframes dissolveFlash {
+    0% { background: rgba(220,38,38,0.08); }
+    50% { background: rgba(220,38,38,0.15); }
+    100% { background: transparent; }
+  }
+
+  /* Alert that pops when important content dissolves */
+  .context-alert {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    background: #fef2f2; border: 1px solid rgba(220,38,38,0.25);
+    border-radius: 12px; padding: 0.6rem 1.2rem;
+    font-size: 0.75rem; color: #991b1b; z-index: 200;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.1);
+    display: flex; align-items: center; gap: 0.5rem;
+    opacity: 0; white-space: nowrap;
+  }
+
+  /* New messages appear at bottom */
+  .conv-msg.new-msg { opacity: 0; }
+
+  /* Meter */
+  .meter {
+    position: fixed; left: calc(50% + 275px); top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    height: 300px; z-index: 50;
+  }
+  .meter-label { font-size: 0.5rem; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; }
+  .meter-bar { width: 6px; flex: 1; background: #f0f0f0; border-radius: 3px; position: relative; overflow: hidden; }
+  .meter-fill { position: absolute; bottom: 0; left: 0; right: 0; background: #16a34a; border-radius: 3px; transition: height 0.8s ease, background 0.5s; }
+  .meter-pct { font-size: 0.6rem; font-weight: 600; color: #bbb; }
+
+  .insight-box {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    max-width: 500px; width: 90%; padding: 1rem 1.3rem;
+    background: #fffbeb; border-left: 4px solid #fabb43; border-radius: 0 10px 10px 0;
+    font-size: 0.82rem; color: #92400e; line-height: 1.5; opacity: 0; z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Kontext-Fenster</div>
+  <h2>KI hat ein <span class="hl">Kurzzeitgedächtnis</span></h2>
+  <div class="sub">Alles was oben rausfällt, ist für die KI vergessen. Für immer.</div>
+</div>
+<div class="hint">Klick zum Weiter</div>
+
+<div class="vp-top-fade" id="topFade" style="height:0px;"></div>
+
+<div class="conv-column" id="convCol">
+  <!-- Initial conversation — all visible -->
+  <div class="conv-msg system important" id="m0"><div class="sender">System</div>Du bist ein erfahrener Patentanwalt mit Schwerpunkt Maschinenbau.</div>
+  <div class="conv-msg user important" id="m1"><div class="sender">Du</div>Hier ist mein Patentanspruch: "Vorrichtung zum drahtlosen Laden, umfassend eine Sendespule, eine Empfangsspule und eine Steuereinheit..." Prüfe gegen DE 10 2020 456 789.</div>
+  <div class="conv-msg ai" id="m2"><div class="sender">KI</div>Verstanden. M1.1 Sendespule und M1.2 Empfangsspule sind in der Druckschrift offenbart. M1.3 Steuereinheit unterscheidet sich in der Regelungslogik.</div>
+  <div class="conv-msg user" id="m3"><div class="sender">Du</div>Formuliere den Anspruch um — Regelungslogik stärker betonen.</div>
+  <div class="conv-msg ai" id="m4"><div class="sender">KI</div>"...wobei die Steuereinheit eine adaptive Frequenzregelung basierend auf Kopplungseffizienz durchführt..."</div>
+</div>
+
+<div class="meter">
+  <div class="meter-label">Kontext</div>
+  <div class="meter-bar"><div class="meter-fill" id="mFill" style="height:30%;"></div></div>
+  <div class="meter-pct" id="mPct">30%</div>
+</div>
+
+<!-- Alerts -->
+<div class="context-alert" id="alert1" style="top:25%;">⚠️ "Du bist Patentanwalt" — gerade aus dem Kontext gefallen!</div>
+<div class="context-alert" id="alert2" style="top:25%;">⚠️ Dein Patentanspruch-Text ist nicht mehr im Kontext!</div>
+<div class="context-alert" id="alert3" style="top:25%;">⚠️ Die KI weiß nicht mehr, was du am Anfang wolltest</div>
+
+<div class="insight-box" id="insightBox">
+  ⚡ <strong>Jede Nachricht kostet Kontext.</strong> Irgendwann fallen deine wichtigsten Anweisungen raus — und die KI dreht sich im Kreis. Manchmal ist "Neuer Chat" mit einem klaren Prompt die beste Lösung.
+</div>
+
+<script>
+const convCol = document.getElementById('convCol');
+let step = -1;
+let busy = false;
+let msgCount = 5; // initial messages m0–m4
+
+// Steps: each adds messages at the bottom and dissolves messages from the top
+const steps = [
+  {
+    // Step 0: Show initial state — just highlight the important messages
+    addMsgs: [],
+    dissolve: [],
+    meter: 30,
+    action: () => {
+      // Pulse the important markers
+      gsap.fromTo('.important::after', { opacity: 0 }, { opacity: 1, duration: 0.5 });
+    }
+  },
+  {
+    // Step 1: More conversation, still fine
+    addMsgs: [
+      { type: 'user', text: 'Das "wobei" ist zu schwach. Mach ein eigenes Merkmal daraus.' },
+      { type: 'ai', text: '"c) eine Steuereinheit, die eine adaptive Frequenzregelung durchführt, d) wobei die Frequenzregelung auf Echtzeitmessung basiert..."' },
+    ],
+    dissolve: [],
+    meter: 48,
+  },
+  {
+    // Step 2: More messages, still ok
+    addMsgs: [
+      { type: 'user', text: 'Nein, der abhängige Anspruch soll die Regelungslogik genauer definieren. Nicht nur Frequenz.' },
+      { type: 'ai', text: 'Verstanden. Hier ein breiterer Ansatz: "...wobei die Steuereinheit ferner dazu eingerichtet ist, eine Leistungsanpassung und eine Impedanzabstimmung durchzuführen..."' },
+    ],
+    dissolve: [],
+    meter: 62,
+  },
+  {
+    // Step 3: System prompt dissolves! Alert 1
+    addMsgs: [
+      { type: 'user', text: 'Berücksichtige auch den Aspekt der thermischen Überwachung.' },
+      { type: 'ai', text: 'Natürlich. Die thermische Überwachung könnte als weiteres Merkmal e) formuliert werden...' },
+    ],
+    dissolve: ['m0'],  // System prompt gone!
+    meter: 75,
+    alert: 'alert1',
+  },
+  {
+    // Step 4: Initial patent claim dissolves! Alert 2
+    addMsgs: [
+      { type: 'user', text: 'Warte — was war nochmal der Stand der Technik? Was hat die Druckschrift offenbart?' },
+      { type: 'ai', text: 'Welche Druckschrift meinen Sie? Können Sie mir die Details nochmal nennen?' },
+    ],
+    dissolve: ['m1'],  // Patent claim gone!
+    meter: 85,
+    alert: 'alert2',
+  },
+  {
+    // Step 5: First analysis gone, contradictions
+    addMsgs: [
+      { type: 'user', text: 'DE 10 2020 456 789!! Das hab ich dir am Anfang gegeben!' },
+      { type: 'ai', text: 'Ah richtig. Bei erneuter Analyse scheint M1.1 doch neuheitsschädlich zu sein...' },
+      { type: 'user', text: 'WAS?! Vorhin hast du gesagt M1.1 ist offenbart! Jetzt ist es neu?!', angry: true },
+    ],
+    dissolve: ['m2', 'm3'],
+    meter: 93,
+    alert: 'alert3',
+  },
+  {
+    // Step 6: Full angry loop
+    addMsgs: [
+      { type: 'ai', text: 'Entschuldigung für die Verwirrung. Lassen Sie mich nochmal von vorn beginnen...' },
+      { type: 'user', text: 'Du machst es WIEDER falsch. ES GEHT UM DIE REGELUNGSLOGIK!', angry: true },
+      { type: 'ai', text: 'Sie haben Recht, die Regelungslogik... [wiederholt im Wesentlichen die gleiche Analyse]' },
+    ],
+    dissolve: ['m4'],
+    meter: 99,
+  },
+];
+
+function dissolveMsg(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('dissolving');
+  setTimeout(() => {
+    el.classList.remove('dissolving');
+    el.classList.add('dissolved');
+    // If it was important, flash red
+    if (el.classList.contains('important')) {
+      gsap.fromTo(el, { borderLeftColor: '#dc2626' }, { borderLeftColor: '#f0f0f0', duration: 1 });
+    }
+  }, 600);
+}
+
+function addMsg(type, text, angry) {
+  const el = document.createElement('div');
+  el.className = 'conv-msg ' + type + (angry ? ' angry' : '') + ' new-msg';
+  el.id = 'm' + msgCount;
+  msgCount++;
+
+  const sender = document.createElement('div');
+  sender.className = 'sender';
+  sender.textContent = type === 'user' ? 'Du' : type === 'ai' ? 'KI' : 'System';
+  el.appendChild(sender);
+  el.appendChild(document.createTextNode(text));
+
+  convCol.appendChild(el);
+
+  // Animate in
+  gsap.fromTo(el, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 });
+
+  return el;
+}
+
+function doStep(s) {
+  const data = steps[s];
+
+  // Dissolve old messages
+  data.dissolve.forEach((id, i) => {
+    setTimeout(() => dissolveMsg(id), i * 300);
+  });
+
+  // Add new messages
+  data.addMsgs.forEach((m, i) => {
+    setTimeout(() => addMsg(m.type, m.text, m.angry), data.dissolve.length * 300 + 200 + i * 400);
+  });
+
+  // Scroll the column up so new messages are visible
+  const totalNewHeight = data.addMsgs.length * 55;
+  setTimeout(() => {
+    gsap.to(convCol, { y: (parseFloat(gsap.getProperty(convCol, 'y')) || 0) - totalNewHeight, duration: 0.7, ease: 'power2.out' });
+  }, data.dissolve.length * 300 + data.addMsgs.length * 400 + 300);
+
+  // Grow the top fade to cover dissolved area
+  const dissolvedCount = document.querySelectorAll('.dissolved').length + data.dissolve.length;
+
+  // Meter
+  const totalDelay = data.dissolve.length * 300 + data.addMsgs.length * 400;
+  setTimeout(() => {
+    gsap.to('#mFill', { height: data.meter + '%', duration: 0.8 });
+    document.getElementById('mPct').textContent = data.meter + '%';
+    if (data.meter > 60) {
+      document.getElementById('mFill').style.background = data.meter > 85 ? '#dc2626' : '#fabb43';
+      document.getElementById('mPct').style.color = data.meter > 85 ? '#dc2626' : '#e5a530';
+    }
+  }, totalDelay);
+
+  // Alert
+  if (data.alert) {
+    const alertEl = document.getElementById(data.alert);
+    setTimeout(() => {
+      gsap.fromTo(alertEl, { opacity: 0, y: -15 }, { opacity: 1, y: 0, duration: 0.5 });
+      gsap.to(alertEl, { opacity: 0, delay: 3, duration: 0.5 });
+    }, data.dissolve.length * 300 + 400);
+  }
+
+  // Action
+  if (data.action) data.action();
+}
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= steps.length) {
+    gsap.to('#insightBox', { opacity: 1, duration: 0.7 });
+    return;
+  }
+  busy = true;
+  doStep(step);
+  const d = steps[step];
+  const totalTime = d.dissolve.length * 300 + d.addMsgs.length * 400 + 800;
+  setTimeout(() => busy = false, totalTime);
+}
+
+document.addEventListener('click', advance);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+gsap.fromTo('.label .ol, .label h2, .label .sub', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.2 });
+</script>
+
+</body>
+</html>

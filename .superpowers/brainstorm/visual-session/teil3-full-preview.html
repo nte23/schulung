@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 3 — Full Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; -webkit-user-select: none; user-select: none; }
+
+  .progress { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(135deg, #fabb43, #ea580c); z-index: 1000; transition: width 0.5s; }
+
+  .nav { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.5rem; z-index: 200; }
+  .nav-counter { font-size: 0.75rem; color: #bbb; font-variant-numeric: tabular-nums; margin-right: 0.25rem; }
+  .nav-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e0e0e0; background: white; color: #666; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .nav-btn:hover { background: #fabb43; border-color: #fabb43; color: white; }
+  .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: white; border-color: #e0e0e0; color: #666; }
+
+  .slide { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 5rem; opacity: 0; visibility: hidden; pointer-events: none; }
+  .slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+  .slide-inner { max-width: 900px; width: 100%; }
+
+  .overline { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: #fabb43; margin-bottom: 1rem; opacity: 0; }
+  h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 600; line-height: 1.15; margin-bottom: 1rem; letter-spacing: -0.02em; opacity: 0; }
+  h1 .hl { color: #fabb43; }
+  .subtitle { font-size: 1.1rem; color: #777; max-width: 480px; line-height: 1.55; opacity: 0; }
+
+  /* Prompt boxes */
+  .prompt-box { background: #f8f8f8; border: 1px solid #eee; border-radius: 12px; padding: 1.2rem 1.5rem; margin-top: 1.5rem; font-size: 0.85rem; line-height: 1.7; color: #444; opacity: 0; }
+  .prompt-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fabb43; margin-bottom: 0.5rem; }
+  .prompt-box .role { color: #7c5cbf; font-weight: 600; }
+  .prompt-box .context { color: #4a90d9; font-weight: 600; }
+  .prompt-box .task { color: #e8853d; font-weight: 600; }
+  .prompt-box .format { color: #16a34a; font-weight: 600; }
+
+  /* Pro/con tags */
+  .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; opacity: 0; }
+  .tag { font-size: 0.72rem; padding: 0.3rem 0.7rem; border-radius: 20px; font-weight: 500; }
+  .tag.pro { background: rgba(22,163,74,0.08); color: #16a34a; }
+  .tag.con { background: rgba(220,38,38,0.06); color: #dc2626; }
+
+  /* Side-by-side */
+  .split { display: flex; gap: 1.5rem; margin-top: 1.5rem; }
+  .split-side { flex: 1; border-radius: 12px; padding: 1.2rem 1.5rem; opacity: 0; }
+  .split-side.bad { background: #fef2f2; border: 1px solid rgba(220,38,38,0.15); }
+  .split-side.good { background: rgba(22,163,74,0.03); border: 1px solid rgba(22,163,74,0.15); }
+  .split-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .split-label.bad { color: #dc2626; }
+  .split-label.good { color: #16a34a; }
+  .split-side p { font-size: 0.82rem; line-height: 1.6; color: #555; }
+
+  /* Steps chain */
+  .steps-chain { display: flex; gap: 0.8rem; align-items: stretch; margin-top: 2rem; }
+  .step-box { flex: 1; background: #f8f8f8; border: 1px solid #eee; border-radius: 12px; padding: 1rem; opacity: 0; }
+  .step-num { font-size: 0.6rem; font-weight: 700; color: #fabb43; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+  .step-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .step-desc { font-size: 0.7rem; color: #888; line-height: 1.4; }
+  .step-arrow { display: flex; align-items: center; font-size: 1.2rem; color: #ddd; opacity: 0; flex-shrink: 0; }
+
+  /* Step-back visual */
+  .stepback-visual { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; margin-top: 2rem; }
+  .sb-level { display: flex; align-items: center; gap: 1rem; width: 100%; opacity: 0; }
+  .sb-arrow-down { font-size: 1.2rem; color: #fabb43; opacity: 0; }
+  .sb-box { padding: 0.8rem 1.2rem; border-radius: 10px; font-size: 0.82rem; line-height: 1.5; flex: 1; }
+  .sb-box.specific { background: #f8f8f8; border: 1px solid #eee; color: #555; }
+  .sb-box.broad { background: rgba(250,187,67,0.06); border: 1px solid rgba(250,187,67,0.2); color: #92400e; }
+  .sb-box.answer { background: rgba(22,163,74,0.04); border: 1px solid rgba(22,163,74,0.15); color: #166534; }
+  .sb-label { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+  .sb-label.orange { color: #fabb43; }
+  .sb-label.green { color: #16a34a; }
+  .sb-label.grey { color: #999; }
+
+  /* Baukasten blocks */
+  .baukasten { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 2rem; }
+  .bk-block { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.2rem; border-radius: 12px; color: white; font-size: 0.82rem; line-height: 1.5; opacity: 0; }
+  .bk-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .bk-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; opacity: 0.7; }
+
+  /* Bonus cards */
+  .bonus-cards { display: flex; gap: 1rem; margin-top: 2rem; }
+  .bonus-card { flex: 1; background: #f8f8f8; border: 1px solid #eee; border-radius: 12px; padding: 1.2rem; opacity: 0; }
+  .bonus-card-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .bonus-card-desc { font-size: 0.72rem; color: #888; line-height: 1.45; }
+  .bonus-card-example { font-size: 0.65rem; color: #fabb43; font-style: italic; margin-top: 0.5rem; }
+
+  /* NN simplified */
+  .nn-simple { display: flex; gap: 2rem; align-items: center; justify-content: center; margin-top: 2rem; }
+  .nn-box { width: 200px; text-align: center; opacity: 0; }
+  .nn-grid { display: flex; flex-wrap: wrap; gap: 4px; width: 100px; margin: 0 auto 0.5rem; }
+  .nd { width: 8px; height: 8px; border-radius: 50%; }
+  .nd.idle { background: #e0e0e0; }
+  .nd.scatter { background: #fabb43; opacity: 0.4; }
+  .nd.focus { background: #ea580c; }
+  .nn-label { font-size: 0.7rem; color: #999; line-height: 1.4; margin-top: 0.5rem; }
+  .nn-prompt { font-size: 0.72rem; color: #333; font-weight: 500; margin-bottom: 0.5rem; }
+  .nn-vs { font-size: 1.2rem; color: #ddd; font-weight: 300; opacity: 0; }
+
+  .insight { padding: 1rem 1.3rem; background: #fffbeb; border-left: 4px solid #fabb43; border-radius: 0 10px 10px 0; font-size: 0.85rem; color: #92400e; line-height: 1.55; margin-top: 1.5rem; opacity: 0; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- S0: Opener -->
+<div class="slide active" id="s0">
+  <div class="slide-inner" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+    <div class="overline">Teil 3</div>
+    <h1>Die Kunst des <span class="hl">Promptings</span></h1>
+    <div class="subtitle" style="text-align:center;">Du weißt jetzt, wie KI funktioniert und wo sie scheitert.<br>Jetzt lernst du, wie du sie richtig einsetzt.</div>
+  </div>
+</div>
+
+<!-- S1: Handle als -->
+<div class="slide" id="s1">
+  <div class="slide-inner">
+    <div class="overline">Warum Formulierung alles verändert</div>
+    <h1>Rollen-Prompts <span class="hl">fokussieren</span> das Modell</h1>
+    <div class="nn-simple">
+      <div class="nn-box">
+        <div class="nn-prompt">"Erzähl mir eine Geschichte"</div>
+        <div class="nn-grid">
+          <div class="nd idle"></div><div class="nd scatter"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd scatter"></div>
+          <div class="nd idle"></div><div class="nd idle"></div><div class="nd scatter"></div><div class="nd idle"></div><div class="nd idle"></div>
+          <div class="nd scatter"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd scatter"></div>
+          <div class="nd idle"></div><div class="nd scatter"></div><div class="nd idle"></div><div class="nd scatter"></div><div class="nd idle"></div>
+          <div class="nd idle"></div><div class="nd idle"></div><div class="nd scatter"></div><div class="nd idle"></div><div class="nd idle"></div>
+        </div>
+        <div class="nn-label">Gestreut — viele Bereiche<br>aktivieren sich schwach</div>
+      </div>
+      <div class="nn-vs">vs.</div>
+      <div class="nn-box">
+        <div class="nn-prompt">"Du bist Patentanwalt.<br>Formuliere Anspruch 1..."</div>
+        <div class="nn-grid">
+          <div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div>
+          <div class="nd idle"></div><div class="nd focus"></div><div class="nd focus"></div><div class="nd focus"></div><div class="nd idle"></div>
+          <div class="nd idle"></div><div class="nd focus"></div><div class="nd focus"></div><div class="nd focus"></div><div class="nd idle"></div>
+          <div class="nd idle"></div><div class="nd idle"></div><div class="nd focus"></div><div class="nd idle"></div><div class="nd idle"></div>
+          <div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div><div class="nd idle"></div>
+        </div>
+        <div class="nn-label">Fokussiert — relevante Bereiche<br>aktivieren sich stark</div>
+      </div>
+    </div>
+    <div class="insight">→ Rollen-Prompts verschieben die Wahrscheinlichkeitsverteilung in Richtung Fachsprache und -wissen.</div>
+  </div>
+</div>
+
+<!-- S2: Zero-Shot -->
+<div class="slide" id="s2">
+  <div class="slide-inner">
+    <div class="overline">Technik 1: Zero-Shot</div>
+    <h1>Einfach fragen — <span class="hl">ohne Beispiele</span></h1>
+    <div class="prompt-box">
+      <div class="prompt-label">Prompt</div>
+      Fasse den folgenden Patentanspruch in einfacher Sprache zusammen:<br><br>
+      "Vorrichtung zum drahtlosen Laden eines mobilen Endgeräts, umfassend eine Sendespule, eine Empfangsspule und eine Steuereinheit, die dazu eingerichtet ist, eine adaptive Frequenzregelung durchzuführen."
+    </div>
+    <div class="tags">
+      <span class="tag pro">✓ Schnell & einfach</span>
+      <span class="tag pro">✓ Gut für klare Aufgaben</span>
+      <span class="tag con">✗ Unvorhersehbares Format</span>
+      <span class="tag con">✗ Qualität schwankt</span>
+    </div>
+  </div>
+</div>
+
+<!-- S3: Few-Shot -->
+<div class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="overline">Technik 2: Few-Shot</div>
+    <h1>Beispiele geben → <span class="hl">Muster vorgeben</span></h1>
+    <div class="prompt-box" id="fewshot1">
+      <div class="prompt-label">Beispiel 1</div>
+      <strong>Eingabe:</strong> Vorrichtung zum Erhitzen von Flüssigkeiten...<br>
+      <strong>Zusammenfassung:</strong> Ein Gerät, das Flüssigkeiten mit einem Heizelement erwärmt und die Temperatur automatisch regelt.
+    </div>
+    <div class="prompt-box" id="fewshot2">
+      <div class="prompt-label">Beispiel 2</div>
+      <strong>Eingabe:</strong> Verfahren zur Herstellung eines Verbundwerkstoffs...<br>
+      <strong>Zusammenfassung:</strong> Ein Verfahren, bei dem zwei Materialien unter Druck und Hitze zu einem Verbund zusammengefügt werden.
+    </div>
+    <div class="prompt-box" id="fewshotNew" style="border-color: #fabb43; background: rgba(250,187,67,0.03);">
+      <div class="prompt-label" style="color: #ea580c;">Jetzt du</div>
+      <strong>Eingabe:</strong> Vorrichtung zum drahtlosen Laden...<br>
+      <strong>Zusammenfassung:</strong> → KI folgt dem Muster automatisch!
+    </div>
+    <div class="tags">
+      <span class="tag pro">✓ Konsistentes Format</span>
+      <span class="tag pro">✓ Deutlich bessere Qualität</span>
+      <span class="tag pro">✓ KI "versteht" die Erwartung</span>
+    </div>
+  </div>
+</div>
+
+<!-- S4: Chain-of-Thought -->
+<div class="slide" id="s4">
+  <div class="slide-inner">
+    <div class="overline">Technik 3: Chain-of-Thought</div>
+    <h1>"Denke <span class="hl">Schritt für Schritt</span>"</h1>
+    <div class="steps-chain">
+      <div class="step-box">
+        <div class="step-num">Schritt 1</div>
+        <div class="step-title">Merkmale identifizieren</div>
+        <div class="step-desc">Extrahiere alle Merkmale aus Anspruch 1 und der Druckschrift einzeln.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">
+        <div class="step-num">Schritt 2</div>
+        <div class="step-title">Einzeln vergleichen</div>
+        <div class="step-desc">Prüfe für jedes Merkmal: offenbart, teilweise offenbart, oder nicht offenbart?</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">
+        <div class="step-num">Schritt 3</div>
+        <div class="step-title">Ergebnis ableiten</div>
+        <div class="step-desc">Ist der Anspruch neuheitsschädlich vorweggenommen? Begründe basierend auf Schritt 2.</div>
+      </div>
+    </div>
+    <div class="insight">⚡ Zwingt das Modell zu sequenziellem Reasoning statt einer vorschnellen Antwort. Fehler werden sichtbar und nachvollziehbar.</div>
+  </div>
+</div>
+
+<!-- S5: Step-Back Prompting -->
+<div class="slide" id="s5">
+  <div class="slide-inner">
+    <div class="overline">Technik 4: Step-Back Prompting</div>
+    <h1>Erst <span class="hl">zurücktreten</span>, dann analysieren</h1>
+    <div class="stepback-visual">
+      <div class="sb-level">
+        <div class="sb-box specific">
+          <div class="sb-label grey">Deine eigentliche Frage</div>
+          "Ist Anspruch 1 des Patents DE ... durch die Druckschrift EP ... neuheitsschädlich vorweggenommen?"
+        </div>
+      </div>
+      <div class="sb-arrow-down">↑ Erst einen Schritt zurück</div>
+      <div class="sb-level">
+        <div class="sb-box broad">
+          <div class="sb-label orange">Step-Back Frage</div>
+          "Was sind die allgemeinen Prinzipien zur Beurteilung der Neuheit eines Patentanspruchs nach EPÜ Art. 54?"
+        </div>
+      </div>
+      <div class="sb-arrow-down">↓ Dann mit diesem Wissen</div>
+      <div class="sb-level">
+        <div class="sb-box answer">
+          <div class="sb-label green">Bessere Antwort</div>
+          KI antwortet jetzt mit fundiertem Verständnis der Neuheitsprüfung — nicht nur Pattern-Matching.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S6: Vorher/Nachher -->
+<div class="slide" id="s6">
+  <div class="slide-inner">
+    <div class="overline">Der Unterschied</div>
+    <h1>Was <span class="hl">Kontext</span> ausmacht</h1>
+    <div class="split">
+      <div class="split-side bad">
+        <div class="split-label bad">✗ Ohne Technik</div>
+        <p>"Schreib mir einen Patentanspruch für eine Erfindung zum drahtlosen Laden."</p>
+      </div>
+      <div class="split-side good">
+        <div class="split-label good">✓ Mit Baukasten</div>
+        <p><span style="color:#7c5cbf;font-weight:600;">Du bist ein erfahrener Patentanwalt (EP/DE).</span><br>
+        <span style="color:#4a90d9;font-weight:600;">Gegeben: Sendespule, Empfangsspule, Steuereinheit mit adaptiver Frequenzregelung.</span><br>
+        <span style="color:#e8853d;font-weight:600;">Formuliere einen unabhängigen Vorrichtungsanspruch.</span><br>
+        <span style="color:#16a34a;font-weight:600;">Verwende EPÜ-konforme Sprache. Gliedere in Oberbegriff und kennzeichnenden Teil.</span></p>
+      </div>
+    </div>
+    <div class="insight">→ Gleiche Aufgabe. Völlig anderes Ergebnis. Der Unterschied sind 30 Sekunden mehr Nachdenken beim Prompt.</div>
+  </div>
+</div>
+
+<!-- S7: Prompt-Baukasten -->
+<div class="slide" id="s7">
+  <div class="slide-inner">
+    <div class="overline">Das Framework</div>
+    <h1>Der <span class="hl">Prompt-Baukasten</span></h1>
+    <div class="baukasten">
+      <div class="bk-block" style="background:#7c5cbf;">
+        <div class="bk-icon">🎭</div>
+        <div>
+          <div class="bk-label">Rolle</div>
+          "Du bist ein erfahrener Patentanwalt mit Schwerpunkt Maschinenbau und Erfahrung vor dem EPA."
+        </div>
+      </div>
+      <div class="bk-block" style="background:#4a90d9;">
+        <div class="bk-icon">📋</div>
+        <div>
+          <div class="bk-label">Kontext</div>
+          "Gegeben ist folgender Patentanspruch: [...]. Die relevante Druckschrift offenbart: [...]."
+        </div>
+      </div>
+      <div class="bk-block" style="background:#e8853d;">
+        <div class="bk-icon">🎯</div>
+        <div>
+          <div class="bk-label">Aufgabe</div>
+          "Erstelle eine Merkmalsgliederung und bewerte die Neuheit jedes Merkmals einzeln."
+        </div>
+      </div>
+      <div class="bk-block" style="background:#16a34a;">
+        <div class="bk-icon">📐</div>
+        <div>
+          <div class="bk-label">Format</div>
+          "Antworte als nummerierte Liste. Nutze: 'Merkmal X ist / ist nicht offenbart, weil...'"
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S8: Bonus Techniques -->
+<div class="slide" id="s8">
+  <div class="slide-inner">
+    <div class="overline">Weitere Techniken</div>
+    <h1>Drei <span class="hl">Bonus</span>-Techniken</h1>
+    <div class="bonus-cards">
+      <div class="bonus-card">
+        <div class="bonus-card-title">Structured Output</div>
+        <div class="bonus-card-desc">Fordere ein bestimmtes Format: JSON, Tabelle, Markdown. Besonders nützlich wenn du die Ausgabe weiterverarbeiten willst.</div>
+        <div class="bonus-card-example">"Antworte als Tabelle mit Spalten: Merkmal | Offenbart | Begründung"</div>
+      </div>
+      <div class="bonus-card">
+        <div class="bonus-card-title">Prompt Chaining</div>
+        <div class="bonus-card-desc">Zerlege komplexe Aufgaben in mehrere Prompts. Ergebnis von Prompt 1 wird Input für Prompt 2.</div>
+        <div class="bonus-card-example">Prompt 1: Merkmale extrahieren → Prompt 2: Neuheit prüfen → Prompt 3: Formulierung</div>
+      </div>
+      <div class="bonus-card">
+        <div class="bonus-card-title">Self-Consistency</div>
+        <div class="bonus-card-desc">Stelle die gleiche Frage 3x. Wenn die Antworten übereinstimmen → wahrscheinlich korrekt. Abweichungen → genauer prüfen.</div>
+        <div class="bonus-card-example">3x "Ist Merkmal X offenbart?" → 2x Ja, 1x Nein → Achtung!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S9: Context Window -->
+<div class="slide" id="s9">
+  <div class="slide-inner" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+    <div class="overline">Praxis-Tipp</div>
+    <h1>KI hat ein <span class="hl">Kurzzeitgedächtnis</span></h1>
+    <div class="subtitle" style="text-align:center;">Lange Chats = verlorener Kontext = schlechtere Antworten.<br>→ Interaktive Demo auf der nächsten Seite.</div>
+  </div>
+</div>
+
+<div class="nav">
+  <span class="nav-counter"><span id="cur">1</span>/10</span>
+  <button class="nav-btn" id="prevBtn" disabled>←</button>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const TOTAL = slides.length;
+let cur = 0, animating = false;
+
+function animateIn(idx) {
+  const s = slides[idx];
+  const els = s.querySelectorAll('.overline, h1, .subtitle, .prompt-box, .tags, .split-side, .step-box, .step-arrow, .sb-level, .sb-arrow-down, .bk-block, .bonus-card, .nn-box, .nn-vs, .insight');
+  gsap.set(els, { opacity: 0, y: 25 });
+  gsap.to(els, { opacity: 1, y: 0, duration: 0.65, stagger: 0.1, ease: 'power2.out', delay: 0.15 });
+}
+
+function animateOut(idx, dir) {
+  const s = slides[idx];
+  const els = s.querySelectorAll('.overline, h1, .subtitle, .prompt-box, .tags, .split-side, .step-box, .step-arrow, .sb-level, .sb-arrow-down, .bk-block, .bonus-card, .nn-box, .nn-vs, .insight');
+  return gsap.to(els, { opacity: 0, x: -30 * dir, duration: 0.3, stagger: 0.02, ease: 'power2.in' });
+}
+
+function goTo(idx) {
+  if (idx === cur || animating || idx < 0 || idx >= TOTAL) return;
+  animating = true;
+  const dir = idx > cur ? 1 : -1;
+  const old = cur;
+  animateOut(old, dir).then(() => {
+    slides[old].classList.remove('active');
+    slides[idx].classList.add('active');
+    cur = idx;
+    updateNav();
+    animateIn(idx);
+    setTimeout(() => animating = false, 600);
+  });
+}
+
+function updateNav() {
+  document.getElementById('cur').textContent = cur + 1;
+  document.getElementById('progress').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === TOTAL - 1;
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(cur - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(cur + 1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(cur + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(cur - 1); }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('.nav')) return;
+  goTo(cur + 1);
+});
+
+animateIn(0);
+</script>
+
+</body>
+</html>

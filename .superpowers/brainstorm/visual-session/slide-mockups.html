@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slide Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f0f0f0; color: #1a1a1a; padding: 2rem; }
+  h1.page-title { text-align: center; font-size: 1.5rem; color: #555; margin-bottom: 2rem; font-weight: 400; }
+
+  .mockups { display: flex; flex-direction: column; gap: 3rem; max-width: 1100px; margin: 0 auto; }
+
+  .mockup-wrapper { position: relative; }
+  .mockup-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.75rem; }
+  .mockup-desc { font-size: 0.85rem; color: #888; margin-bottom: 1rem; line-height: 1.5; }
+
+  .slide-frame {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+    aspect-ratio: 16/9;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+  }
+
+  .slide-frame .progress {
+    position: absolute; top: 0; left: 0; height: 4px;
+    background: linear-gradient(135deg, #fabb43 0%, #f59e0b 50%, #ea580c 100%);
+  }
+  .slide-frame .nav {
+    position: absolute; bottom: 1.5rem; right: 1.5rem;
+    font-size: 0.7rem; color: #aaa;
+  }
+
+  /* Slide content styles */
+  .s-content { width: 100%; max-width: 900px; }
+  .s-overline { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 1.25rem; }
+  .s-h1 { font-size: 2.8rem; font-weight: 600; line-height: 1.15; margin-bottom: 1.25rem; letter-spacing: -0.02em; }
+  .s-h1 .hl { color: #fabb43; }
+  .s-sub { font-size: 1.1rem; color: #555; max-width: 500px; line-height: 1.5; }
+
+  /* === SLIDE 2: Tokenizer === */
+  .token-demo { margin-top: 2rem; }
+  .token-source { font-size: 1.3rem; color: #333; margin-bottom: 1.5rem; font-style: italic; }
+  .token-source .arrow { color: #ccc; margin: 0 0.5rem; }
+  .tokens-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; }
+  .token-block {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  }
+  .token-chip {
+    padding: 0.5rem 1rem; border-radius: 8px; font-size: 1rem; font-weight: 500;
+    color: white; position: relative;
+  }
+  .token-chip.c1 { background: #4a90d9; }
+  .token-chip.c2 { background: #7c5cbf; }
+  .token-chip.c3 { background: #e8853d; }
+  .token-chip.c4 { background: #3daa8f; }
+  .token-chip.c5 { background: #d94a6e; }
+  .token-chip.c6 { background: #8b6914; }
+  .token-id { font-size: 0.65rem; color: #aaa; font-variant-numeric: tabular-nums; }
+  .token-note { margin-top: 1.5rem; font-size: 0.85rem; color: #888; }
+
+  /* === SLIDE 3: Neural Network === */
+  .nn-container { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .nn-canvas {
+    width: 100%; max-width: 700px; height: 300px;
+    position: relative; margin: 1.5rem 0;
+  }
+  .nn-dot {
+    position: absolute; border-radius: 50%;
+    background: #c8d6e5;
+  }
+  .nn-dot.active {
+    background: #fabb43;
+    box-shadow: 0 0 8px rgba(250, 187, 67, 0.6);
+  }
+  .nn-dot.hot {
+    background: #ea580c;
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.7);
+  }
+  .nn-dot.blue {
+    background: #4a90d9;
+    box-shadow: 0 0 6px rgba(74, 144, 217, 0.4);
+  }
+  .nn-input-label, .nn-output-label {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 0.75rem; color: #999;
+  }
+  .nn-input-label { left: -2rem; writing-mode: vertical-rl; text-orientation: mixed; }
+  .nn-output-label { right: -2rem; writing-mode: vertical-rl; text-orientation: mixed; }
+  .nn-arrow {
+    position: absolute; top: 50%; font-size: 1.2rem; color: #fabb43;
+  }
+  .nn-arrow.left { left: 1rem; }
+  .nn-arrow.right { right: 1rem; }
+
+  /* === SLIDE 4: Next Token === */
+  .ntp-sentence { font-size: 1.4rem; margin-bottom: 2rem; color: #333; }
+  .ntp-sentence .done { color: #1a1a1a; }
+  .ntp-sentence .cursor {
+    display: inline-block; width: 3px; height: 1.3em; background: #fabb43;
+    vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ntp-bars { display: flex; flex-direction: column; gap: 0.6rem; max-width: 550px; }
+  .ntp-row { display: flex; align-items: center; gap: 0.75rem; }
+  .ntp-word { width: 100px; text-align: right; font-size: 0.95rem; color: #555; font-weight: 500; }
+  .ntp-bar-bg { flex: 1; height: 28px; background: #f0f0f0; border-radius: 6px; overflow: hidden; position: relative; }
+  .ntp-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+  .ntp-bar-fill.top { background: linear-gradient(90deg, #fabb43, #ea580c); }
+  .ntp-bar-fill.mid { background: #fabb43; opacity: 0.7; }
+  .ntp-bar-fill.low { background: #e0d5c0; }
+  .ntp-pct { width: 40px; font-size: 0.8rem; color: #999; }
+  .ntp-insight {
+    margin-top: 2rem; padding: 1.25rem 1.5rem; background: #fffbeb;
+    border-left: 4px solid #fabb43; border-radius: 0 8px 8px 0;
+    font-size: 0.95rem; color: #92400e; line-height: 1.5;
+  }
+
+  /* === SLIDE 5: Hallucination === */
+  .halluc-box {
+    background: #fafafa; border: 1px solid #eee; border-radius: 12px;
+    padding: 2rem; margin: 1.5rem 0; position: relative; overflow: hidden;
+    max-width: 650px;
+  }
+  .halluc-text { font-size: 1rem; line-height: 1.7; color: #333; }
+  .halluc-text .fake {
+    position: relative;
+  }
+  .halluc-text .fake::after {
+    content: ''; position: absolute; left: -2px; right: -2px; top: -2px; bottom: -2px;
+    background: rgba(220, 38, 38, 0.08); border-radius: 3px;
+    border-bottom: 2px wavy #dc2626;
+  }
+  .halluc-reveal { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .halluc-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
+  .halluc-item .icon-bad { color: #dc2626; font-weight: 700; font-size: 1.1rem; }
+  .halluc-item .icon-good { color: #16a34a; font-weight: 700; font-size: 1.1rem; }
+  .halluc-item span:last-child { color: #555; }
+  .halluc-quote {
+    margin-top: 1.5rem; font-size: 1.05rem; font-style: italic; color: #92400e;
+    border-left: 3px solid #fabb43; padding-left: 1rem;
+  }
+
+  /* Glitch overlay lines */
+  .glitch-lines {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; opacity: 0.15;
+  }
+  .glitch-line {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: #dc2626;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Slide Mockups — KI Workshop Presentation</h1>
+
+<div class="mockups">
+
+  <!-- MOCKUP 1: Title Slide -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">Slide 1 — Titelfolie</div>
+    <div class="mockup-desc">Clean, confident opener. The orange accent carries through the entire presentation.</div>
+    <div class="slide-frame">
+      <div class="progress" style="width: 3%;"></div>
+      <div class="s-content">
+        <div class="s-overline">Workshop</div>
+        <div class="s-h1">Grundlagen der<br><span class="hl">generativen KI</span></div>
+        <div class="s-sub">Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie Sie sie effektiv einsetzen.</div>
+      </div>
+      <div class="nav">1/29 &nbsp; ← →</div>
+    </div>
+  </div>
+
+  <!-- MOCKUP 2: Tokenization -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">Slide 6 — Tokenisierung</div>
+    <div class="mockup-desc">Text breaks into colored token blocks. Each token springs apart with a bounce animation. Token IDs fade in below. The audience sees how "Patentanspruch" gets split.</div>
+    <div class="slide-frame">
+      <div class="progress" style="width: 21%;"></div>
+      <div class="s-content">
+        <div class="s-overline">Schritt 1: Tokenisierung</div>
+        <div class="s-h1" style="font-size: 2.2rem;">Text wird in <span class="hl">Bausteine</span> zerlegt</div>
+        <div class="token-demo">
+          <div class="token-source">"Der Patentanspruch betrifft eine Vorrichtung"</div>
+          <div class="tokens-row">
+            <div class="token-block">
+              <div class="token-chip c1">Der</div>
+              <div class="token-id">874</div>
+            </div>
+            <div class="token-block">
+              <div class="token-chip c2">Patent</div>
+              <div class="token-id">28431</div>
+            </div>
+            <div class="token-block">
+              <div class="token-chip c3">anspruch</div>
+              <div class="token-id">15229</div>
+            </div>
+            <div class="token-block">
+              <div class="token-chip c4">betrifft</div>
+              <div class="token-id">67234</div>
+            </div>
+            <div class="token-block">
+              <div class="token-chip c5">eine</div>
+              <div class="token-id">1653</div>
+            </div>
+            <div class="token-block">
+              <div class="token-chip c1">Vorrichtung</div>
+              <div class="token-id">44521</div>
+            </div>
+          </div>
+          <div class="token-note">→ 6 Tokens — Deutsche Texte brauchen ~30% mehr Tokens als Englische</div>
+        </div>
+      </div>
+      <div class="nav">6/29 &nbsp; ← →</div>
+    </div>
+  </div>
+
+  <!-- MOCKUP 3: Neural Network -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">Slide 9 — Das Neuronale Netz (Hero Animation)</div>
+    <div class="mockup-desc">THE centerpiece. ~500 dots in a brain/ellipse shape. Idle: blue/grey pulsing. When activated: orange wave ripples from left to right, connections brighten. This is a Canvas animation — this mockup shows a static snapshot mid-activation.</div>
+    <div class="slide-frame">
+      <div class="progress" style="width: 31%;"></div>
+      <div class="s-content nn-container">
+        <div class="s-overline">Die Architektur</div>
+        <div class="s-h1" style="font-size: 2.2rem; text-align: center;">Das <span class="hl">Neuronale Netz</span></div>
+        <div class="nn-canvas" id="nnCanvas">
+          <div class="nn-arrow left">→</div>
+          <div class="nn-arrow right">→</div>
+        </div>
+        <div style="text-align: center; font-size: 0.9rem; color: #888;">Prompt → <span style="color: #fabb43; font-weight: 600;">Aktivierung breitet sich aus</span> → Antwort</div>
+      </div>
+      <div class="nav">9/29 &nbsp; ← →</div>
+    </div>
+  </div>
+
+  <!-- MOCKUP 4: Next Token Prediction -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">Slide 11 — Next-Token-Prediction (Key Insight)</div>
+    <div class="mockup-desc">The most important conceptual slide. Animated bar chart shows probability distribution. Each word gets selected and snaps into the sentence. Bars animate dynamically as the sentence builds word by word.</div>
+    <div class="slide-frame">
+      <div class="progress" style="width: 38%;"></div>
+      <div class="s-content">
+        <div class="s-overline">Das Kernprinzip</div>
+        <div class="s-h1" style="font-size: 2rem;">KI sagt das <span class="hl">wahrscheinlichste nächste Wort</span> vorher</div>
+        <div class="ntp-sentence">
+          <span class="done">Der Patent</span><span class="cursor"></span>
+        </div>
+        <div class="ntp-bars">
+          <div class="ntp-row">
+            <div class="ntp-word">anspruch</div>
+            <div class="ntp-bar-bg"><div class="ntp-bar-fill top" style="width: 68%;"></div></div>
+            <div class="ntp-pct">34%</div>
+          </div>
+          <div class="ntp-row">
+            <div class="ntp-word">inhaber</div>
+            <div class="ntp-bar-bg"><div class="ntp-bar-fill mid" style="width: 44%;"></div></div>
+            <div class="ntp-pct">22%</div>
+          </div>
+          <div class="ntp-row">
+            <div class="ntp-word">schutz</div>
+            <div class="ntp-bar-bg"><div class="ntp-bar-fill mid" style="width: 36%;"></div></div>
+            <div class="ntp-pct">18%</div>
+          </div>
+          <div class="ntp-row">
+            <div class="ntp-word">anwalt</div>
+            <div class="ntp-bar-bg"><div class="ntp-bar-fill low" style="width: 22%;"></div></div>
+            <div class="ntp-pct">11%</div>
+          </div>
+          <div class="ntp-row">
+            <div class="ntp-word">amt</div>
+            <div class="ntp-bar-bg"><div class="ntp-bar-fill low" style="width: 14%;"></div></div>
+            <div class="ntp-pct">7%</div>
+          </div>
+        </div>
+        <div class="ntp-insight">
+          ⚡ <strong>Das Modell WEISS die Antwort nicht.</strong> Es sagt das wahrscheinlichste nächste Wort vorher — Wort für Wort. Alles andere ergibt sich daraus.
+        </div>
+      </div>
+      <div class="nav">11/29 &nbsp; ← →</div>
+    </div>
+  </div>
+
+  <!-- MOCKUP 5: Hallucination -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">Slide 14 — Halluzinationen (Glitch Effect)</div>
+    <div class="mockup-desc">Confident-looking patent citation appears perfectly normal. Then a glitch animation triggers — RGB split, distortion — revealing every detail is fabricated. Red wavy underlines and ❌ marks appear one by one. The audience gasps.</div>
+    <div class="slide-frame">
+      <div class="progress" style="width: 48%;"></div>
+      <div class="s-content">
+        <div class="s-overline">Halluzinationen</div>
+        <div class="s-h1" style="font-size: 2rem;">Warum KI <span class="hl">überzeugend falsch</span> liegt</div>
+        <div class="halluc-box">
+          <div class="glitch-lines">
+            <div class="glitch-line" style="top: 15%;"></div>
+            <div class="glitch-line" style="top: 45%;"></div>
+            <div class="glitch-line" style="top: 72%;"></div>
+          </div>
+          <div class="halluc-text">
+            „Gemäß der BGH-Entscheidung <span class="fake">X&nbsp;ZR&nbsp;47/19</span> vom <span class="fake">14.03.2021</span> wurde festgestellt, dass der Patentanspruch 1 durch die Druckschrift <span class="fake">DE&nbsp;10&nbsp;2019&nbsp;123&nbsp;456&nbsp;A1</span> neuheitsschädlich vorweggenommen wird."
+          </div>
+          <div class="halluc-reveal">
+            <div class="halluc-item"><span class="icon-bad">✗</span> <span>Aktenzeichen existiert nicht</span></div>
+            <div class="halluc-item"><span class="icon-bad">✗</span> <span>Datum stimmt nicht</span></div>
+            <div class="halluc-item"><span class="icon-bad">✗</span> <span>Druckschrift existiert nicht</span></div>
+            <div class="halluc-item"><span class="icon-good">✓</span> <span>Klingt absolut überzeugend</span></div>
+          </div>
+        </div>
+        <div class="halluc-quote">
+          „Die KI halluziniert nicht TROTZ ihrer Funktionsweise — sondern WEGEN."
+        </div>
+      </div>
+      <div class="nav">14/29 &nbsp; ← →</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Generate neural network dots
+const canvas = document.getElementById('nnCanvas');
+const w = canvas.offsetWidth, h = canvas.offsetHeight;
+const cx = w / 2, cy = h / 2;
+const rx = w * 0.4, ry = h * 0.42;
+
+for (let i = 0; i < 350; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.sqrt(Math.random());
+  const x = cx + Math.cos(angle) * rx * r;
+  const y = cy + Math.sin(angle) * ry * r;
+  const size = 3 + Math.random() * 4;
+
+  const dot = document.createElement('div');
+  dot.className = 'nn-dot';
+  dot.style.left = x + 'px';
+  dot.style.top = y + 'px';
+  dot.style.width = size + 'px';
+  dot.style.height = size + 'px';
+
+  // Activation wave: dots on the left side and center are "activated"
+  const normalizedX = (x - (cx - rx)) / (2 * rx); // 0 to 1
+  if (normalizedX < 0.6) {
+    // Check if in the "active region" (upper-center cluster)
+    const distFromCenter = Math.sqrt(Math.pow((x - cx * 0.9) / rx, 2) + Math.pow((y - cy * 0.7) / ry, 2));
+    if (distFromCenter < 0.35) {
+      dot.classList.add('hot');
+    } else if (normalizedX < 0.5) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.add('blue');
+    }
+  }
+
+  canvas.appendChild(dot);
+}
+</script>
+
+</body>
+</html>

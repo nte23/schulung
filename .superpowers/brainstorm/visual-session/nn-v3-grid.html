@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network v3 — Grid</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+  }
+  canvas { display: block; position: fixed; top: 0; left: 0; }
+
+  .overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 10;
+  }
+  .text-box { position: absolute; top: 3rem; left: 3.5rem; transition: opacity 0.8s; }
+  .overline {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.15em; color: #fabb43; margin-bottom: 0.5rem;
+  }
+  .headline { font-size: 2rem; font-weight: 600; line-height: 1.25; max-width: 460px; }
+  .headline .hl { color: #fabb43; }
+  .sub { font-size: 0.85rem; color: #999; margin-top: 0.5rem; max-width: 400px; line-height: 1.5; }
+
+  .counter-box {
+    position: absolute; bottom: 3rem; right: 3.5rem;
+    background: rgba(250,187,67,0.06); border: 1px solid rgba(250,187,67,0.2);
+    border-radius: 10px; padding: 0.7rem 1.1rem;
+    opacity: 0; transition: opacity 0.8s;
+  }
+  .counter-box.visible { opacity: 1; }
+  .counter-big { font-size: 1.5rem; font-weight: 700; color: #ea580c; }
+  .counter-label { font-size: 0.6rem; color: #999; margin-top: 0.15rem; }
+
+  .prompt-box {
+    position: absolute; bottom: 3rem; left: 3.5rem;
+    opacity: 0; transition: opacity 0.8s; max-width: 480px;
+  }
+  .prompt-box.visible { opacity: 1; }
+  .prompt-label { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.35rem; }
+  .prompt-text {
+    font-size: 0.85rem; color: #666; line-height: 1.5;
+    border-left: 2px solid rgba(250,187,67,0.5); padding-left: 0.8rem;
+  }
+
+  .hint {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; color: #ccc;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  .steps { position: absolute; top: 1.5rem; right: 3.5rem; display: flex; gap: 6px; }
+  .pip { width: 6px; height: 6px; border-radius: 50%; background: #ddd; transition: all 0.4s; }
+  .pip.on { background: #fabb43; transform: scale(1.4); }
+  .pip.done { background: #e5a530; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="overlay">
+  <div class="text-box">
+    <div class="overline" id="olEl">Das Neuronale Netz</div>
+    <div class="headline" id="hlEl">So sieht es <span class="hl">vereinfacht</span> aus</div>
+    <div class="sub" id="subEl">7 Schichten. Daten fließen von links nach rechts.</div>
+  </div>
+  <div class="counter-box" id="ctrBox">
+    <div class="counter-big" id="ctrBig">96</div>
+    <div class="counter-label" id="ctrLbl">Schichten in GPT-4</div>
+  </div>
+  <div class="prompt-box" id="pBox">
+    <div class="prompt-label">Prompt</div>
+    <div class="prompt-text">"Schreibe einen Patentanspruch für eine Vorrichtung zum drahtlosen Laden..."</div>
+  </div>
+  <div class="steps"><div class="pip on" id="p0"></div><div class="pip" id="p1"></div><div class="pip" id="p2"></div></div>
+  <div class="hint">click to continue</div>
+</div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const dpr = Math.min(devicePixelRatio, 2);
+
+let W, H, cx, cy;
+function resize() {
+  W = cv.width = window.innerWidth * dpr;
+  H = cv.height = window.innerHeight * dpr;
+  cx = W / 2; cy = H / 2;
+  cv.style.width = window.innerWidth + 'px';
+  cv.style.height = window.innerHeight + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== GRID DIMENSIONS =====
+const NX = 7;   // layers left-right
+const NZ = 25;  // depth layers
+const NY = 10;  // vertical nodes
+const SP = 38 * dpr; // uniform spacing
+
+const FOV = 900 * dpr;
+
+// Build node grid [x][z][y]
+const grid = [];
+for (let x = 0; x < NX; x++) {
+  grid[x] = [];
+  for (let z = 0; z < NZ; z++) {
+    grid[x][z] = [];
+    for (let y = 0; y < NY; y++) {
+      grid[x][z][y] = {
+        bx: (x - NX / 2 + 0.5) * SP,
+        by: (y - NY / 2 + 0.5) * SP,
+        bz: (z - NZ / 2 + 0.5) * SP,
+        ix: x, iz: z, iy: y,
+        activation: 0,
+        targetAct: 0,
+      };
+    }
+  }
+}
+
+// Build edges (connections between adjacent nodes)
+const edges = [];
+for (let x = 0; x < NX; x++) {
+  for (let z = 0; z < NZ; z++) {
+    for (let y = 0; y < NY; y++) {
+      // Right neighbor (x+1)
+      if (x + 1 < NX) edges.push([grid[x][z][y], grid[x+1][z][y]]);
+      // Down neighbor (y+1)
+      if (y + 1 < NY) edges.push([grid[x][z][y], grid[x][z][y+1]]);
+      // Depth neighbor (z+1)
+      if (z + 1 < NZ) edges.push([grid[x][z][y], grid[x][z+1][y]]);
+    }
+  }
+}
+
+// Pre-generate activation targets (sparse paths)
+function generateActivation() {
+  // Reset
+  for (let x = 0; x < NX; x++)
+    for (let z = 0; z < NZ; z++)
+      for (let y = 0; y < NY; y++)
+        grid[x][z][y].targetAct = 0;
+
+  // Path 1: a winding path through specific layers
+  for (let z = 0; z < NZ; z++) {
+    const pathY = Math.floor(4 + Math.sin(z * 0.4) * 2.5);
+    const pathX = Math.floor(3 + Math.sin(z * 0.25) * 1.8);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const yy = pathY + dy, xx = pathX + dx;
+        if (yy >= 0 && yy < NY && xx >= 0 && xx < NX) {
+          const strength = 1 - Math.sqrt(dx*dx + dy*dy) * 0.35;
+          grid[xx][z][yy].targetAct = Math.max(grid[xx][z][yy].targetAct, strength);
+        }
+      }
+    }
+  }
+
+  // Cluster: a dense region mid-back
+  for (let x = 1; x < 5; x++) {
+    for (let z = 12; z < 20; z++) {
+      for (let y = 3; y < 7; y++) {
+        grid[x][z][y].targetAct = Math.max(grid[x][z][y].targetAct, 0.5 + Math.random() * 0.4);
+      }
+    }
+  }
+}
+generateActivation();
+
+// ===== STATE =====
+let step = 0;
+let tgtAY = 0, tgtAX = 0;
+let curAY = 0, curAX = 0;
+let wave = -1;
+let time = 0;
+
+const STEPS = [
+  { ol: 'Das Neuronale Netz', hl: 'So sieht es <span class="hl">vereinfacht</span> aus',
+    sub: '7 Schichten. Daten fließen von links nach rechts.', ay: 0, ax: 0,
+    ctr: false, prompt: false },
+  { ol: 'Die Realität', hl: 'Dahinter stecken <span class="hl">Hunderte</span> Schichten',
+    sub: 'Jede Schicht verarbeitet die Information weiter.', ay: 0.52, ax: 0.08,
+    ctr: true, cb: '96', cl: 'Schichten in GPT-4 (geschätzt)', prompt: false },
+  { ol: 'Aktivierung', hl: 'Nur <span class="hl">bestimmte Pfade</span> feuern',
+    sub: 'Verschiedene Prompts aktivieren verschiedene Regionen.', ay: 0.52, ax: 0.08,
+    ctr: true, cb: '1.800 Mrd.', cl: 'Parameter in GPT-4', prompt: true },
+];
+
+function setStep(s) {
+  const d = STEPS[s];
+  document.getElementById('olEl').textContent = d.ol;
+  document.getElementById('hlEl').innerHTML = d.hl;
+  document.getElementById('subEl').textContent = d.sub;
+  tgtAY = d.ay; tgtAX = d.ax;
+  const cb = document.getElementById('ctrBox');
+  cb.classList.toggle('visible', d.ctr);
+  if (d.ctr) { document.getElementById('ctrBig').textContent = d.cb; document.getElementById('ctrLbl').textContent = d.cl; }
+  document.getElementById('pBox').classList.toggle('visible', d.prompt);
+  for (let i = 0; i < 3; i++) document.getElementById('p'+i).className = 'pip' + (i===s?' on':i<s?' done':'');
+  if (s === 2) wave = -0.05;
+}
+
+document.addEventListener('click', () => {
+  step = (step + 1) % 3;
+  if (step === 0) {
+    wave = -1;
+    for (let x=0;x<NX;x++) for (let z=0;z<NZ;z++) for (let y=0;y<NY;y++) grid[x][z][y].activation = 0;
+  }
+  setStep(step);
+});
+setStep(0);
+
+// ===== PROJECTION =====
+function proj(x, y, z) {
+  const s = FOV / (FOV + z);
+  return [cx + x * s, cy + y * s, s, z];
+}
+
+// ===== RENDER =====
+function render() {
+  time += 0.016;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  curAY += (tgtAY - curAY) * 0.025;
+  curAX += (tgtAX - curAX) * 0.025;
+  const cY = Math.cos(curAY), sY = Math.sin(curAY);
+  const cX = Math.cos(curAX), sX = Math.sin(curAX);
+  const flat = Math.abs(curAY) < 0.03;
+
+  // Wave
+  if (wave >= -0.05 && wave < 1.8) wave += 0.004;
+
+  // Update activations
+  if (wave >= 0) {
+    for (let x=0;x<NX;x++) for (let z=0;z<NZ;z++) for (let y=0;y<NY;y++) {
+      const n = grid[x][z][y];
+      const wp = (x / NX) * 0.25 + (z / NZ) * 0.75;
+      const d = wave - wp;
+      if (d > 0 && d < 0.35 && n.targetAct > 0) {
+        n.activation = Math.min(n.targetAct, n.activation + 0.03 * n.targetAct);
+      } else if (d > 0.6) {
+        n.activation = Math.max(0, n.activation - 0.004);
+      }
+    }
+  }
+
+  // Project all nodes, cache projected positions
+  const pCache = []; // [x][z][y] = [px, py, scale, pz]
+  for (let x=0;x<NX;x++) { pCache[x] = []; for (let z=0;z<NZ;z++) { pCache[x][z] = []; for (let y=0;y<NY;y++) {
+    const n = grid[x][z][y];
+    // In flat mode only show middle z-slice
+    if (flat && Math.abs(z - NZ/2) > 0.8) { pCache[x][z][y] = null; continue; }
+
+    const x1 = n.bx * cY - n.bz * sY;
+    const z1 = n.bx * sY + n.bz * cY;
+    const y1 = n.by * cX - z1 * sX;
+    const z2 = n.by * sX + z1 * cX;
+    pCache[x][z][y] = proj(x1, y1, z2);
+  }}}
+
+  // ===== DRAW EDGES =====
+  for (const [a, b] of edges) {
+    const pa = pCache[a.ix][a.iz][a.iy];
+    const pb = pCache[b.ix][b.iz][b.iy];
+    if (!pa || !pb) continue;
+
+    const minScale = Math.min(pa[2], pb[2]);
+    // Skip tiny far-away lines
+    if (minScale < 0.25) continue;
+
+    const bothActive = a.activation > 0.15 && b.activation > 0.15;
+    const actLevel = Math.min(a.activation, b.activation);
+
+    if (bothActive) {
+      // Glowing orange line
+      const alpha = Math.min(0.7, actLevel * 0.9 * minScale);
+      ctx.strokeStyle = `rgba(250, 160, 30, ${alpha})`;
+      ctx.lineWidth = (0.8 + actLevel * 1.5) * dpr * minScale;
+    } else {
+      // Structural dark line
+      const alpha = Math.min(0.18, 0.22 * minScale * minScale);
+      ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+      ctx.lineWidth = 0.6 * dpr * minScale;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(pa[0], pa[1]);
+    ctx.lineTo(pb[0], pb[1]);
+    ctx.stroke();
+  }
+
+  // ===== DRAW NODES =====
+  // Collect and sort by z
+  const sortable = [];
+  for (let x=0;x<NX;x++) for (let z=0;z<NZ;z++) for (let y=0;y<NY;y++) {
+    const p = pCache[x][z][y];
+    if (!p) continue;
+    sortable.push({ p, n: grid[x][z][y] });
+  }
+  sortable.sort((a, b) => a.p[3] - b.p[3]);
+
+  for (const { p, n } of sortable) {
+    const [px, py, sc] = p;
+    const act = n.activation;
+    const baseR = 2.5 * dpr * sc;
+
+    if (sc < 0.2) continue;
+
+    let r, g, b_c;
+    if (act > 0.5) {
+      r = 234; g = 120; b_c = 20;
+    } else if (act > 0.1) {
+      const t = act / 0.5;
+      r = Math.round(30 + 204 * t); g = Math.round(30 + 90 * t); b_c = Math.round(30 - 10 * t);
+    } else {
+      r = 30; g = 30; b_c = 30;
+    }
+
+    const alpha = Math.max(0.15, Math.min(1, sc * 1.3));
+    const breathe = 1 + Math.sin(time * 1.2 + n.ix * 3 + n.iy * 0.5) * 0.04;
+    const finalR = baseR * breathe * (1 + act * 0.5);
+
+    // Glow
+    if (act > 0.25) {
+      const glowR = finalR * 4;
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, glowR);
+      grad.addColorStop(0, `rgba(250, 170, 40, ${act * 0.3 * alpha})`);
+      grad.addColorStop(1, `rgba(250, 170, 40, 0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(px, py, glowR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dot
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b_c}, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(px, py, finalR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>

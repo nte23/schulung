@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 3 — Prompting-Techniken Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; padding: 2rem; overflow-y: auto; }
+
+  .header { max-width: 1100px; margin: 0 auto 2rem; }
+  .header .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #fabb43; margin-bottom: 0.4rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 600; }
+  .header p { font-size: 0.85rem; color: #888; margin-top: 0.3rem; line-height: 1.5; }
+
+  .slides { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .slides.full { grid-template-columns: 1fr; }
+
+  .card {
+    background: white; border-radius: 14px; border: 1px solid #eee;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .card-preview {
+    aspect-ratio: 16/9; background: #fff; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem; overflow: hidden; border-bottom: 1px solid #f0f0f0;
+  }
+  .card-preview .mini-ol {
+    position: absolute; top: 0.6rem; left: 0.8rem;
+    font-size: 0.4rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #fabb43;
+  }
+  .card-preview .mini-h {
+    font-size: 0.75rem; font-weight: 600; text-align: center; line-height: 1.3;
+    max-width: 90%;
+  }
+  .card-preview .mini-h .hl { color: #fabb43; }
+
+  .card-info { padding: 0.8rem 1rem; }
+  .card-num { font-size: 0.55rem; font-weight: 700; color: #fabb43; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
+  .card-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .card-desc { font-size: 0.7rem; color: #888; line-height: 1.45; }
+  .card-anim { margin-top: 0.35rem; font-size: 0.6rem; color: #fabb43; font-weight: 500; font-style: italic; }
+
+  .section-label {
+    grid-column: 1 / -1;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #ccc;
+    display: flex; align-items: center; gap: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: #eee; }
+
+  /* Mini components for previews */
+  .mini-prompt {
+    background: #f5f5f5; border: 1px solid #eee; border-radius: 6px;
+    padding: 0.4rem 0.6rem; font-size: 0.42rem; color: #555;
+    text-align: left; line-height: 1.5; max-width: 90%; width: 100%;
+  }
+  .mini-prompt .role { color: #7c5cbf; font-weight: 600; }
+  .mini-prompt .context { color: #4a90d9; font-weight: 600; }
+  .mini-prompt .task { color: #e8853d; font-weight: 600; }
+  .mini-prompt .format { color: #16a34a; font-weight: 600; }
+
+  .mini-blocks {
+    display: flex; flex-direction: column; gap: 3px; width: 90%;
+  }
+  .mini-block {
+    padding: 0.3rem 0.5rem; border-radius: 5px; font-size: 0.4rem;
+    font-weight: 600; color: white;
+  }
+
+  .mini-compare {
+    display: flex; gap: 6px; width: 90%; align-items: stretch;
+  }
+  .mini-compare-side {
+    flex: 1; background: #f8f8f8; border-radius: 6px; padding: 0.4rem;
+    font-size: 0.38rem; line-height: 1.4; color: #777;
+    border: 1px solid #eee; text-align: left;
+  }
+  .mini-compare-side.good { border-color: rgba(22,163,74,0.3); }
+  .mini-compare-label {
+    font-size: 0.35rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 0.2rem;
+  }
+  .mini-compare-label.bad { color: #dc2626; }
+  .mini-compare-label.good { color: #16a34a; }
+
+  .mini-nn {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .mini-nn-box {
+    width: 70px; height: 50px; border-radius: 6px; border: 1px solid #eee;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .mini-dots { display: flex; flex-wrap: wrap; gap: 2px; width: 40px; }
+  .md { width: 3px; height: 3px; border-radius: 50%; }
+  .md.idle { background: #ddd; }
+  .md.scatter { background: #fabb43; opacity: 0.5; }
+  .md.focus { background: #ea580c; }
+  .mini-nn-label { font-size: 0.33rem; color: #999; text-align: center; margin-top: 2px; }
+
+  .mini-chain {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .mini-step {
+    padding: 0.25rem 0.4rem; background: #f0f0f0; border-radius: 4px;
+    font-size: 0.38rem; color: #555; font-weight: 500;
+  }
+  .mini-arrow { color: #fabb43; font-size: 0.5rem; }
+
+  .mini-cards-row {
+    display: flex; gap: 4px;
+  }
+  .mini-card-item {
+    flex: 1; background: #f5f5f5; border-radius: 5px; padding: 0.3rem;
+    font-size: 0.35rem; color: #777; text-align: center; line-height: 1.3;
+    border: 1px solid #eee;
+  }
+  .mini-card-title { font-weight: 600; color: #555; margin-bottom: 1px; font-size: 0.38rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="label">Teil 3 — Prompting-Techniken</div>
+  <h1>Slide-Übersicht (~30 Minuten)</h1>
+  <p>Von "warum Formulierung alles verändert" bis zum Prompt-Baukasten. Mischung aus visuellen Demos und praktischen Beispielen.</p>
+</div>
+
+<div class="slides">
+
+  <div class="section-label">Opener & Konzept</div>
+
+  <!-- S19: Opener -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Teil 3</div>
+      <div class="mini-h">Die Kunst des<br><span class="hl">Promptings</span></div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 19 — Section Opener</div>
+      <div class="card-title">Die Kunst des Promptings</div>
+      <div class="card-desc">"Warum Formulierung alles verändert" — zentraler Opener, leitet über von Grenzen zu Lösungen.</div>
+      <div class="card-anim">Fade in, centered</div>
+    </div>
+  </div>
+
+  <!-- S20: Act as -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Warum es funktioniert</div>
+      <div class="mini-nn">
+        <div>
+          <div class="mini-nn-box">
+            <div class="mini-dots">
+              <div class="md idle"></div><div class="md scatter"></div><div class="md idle"></div><div class="md idle"></div><div class="md idle"></div>
+              <div class="md idle"></div><div class="md idle"></div><div class="md scatter"></div><div class="md idle"></div><div class="md scatter"></div>
+              <div class="md idle"></div><div class="md scatter"></div><div class="md idle"></div><div class="md idle"></div><div class="md idle"></div>
+              <div class="md idle"></div><div class="md idle"></div><div class="md idle"></div><div class="md scatter"></div><div class="md idle"></div>
+            </div>
+          </div>
+          <div class="mini-nn-label">"Erzähl mir<br>eine Geschichte"</div>
+        </div>
+        <div style="font-size:0.6rem; color:#ccc;">vs.</div>
+        <div>
+          <div class="mini-nn-box">
+            <div class="mini-dots">
+              <div class="md idle"></div><div class="md idle"></div><div class="md idle"></div><div class="md idle"></div><div class="md idle"></div>
+              <div class="md idle"></div><div class="md focus"></div><div class="md focus"></div><div class="md focus"></div><div class="md idle"></div>
+              <div class="md idle"></div><div class="md focus"></div><div class="md focus"></div><div class="md focus"></div><div class="md idle"></div>
+              <div class="md idle"></div><div class="md idle"></div><div class="md focus"></div><div class="md idle"></div><div class="md idle"></div>
+            </div>
+          </div>
+          <div class="mini-nn-label">"Du bist ein<br>Patentanwalt..."</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 20 — "Handle als..." ⭐</div>
+      <div class="card-title">Warum Rollen-Prompts funktionieren</div>
+      <div class="card-desc">Zwei Netzwerke nebeneinander. Links: generischer Prompt → gestreute Aktivierung. Rechts: Rollen-Prompt → fokussierte Aktivierung. Visueller Beweis, dass Kontext die Wahrscheinlichkeiten verschiebt.</div>
+      <div class="card-anim">Dual Canvas — sequential activation</div>
+    </div>
+  </div>
+
+  <div class="section-label">Die Techniken</div>
+
+  <!-- S21: Zero-Shot -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Technik 1</div>
+      <div class="mini-prompt" style="max-width: 75%;">
+        "Fasse den folgenden Patentanspruch in einfacher Sprache zusammen: [Text]"
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 21 — Zero-Shot</div>
+      <div class="card-title">Einfach fragen — ohne Beispiele</div>
+      <div class="card-desc">Direkteste Form. Gut für einfache Aufgaben. Zeigt Patent-Beispiel. ✓ Schnell ✗ Unvorhersehbares Format.</div>
+      <div class="card-anim">Prompt-Box fade-in</div>
+    </div>
+  </div>
+
+  <!-- S22: Few-Shot -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Technik 2</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; width: 80%; font-size: 0.38rem;">
+        <div style="background: #f0f0f0; padding: 0.3rem 0.5rem; border-radius: 4px; color: #999;">
+          <strong style="color:#555;">Beispiel 1:</strong> Vorrichtung zum... umfassend a) ein erstes...
+        </div>
+        <div style="background: #f0f0f0; padding: 0.3rem 0.5rem; border-radius: 4px; color: #999;">
+          <strong style="color:#555;">Beispiel 2:</strong> Verfahren zum... mit den Schritten: a) ...
+        </div>
+        <div style="background: #fffbeb; padding: 0.3rem 0.5rem; border-radius: 4px; color: #92400e; border: 1px solid rgba(250,187,67,0.3);">
+          <strong>Jetzt formuliere:</strong> [Neue Aufgabe]
+        </div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 22 — Few-Shot</div>
+      <div class="card-title">Beispiele geben → Muster vorgeben</div>
+      <div class="card-desc">2-3 Beispiele zeigen der KI das gewünschte Format und den Stil. Patent-Anspruch-Beispiele. Dramatisch bessere Qualität.</div>
+      <div class="card-anim">Beispiel-Blöcke stagger in</div>
+    </div>
+  </div>
+
+  <!-- S23: Chain-of-Thought -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Technik 3</div>
+      <div class="mini-chain">
+        <div class="mini-step">1. Merkmale<br>identifizieren</div>
+        <div class="mini-arrow">→</div>
+        <div class="mini-step">2. Einzeln<br>vergleichen</div>
+        <div class="mini-arrow">→</div>
+        <div class="mini-step">3. Zusammen-<br>fassen</div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 23 — Chain-of-Thought</div>
+      <div class="card-title">"Denke Schritt für Schritt"</div>
+      <div class="card-desc">Zwingt das Modell zu sequenziellem Reasoning. Patent-Beispiel: Stand-der-Technik-Analyse in 3 Schritten. Deutlich bessere Ergebnisse bei komplexen Aufgaben.</div>
+      <div class="card-anim">Steps appear sequentially with arrows</div>
+    </div>
+  </div>
+
+  <!-- S24: Vorher/Nachher Vergleich -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Der Unterschied</div>
+      <div class="mini-compare">
+        <div class="mini-compare-side">
+          <div class="mini-compare-label bad">✗ Vorher</div>
+          "Schreib mir einen Patentanspruch für eine Erfindung"
+        </div>
+        <div class="mini-compare-side good">
+          <div class="mini-compare-label good">✓ Nachher</div>
+          "Du bist Patentanwalt. Gegeben: [Kontext]. Formuliere einen unabhängigen Vorrichtungsanspruch mit Merkmalen a)–d). Verwende EPÜ-konforme Sprache."
+        </div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 24 — Vorher / Nachher</div>
+      <div class="card-title">Was Kontext ausmacht</div>
+      <div class="card-desc">Direkter Vergleich: gleiche Aufgabe, schlechter vs. guter Prompt. Zeigt konkret wie Rolle + Kontext + Aufgabe + Format den Output transformieren. Evtl. live Demo?</div>
+      <div class="card-anim">Side-by-side morph</div>
+    </div>
+  </div>
+
+  <div class="section-label">Der Baukasten</div>
+
+  <!-- S25: Prompt-Baukasten -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Das Framework</div>
+      <div class="mini-blocks">
+        <div class="mini-block" style="background:#7c5cbf;">🎭 Rolle — "Du bist ein erfahrener Patentanwalt..."</div>
+        <div class="mini-block" style="background:#4a90d9;">📋 Kontext — "Gegeben ist folgender Anspruch: [...]"</div>
+        <div class="mini-block" style="background:#e8853d;">🎯 Aufgabe — "Erstelle eine Merkmalsgliederung"</div>
+        <div class="mini-block" style="background:#16a34a;">📐 Format — "Antworte in nummerierter Liste"</div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 25 — Prompt-Baukasten ⭐ Takeaway</div>
+      <div class="card-title">Rolle + Kontext + Aufgabe + Format</div>
+      <div class="card-desc">DAS Framework zum Mitnehmen. 4 Bausteine stacken sich visuell. Jeder Block hat ein Patent-Beispiel. Das sollen sie sich merken.</div>
+      <div class="card-anim">Blocks stack with bounce</div>
+    </div>
+  </div>
+
+  <!-- S26: Weitere Techniken -->
+  <div class="card">
+    <div class="card-preview">
+      <div class="mini-ol">Überblick</div>
+      <div class="mini-cards-row">
+        <div class="mini-card-item">
+          <div class="mini-card-title">Structured Output</div>
+          "Antworte als JSON / Tabelle"
+        </div>
+        <div class="mini-card-item">
+          <div class="mini-card-title">Prompt Chaining</div>
+          Ergebnis 1 → Prompt 2 → Prompt 3
+        </div>
+        <div class="mini-card-item">
+          <div class="mini-card-title">Self-Consistency</div>
+          3x fragen, Ergebnisse vergleichen
+        </div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-num">Slide 26 — Weitere Techniken</div>
+      <div class="card-title">Schnellüberblick — 3 Bonus-Techniken</div>
+      <div class="card-desc">Kurzer Überblick über fortgeschrittene Techniken. Nicht zu tief — zeigt dass es noch mehr gibt. Cards mit kurzer Erklärung.</div>
+      <div class="card-anim">Cards flip in</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:1100px; margin:2rem auto; padding:1.5rem; background:white; border-radius:14px; border:1px solid #eee;">
+  <h3 style="font-size:1rem; margin-bottom:0.8rem;">Die Story von Teil 3</h3>
+  <div style="font-size:0.82rem; color:#555; line-height:1.7;">
+    <p><strong>Opener (19)</strong> → "Die Kunst des Promptings" — Übergang von Grenzen zu Lösungen</p>
+    <p><strong>"Handle als..." (20)</strong> → VISUELL zeigen warum Rollen-Prompts funktionieren — zwei Netzwerke, scattered vs. focused. Brücke zwischen Teil 1 (wie es funktioniert) und Teil 3 (wie man es nutzt).</p>
+    <p><strong>Drei Techniken (21–23)</strong> → Zero-Shot → Few-Shot → Chain-of-Thought. Aufsteigende Komplexität, jedes mit Patent-Beispiel.</p>
+    <p><strong>Vorher/Nachher (24)</strong> → Konkreter Vergleich: schlechter vs. guter Prompt. Zeigt den Effekt aller Techniken zusammen.</p>
+    <p><strong>Der Baukasten (25)</strong> → DAS Takeaway-Framework: Rolle + Kontext + Aufgabe + Format. Das sollen sie mitnehmen.</p>
+    <p><strong>Bonus (26)</strong> → Schnellüberblick über 3 weitere Techniken. Zeigt Tiefe ohne zu überfordern.</p>
+  </div>
+
+  <h3 style="font-size:1rem; margin-top:1.5rem; margin-bottom:0.5rem;">Offene Fragen</h3>
+  <div style="font-size:0.82rem; color:#888; line-height:1.6;">
+    <p>• Soll Slide 20 (Handle als) ein echtes Side-by-side mit dem NN-Canvas sein, oder reicht eine vereinfachte Darstellung?</p>
+    <p>• Soll Slide 24 (Vorher/Nachher) eine Live-Demo beinhalten, oder alles statisch?</p>
+    <p>• Brauchen wir eine eigene Slide für System Prompts / Custom Instructions?</p>
+    <p>• Reichen 3 Bonus-Techniken, oder soll RAG (Retrieval Augmented Generation) eine eigene Slide bekommen?</p>
+  </div>
+</div>
+
+</body>
+</html>

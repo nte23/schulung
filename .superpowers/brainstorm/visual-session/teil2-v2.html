@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teil 2 v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; -webkit-user-select: none; user-select: none; }
+
+  .progress { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(135deg, #dc2626, #fabb43); z-index: 1000; transition: width 0.5s; }
+
+  /* Nav */
+  .nav { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.5rem; z-index: 200; }
+  .nav-counter { font-size: 0.75rem; color: #bbb; font-variant-numeric: tabular-nums; margin-right: 0.25rem; }
+  .nav-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e0e0e0;
+    background: white; color: #666; cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: #fabb43; border-color: #fabb43; color: white; }
+  .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: white; border-color: #e0e0e0; color: #666; }
+
+  /* Label */
+  .label { position: fixed; top: 2.5rem; left: 3.5rem; z-index: 100; }
+  .label .ol { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label .hl-text { font-size: 1.8rem; font-weight: 600; line-height: 1.25; margin-top: 0.4rem; max-width: 500px; }
+  .label .hl-text .hl { color: #fabb43; }
+  .label .sub { font-size: 0.9rem; color: #999; margin-top: 0.4rem; max-width: 420px; line-height: 1.5; }
+
+  /* Slides stacked */
+  .slide { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 5rem; opacity: 0; visibility: hidden; pointer-events: none; }
+  .slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+  .slide-inner { max-width: 750px; width: 100%; }
+
+  /* Bars */
+  .bar-container { width: 100%; max-width: 580px; margin: 0 auto; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .bar-word { width: 160px; text-align: right; font-size: 0.95rem; font-weight: 500; color: #555; white-space: nowrap; }
+  .bar-track { flex: 1; height: 26px; background: #f0f0f0; border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-pct { width: 45px; font-size: 0.8rem; color: #aaa; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .temp-display { margin-bottom: 2rem; text-align: center; }
+  .temp-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #999; margin-bottom: 0.3rem; }
+  .temp-value { font-size: 2.5rem; font-weight: 300; }
+  .temp-desc { font-size: 0.8rem; color: #bbb; margin-top: 0.2rem; }
+
+  .insight { padding: 1rem 1.3rem; border-radius: 0 10px 10px 0; font-size: 0.9rem; line-height: 1.55; max-width: 580px; margin: 1.5rem auto 0; text-align: left; }
+  .insight.warn { background: #fef2f2; border-left: 4px solid #dc2626; color: #991b1b; }
+  .insight.amber { background: #fffbeb; border-left: 4px solid #fabb43; color: #92400e; }
+
+  .sentence-line { font-size: 1.4rem; font-weight: 500; color: #333; margin-bottom: 1.5rem; text-align: left; max-width: 580px; margin-left: auto; margin-right: auto; min-height: 2.2rem; }
+  .sentence-line .tok-new { color: #fabb43; font-weight: 600; }
+  .cursor { display: inline-block; width: 2px; height: 1.1em; background: #fabb43; vertical-align: text-bottom; margin-left: 1px; animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .step-note { font-size: 0.75rem; color: #dc2626; font-weight: 500; text-align: right; max-width: 580px; margin: 0 auto 0.5rem; min-height: 1.2rem; }
+
+  /* Halluc */
+  .halluc-box { background: #fafafa; border: 1px solid #eee; border-radius: 14px; padding: 1.8rem 2rem; text-align: left; position: relative; overflow: hidden; }
+  .halluc-text { font-size: 1rem; line-height: 1.8; color: #333; }
+  .fake { position: relative; }
+  .fake .fu { position: absolute; left: -2px; right: -2px; bottom: -1px; height: 3px; background: #dc2626; border-radius: 2px; }
+  .glitch-o { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .g-bar { position: absolute; left: 0; right: 0; height: 3px; background: rgba(220,38,38,0.35); }
+  .reveal-list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .reveal-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
+  .ri-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+  .ri-icon.bad { background: rgba(220,38,38,0.08); color: #dc2626; }
+  .ri-icon.good { background: rgba(22,163,74,0.08); color: #16a34a; }
+  .halluc-quote { margin-top: 1.8rem; font-size: 1.05rem; font-style: italic; color: #92400e; border-left: 3px solid #fabb43; padding-left: 1.1rem; line-height: 1.5; text-align: left; }
+
+  /* Two cols */
+  .two-cols { display: flex; gap: 3rem; text-align: left; }
+  .col { flex: 1; }
+  .col-head { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 2px solid; }
+  .col-head.g { color: #16a34a; border-color: #16a34a; }
+  .col-head.r { color: #dc2626; border-color: #dc2626; }
+  .col-item { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; font-size: 0.9rem; color: #444; line-height: 1.4; }
+  .ci { font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .ci.g { color: #16a34a; } .ci.r { color: #dc2626; }
+
+  /* Risks */
+  .risk-list { display: flex; flex-direction: column; gap: 0.8rem; }
+  .risk-item { display: flex; gap: 1rem; padding: 1rem 1.3rem; background: #fafafa; border: 1px solid #eee; border-radius: 12px; }
+  .risk-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(220,38,38,0.06); color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .risk-title { font-size: 0.9rem; font-weight: 600; }
+  .risk-desc { font-size: 0.75rem; color: #888; margin-top: 0.15rem; line-height: 1.4; }
+  .rule-box { margin-top: 1.5rem; padding: 0.9rem 1.2rem; background: rgba(22,163,74,0.04); border-left: 4px solid #16a34a; border-radius: 0 10px 10px 0; }
+  .rule-box strong { color: #16a34a; } .rule-box span { font-size: 0.9rem; color: #444; }
+
+  /* Opener */
+  .opener-center { text-align: center; }
+  .opener-center h1 { font-size: 3rem; font-weight: 600; line-height: 1.15; }
+  .opener-center h1 .hl { color: #dc2626; }
+  .opener-center .sub { font-size: 1.1rem; color: #999; margin-top: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="label" id="labelArea"><div class="ol" id="lOl"></div><div class="hl-text" id="lHl"></div><div class="sub" id="lSub"></div></div>
+
+<!-- ===== SLIDES ===== -->
+
+<!-- S0: Opener -->
+<div class="slide active" id="s0">
+  <div class="slide-inner opener-center">
+    <h1>Was KI <span class="hl">nicht</span> kann</h1>
+    <div class="sub">...und warum das unvermeidlich ist.</div>
+  </div>
+</div>
+
+<!-- S1: Temperature -->
+<div class="slide" id="s1">
+  <div class="slide-inner">
+    <div style="margin-bottom:1.5rem; font-size:1.3rem; color:#333; text-align:left; max-width:520px; margin-left:auto; margin-right:auto;">
+      Der Patent<span class="cursor"></span>
+    </div>
+    <div class="temp-display">
+      <div class="temp-label">Temperature</div>
+      <div class="temp-value" id="tVal">0</div>
+      <div class="temp-desc" id="tDesc">Deterministisch — immer #1</div>
+    </div>
+    <div class="bar-container" id="tempBars">
+      <div class="bar-row"><div class="bar-word">anspruch</div><div class="bar-track"><div class="bar-fill" id="tb0" style="background:linear-gradient(90deg,#fabb43,#ea580c);width:0%;"></div></div><div class="bar-pct" id="tp0">0%</div></div>
+      <div class="bar-row"><div class="bar-word">inhaber</div><div class="bar-track"><div class="bar-fill" id="tb1" style="background:#fabb43;width:0%;"></div></div><div class="bar-pct" id="tp1">0%</div></div>
+      <div class="bar-row"><div class="bar-word">schutz</div><div class="bar-track"><div class="bar-fill" id="tb2" style="background:#fabb43;width:0%;"></div></div><div class="bar-pct" id="tp2">0%</div></div>
+      <div class="bar-row"><div class="bar-word">anwalt</div><div class="bar-track"><div class="bar-fill" id="tb3" style="background:#e0d5c0;width:0%;"></div></div><div class="bar-pct" id="tp3">0%</div></div>
+      <div class="bar-row"><div class="bar-word">amt</div><div class="bar-track"><div class="bar-fill" id="tb4" style="background:#e0d5c0;width:0%;"></div></div><div class="bar-pct" id="tp4">0%</div></div>
+    </div>
+    <div class="insight amber" id="tempInsight" style="opacity:0;">
+      ⚡ <strong>Selbst bei Temperature 0 sind Halluzinationen möglich!</strong> Denn auch das wahrscheinlichste Muster kann falsch sein.
+    </div>
+  </div>
+</div>
+
+<!-- S2: Mechanism (click-stepped, persistent bars) -->
+<div class="slide" id="s2">
+  <div class="slide-inner">
+    <div class="sentence-line" id="mechSentence"><span class="cursor"></span></div>
+    <div class="step-note" id="mechNote"></div>
+    <div class="bar-container" id="mechBars">
+      <div class="bar-row" id="mr0"><div class="bar-word" id="mw0"></div><div class="bar-track"><div class="bar-fill" id="mf0" style="width:0%;"></div></div><div class="bar-pct" id="mp0"></div></div>
+      <div class="bar-row" id="mr1"><div class="bar-word" id="mw1"></div><div class="bar-track"><div class="bar-fill" id="mf1" style="width:0%;"></div></div><div class="bar-pct" id="mp1"></div></div>
+      <div class="bar-row" id="mr2"><div class="bar-word" id="mw2"></div><div class="bar-track"><div class="bar-fill" id="mf2" style="width:0%;"></div></div><div class="bar-pct" id="mp2"></div></div>
+      <div class="bar-row" id="mr3"><div class="bar-word" id="mw3"></div><div class="bar-track"><div class="bar-fill" id="mf3" style="width:0%;"></div></div><div class="bar-pct" id="mp3"></div></div>
+    </div>
+    <div class="insight warn" id="mechInsight" style="opacity:0;">
+      ⚠ <strong>Dieses Aktenzeichen wurde nicht nachgeschlagen.</strong> Es wurde GENERIERT — Token für Token, basierend auf Mustern. Das Modell hat kein Bücherregal. Es hat Muster.
+    </div>
+  </div>
+</div>
+
+<!-- S3: Hallucination reveal -->
+<div class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="halluc-box" id="hBox">
+      <div class="glitch-o" id="gO" style="opacity:0;">
+        <div class="g-bar" style="top:15%;"></div><div class="g-bar" style="top:42%;"></div>
+        <div class="g-bar" style="top:68%;"></div><div class="g-bar" style="top:85%;"></div>
+      </div>
+      <div class="halluc-text">
+        „Gemäß der BGH-Entscheidung <span class="fake">X&nbsp;ZR&nbsp;47/19<span class="fu" id="fu1" style="opacity:0;"></span></span> vom <span class="fake">14.03.2021<span class="fu" id="fu2" style="opacity:0;"></span></span> wurde festgestellt, dass der Patentanspruch 1 durch die Druckschrift <span class="fake">DE&nbsp;10&nbsp;2019&nbsp;123&nbsp;456&nbsp;A1<span class="fu" id="fu3" style="opacity:0;"></span></span> neuheitsschädlich vorweggenommen wird."
+      </div>
+      <div class="reveal-list" id="revealList">
+        <div class="reveal-item" style="opacity:0;"><div class="ri-icon bad">✗</div><span>Aktenzeichen — generiertes Muster, nicht nachgeschlagen</span></div>
+        <div class="reveal-item" style="opacity:0;"><div class="ri-icon bad">✗</div><span>Datum — statistisch plausibel, aber erfunden</span></div>
+        <div class="reveal-item" style="opacity:0;"><div class="ri-icon bad">✗</div><span>Druckschrift — sieht echt aus, existiert nicht</span></div>
+        <div class="reveal-item" style="opacity:0;"><div class="ri-icon good">✓</div><span>Klingt absolut überzeugend</span></div>
+      </div>
+    </div>
+    <div class="halluc-quote" id="hQuote" style="opacity:0;">„Die KI halluziniert nicht TROTZ ihrer Funktionsweise — sondern WEGEN."</div>
+  </div>
+</div>
+
+<!-- S4: What we know -->
+<div class="slide" id="s4">
+  <div class="slide-inner">
+    <div class="two-cols">
+      <div class="col" id="colL">
+        <div class="col-head g">Was wir wissen</div>
+        <div class="col-item" style="opacity:0;"><span class="ci g">✓</span><span>Architektur (Transformer)</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci g">✓</span><span>Trainingsdaten (grob)</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci g">✓</span><span>Wie Attention funktioniert</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci g">✓</span><span>Mathematische Grundlagen</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci g">✓</span><span>Warum Halluzinationen unvermeidlich sind</span></div>
+      </div>
+      <div class="col" id="colR">
+        <div class="col-head r">Was wir NICHT wissen</div>
+        <div class="col-item" style="opacity:0;"><span class="ci r">?</span><span>Warum bestimmte Fähigkeiten plötzlich entstehen</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci r">?</span><span>Was einzelne Neuronen genau tun</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci r">?</span><span>Ob echtes „Verstehen" stattfindet</span></div>
+        <div class="col-item" style="opacity:0;"><span class="ci r">?</span><span>Wo die Grenzen der Fähigkeiten liegen</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S5: Risks -->
+<div class="slide" id="s5">
+  <div class="slide-inner">
+    <div class="risk-list">
+      <div class="risk-item" style="opacity:0;"><div class="risk-icon">⚠</div><div><div class="risk-title">Erfundene Rechtsprechung & Aktenzeichen</div><div class="risk-desc">Formal korrekte Aktenzeichen, die nicht existieren.</div></div></div>
+      <div class="risk-item" style="opacity:0;"><div class="risk-icon">⚠</div><div><div class="risk-title">Plausible aber falsche technische Beschreibungen</div><div class="risk-desc">Details klingen richtig, sind aber subtil falsch.</div></div></div>
+      <div class="risk-item" style="opacity:0;"><div class="risk-icon">⚠</div><div><div class="risk-title">Subtile Fehler in Anspruchsformulierungen</div><div class="risk-desc">Schutzbereich stimmt nicht, Merkmale fehlen.</div></div></div>
+      <div class="risk-item" style="opacity:0;"><div class="risk-icon">⚠</div><div><div class="risk-title">Falsche Sicherheit durch perfektes Fachdeutsch</div><div class="risk-desc">Perfekte Sprache macht Fehler schwer erkennbar.</div></div></div>
+    </div>
+    <div class="rule-box" id="ruleBox" style="opacity:0;"><strong>Regel #1:</strong> <span>KI-Output ist ein Entwurf, niemals ein Ergebnis. IMMER verifizieren.</span></div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <span class="nav-counter"><span id="curNum">1</span>/<span id="totNum">6</span></span>
+  <button class="nav-btn" id="prevBtn" disabled>←</button>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const TOTAL = slides.length;
+let cur = 0;
+let animating = false;
+
+// Labels per slide
+const labels = [
+  { ol: '', hl: '', sub: '' },
+  { ol: 'Temperature', hl: 'Der <span class="hl">Kreativitätsregler</span>', sub: 'Erinnerst du dich an die Wahrscheinlichkeitsbalken? Es gibt einen Regler...' },
+  { ol: 'Der Mechanismus', hl: '<span class="hl">Nicht TROTZ</span> sondern WEGEN', sub: 'Schau zu, wie eine Halluzination Wort für Wort entsteht.' },
+  { ol: 'Das Ergebnis', hl: 'Überzeugend — aber <span class="hl">komplett erfunden</span>', sub: '' },
+  { ol: 'Der Stand der Forschung', hl: 'Was wir <span class="hl">wissen</span> — und was nicht', sub: '' },
+  { ol: 'Risiken für die Praxis', hl: 'Wo es für Patentanwälte <span class="hl">gefährlich</span> wird', sub: '' },
+];
+
+function setLabel(idx) {
+  const l = labels[idx];
+  document.getElementById('lOl').textContent = l.ol;
+  document.getElementById('lHl').innerHTML = l.hl;
+  document.getElementById('lSub').textContent = l.sub;
+  gsap.fromTo('#labelArea', { opacity: 0 }, { opacity: 1, duration: 0.5 });
+}
+
+function updateNav() {
+  document.getElementById('curNum').textContent = cur + 1;
+  document.getElementById('progress').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === TOTAL - 1;
+}
+
+// ============ SLIDE-SPECIFIC SUBSTEP LOGIC ============
+// Some slides have internal sub-steps controlled by clicks
+
+// -- Temperature sub-steps --
+const tempPresets = [
+  { t: '0', desc: 'Deterministisch — immer #1', pcts: [100, 0, 0, 0, 0] },
+  { t: '0.7', desc: 'Standard — balanciert', pcts: [34, 22, 18, 11, 7] },
+  { t: '1.5', desc: 'Kreativ — riskanter', pcts: [22, 18, 17, 15, 12] },
+  { t: '2.0', desc: 'Chaos — fast zufällig', pcts: [18, 16, 15, 14, 13] },
+];
+let tempStep = 0;
+
+function applyTemp(idx) {
+  const p = tempPresets[idx];
+  document.getElementById('tVal').textContent = p.t;
+  document.getElementById('tDesc').textContent = p.desc;
+  p.pcts.forEach((pct, i) => {
+    gsap.to(`#tb${i}`, { width: pct * 1.8 + '%', duration: 0.8, ease: 'power2.out' });
+    document.getElementById(`tp${i}`).textContent = pct + '%';
+  });
+}
+
+// -- Mechanism sub-steps --
+const mechSteps = [
+  // Each step: token types in, bars show candidates for the NEXT token
+  { prefix: '', token: 'Gemäß', bars: [{w:'der',p:67},{w:'einer',p:18},{w:'dem',p:10},{w:'des',p:5}], note: 'Was kommt nach "Gemäß"?' },
+  { prefix: 'Gemäß ', token: 'der', bars: [{w:'BGH-Entscheidung',p:38},{w:'Rechtsprechung',p:22},{w:'Bundesgerichtshof',p:18},{w:'Entscheidung',p:12}], note: 'Was kommt nach "Gemäß der"?' },
+  { prefix: 'Gemäß der ', token: 'BGH-Entscheidung', bars: [{w:'X',p:41,hl:1},{w:'I',p:26},{w:'V',p:15},{w:'II',p:10}], note: '← Das MUSTER "X ZR" ist statistisch häufig' },
+  { prefix: 'Gemäß der BGH-Entscheidung ', token: 'X', bars: [{w:'ZR',p:48,hl:1},{w:'ZB',p:30},{w:'ZA',p:12},{w:'R',p:6}], note: '← Wieder: Muster, nicht Fakt' },
+  { prefix: 'Gemäß der BGH-Entscheidung X ', token: 'ZR', bars: [{w:'47/19',p:4,hl:1},{w:'23/18',p:4},{w:'12/21',p:3},{w:'118/17',p:3}], note: '← Plausible Ziffern — KEINE davon nachgeschlagen!' },
+  { prefix: 'Gemäß der BGH-Entscheidung X ZR ', token: '47/19', bars: [], note: '' },
+];
+let mechStep = -1;
+let mechTyping = false;
+
+function typeText(el, fullText, newToken, callback) {
+  // Shows prefix instantly, types new token char by char
+  el.innerHTML = `<span>${fullText.substring(0, fullText.length - newToken.length)}</span><span class="tok-new"></span><span class="cursor"></span>`;
+  const tokEl = el.querySelector('.tok-new');
+  let i = 0;
+  mechTyping = true;
+  const iv = setInterval(() => {
+    if (i < newToken.length) {
+      tokEl.textContent = newToken.substring(0, ++i);
+    } else {
+      clearInterval(iv);
+      mechTyping = false;
+      if (callback) callback();
+    }
+  }, 55);
+}
+
+function applyMechStep(idx) {
+  if (idx < 0 || idx >= mechSteps.length) return;
+  const s = mechSteps[idx];
+  const fullText = s.prefix + s.token;
+
+  // Typewriter for sentence
+  const sent = document.getElementById('mechSentence');
+  typeText(sent, fullText, s.token, () => {
+    // After typing finishes, animate bars
+    animateBarsTo(s.bars);
+  });
+
+  // Note — fade transition
+  const noteEl = document.getElementById('mechNote');
+  gsap.to(noteEl, { opacity: 0, duration: 0.15, onComplete: () => {
+    noteEl.textContent = s.note;
+    if (s.note) gsap.to(noteEl, { opacity: 1, duration: 0.4, delay: 0.3 });
+  }});
+}
+
+function animateBarsTo(bars) {
+  // Morph the 4 persistent bar rows to new data
+  // First shrink all fills to 0
+  for (let i = 0; i < 4; i++) {
+    gsap.to(`#mf${i}`, { width: '0%', duration: 0.25, ease: 'power2.in' });
+  }
+
+  // After shrink, update labels and grow
+  setTimeout(() => {
+    for (let i = 0; i < 4; i++) {
+      const row = document.getElementById(`mr${i}`);
+      const wordEl = document.getElementById(`mw${i}`);
+      const fillEl = document.getElementById(`mf${i}`);
+      const pctEl = document.getElementById(`mp${i}`);
+
+      if (i < bars.length) {
+        const b = bars[i];
+        wordEl.textContent = b.w;
+        wordEl.style.color = b.hl ? '#dc2626' : '#555';
+        wordEl.style.fontWeight = b.hl ? '700' : '500';
+        fillEl.style.background = b.hl ? 'linear-gradient(90deg,#dc2626,#ea580c)' : '#e0d5c0';
+        pctEl.textContent = b.p + '%';
+        gsap.to(row, { opacity: 1, duration: 0.3 });
+        gsap.to(fillEl, { width: Math.min(b.p * 2.2, 100) + '%', duration: 0.7, delay: 0.05 + i * 0.06, ease: 'power2.out' });
+      } else {
+        gsap.to(row, { opacity: 0, duration: 0.2 });
+      }
+    }
+  }, 300);
+}
+
+// -- Halluc sub-steps --
+let hallucStep = -1;
+
+function advanceHalluc() {
+  hallucStep++;
+  const items = document.querySelectorAll('#revealList .reveal-item');
+  if (hallucStep === 0) {
+    // Glitch
+    gsap.to('#gO', { opacity: 1, duration: 0.06 });
+    gsap.to('#gO', { opacity: 0, duration: 0.04, delay: 0.11 });
+    gsap.to('#gO', { opacity: 0.7, duration: 0.04, delay: 0.23 });
+    gsap.to('#gO', { opacity: 0, duration: 0.06, delay: 0.29 });
+    gsap.to('#gO', { opacity: 0.4, duration: 0.03, delay: 0.44 });
+    gsap.to('#gO', { opacity: 0, duration: 0.08, delay: 0.49 });
+    // Underlines
+    gsap.to('#fu1', { opacity: 1, duration: 0.3, delay: 0.6 });
+    gsap.to('#fu2', { opacity: 1, duration: 0.3, delay: 0.75 });
+    gsap.to('#fu3', { opacity: 1, duration: 0.3, delay: 0.9 });
+  } else if (hallucStep >= 1 && hallucStep <= 4) {
+    gsap.to(items[hallucStep - 1], { opacity: 1, duration: 0.4 });
+  } else if (hallucStep === 5) {
+    gsap.to('#hQuote', { opacity: 1, duration: 0.7 });
+  }
+}
+
+// ============ TRANSITIONS ============
+function animateIn(idx) {
+  const s = slides[idx];
+  setLabel(idx);
+
+  // Generic fade in for all child elements
+  const els = s.querySelectorAll('h1, .sub, .slide-inner > *');
+  gsap.fromTo(els, { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power2.out', delay: 0.15 });
+
+  // Slide-specific setup
+  if (idx === 1) { tempStep = 0; applyTemp(0); }
+  if (idx === 2) { mechStep = 0; applyMechStep(0); }
+  if (idx === 3) { hallucStep = -1; }
+  if (idx === 4) {
+    gsap.to('#colL .col-item', { opacity: 1, duration: 0.4, stagger: 0.1, delay: 0.5 });
+    gsap.to('#colR .col-item', { opacity: 1, duration: 0.4, stagger: 0.1, delay: 1.3 });
+  }
+  if (idx === 5) {
+    gsap.fromTo('.risk-item', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.15, delay: 0.5 });
+    gsap.to('#ruleBox', { opacity: 1, duration: 0.5, delay: 1.5 });
+  }
+}
+
+function animateOut(idx, dir) {
+  const s = slides[idx];
+  gsap.to('#labelArea', { opacity: 0, duration: 0.25 });
+  return gsap.to(s.querySelectorAll('.slide-inner > *'), { opacity: 0, x: -30 * dir, duration: 0.3, stagger: 0.02, ease: 'power2.in' });
+}
+
+function resetSlide(idx) {
+  // Reset hidden elements for when we revisit
+  if (idx === 1) { gsap.set('#tempInsight', { opacity: 0 }); }
+  if (idx === 3) {
+    gsap.set('#gO', { opacity: 0 });
+    gsap.set('#fu1, #fu2, #fu3', { opacity: 0 });
+    gsap.set('#revealList .reveal-item', { opacity: 0 });
+    gsap.set('#hQuote', { opacity: 0 });
+  }
+  if (idx === 4) { gsap.set('.col-item', { opacity: 0 }); }
+  if (idx === 5) { gsap.set('.risk-item', { opacity: 0 }); gsap.set('#ruleBox', { opacity: 0 }); }
+}
+
+function goTo(idx) {
+  if (idx === cur || animating || idx < 0 || idx >= TOTAL) return;
+  animating = true;
+  const dir = idx > cur ? 1 : -1;
+  const old = cur;
+
+  animateOut(old, dir).then(() => {
+    slides[old].classList.remove('active');
+    resetSlide(idx);
+    slides[idx].classList.add('active');
+    cur = idx;
+    updateNav();
+    animateIn(idx);
+    setTimeout(() => animating = false, 600);
+  });
+}
+
+// ============ CLICK / KEY HANDLER ============
+// Forward: advance sub-step if slide has them, otherwise next slide
+function forward() {
+  if (animating) return;
+
+  // Sub-step logic
+  if (cur === 1) {
+    // Temperature: cycle through presets, then show insight, then next slide
+    tempStep++;
+    if (tempStep < tempPresets.length) {
+      applyTemp(tempStep);
+      return;
+    } else if (tempStep === tempPresets.length) {
+      gsap.to('#tempInsight', { opacity: 1, duration: 0.5 });
+      return;
+    }
+    // else: fall through to next slide
+  }
+
+  if (cur === 2) {
+    if (mechTyping) return; // wait for typing to finish
+    // Mechanism: step through tokens, then show insight, then next slide
+    mechStep++;
+    if (mechStep < mechSteps.length) {
+      applyMechStep(mechStep);
+      return;
+    } else if (mechStep === mechSteps.length) {
+      gsap.to('#mechInsight', { opacity: 1, duration: 0.6 });
+      return;
+    }
+  }
+
+  if (cur === 3) {
+    // Halluc: glitch → reveals → quote
+    if (hallucStep < 5) {
+      advanceHalluc();
+      return;
+    }
+  }
+
+  // Default: go to next slide
+  goTo(cur + 1);
+}
+
+function backward() {
+  if (animating) return;
+  goTo(cur - 1);
+}
+
+document.getElementById('nextBtn').addEventListener('click', forward);
+document.getElementById('prevBtn').addEventListener('click', backward);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); forward(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); backward(); }
+});
+// Click on slide area = forward
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.nav')) return;
+  forward();
+});
+
+// Init
+updateNav();
+animateIn(0);
+</script>
+
+</body>
+</html>

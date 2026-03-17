@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI Workshop</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <nav class="slide-nav">
+        <span class="slide-counter"><span id="currentSlide">1</span>/<span id="totalSlides">2</span></span>
+        <div class="nav-controls">
+            <button id="prevBtn" class="nav-btn">←</button>
+            <button id="nextBtn" class="nav-btn">→</button>
+        </div>
+    </nav>
+
+    <!-- Speaker Notes Panel -->
+    <aside class="speaker-notes" id="speakerNotes">
+        <div class="notes-header">
+            <span>Speaker Notes</span>
+            <button class="notes-close" id="notesClose">×</button>
+        </div>
+        <div class="notes-content" id="notesContent"></div>
+        <div class="notes-hint">Taste N zum Ein-/Ausblenden</div>
+    </aside>
+
+    <main class="presentation">
+        <!-- Slide 1: Title -->
+        <section class="slide active" data-slide="1">
+            <div class="slide-content title-slide">
+                <span class="overline">Workshop</span>
+                <h1>Grundlagen der<br><span class="highlight">generativen KI</span></h1>
+                <p class="subtitle">Wie Sprachmodelle funktionieren und wo ihre Grenzen liegen.</p>
+            </div>
+            <div class="notes hidden">
+                Willkommen zum Workshop. Heute geht es nicht um Prompt-Sammlungen oder Tool-Empfehlungen.
+                Wir bauen ein echtes Verständnis auf — auch ein bisschen technisch, aber verständlich.
+                Ziel: Nach dem Workshop verstehen Sie, WARUM KI sich so verhält wie sie es tut.
+            </div>
+        </section>
+
+        <!-- Slide 2: Ziel -->
+        <section class="slide" data-slide="2">
+            <div class="slide-content">
+                <span class="overline">Ziel dieses Workshops</span>
+                <h1>Selbst prompten können</h1>
+
+                <div class="check-list">
+                    <div class="check-item negative" data-animate="1">
+                        <span class="check-icon">✗</span>
+                        <span class="check-text">Prompt-Sammlung zum Kopieren</span>
+                    </div>
+                    <div class="check-item positive" data-animate="2">
+                        <span class="check-icon">✓</span>
+                        <span class="check-text">Technisch verstehen, wie es funktioniert</span>
+                    </div>
+                </div>
+            </div>
+            <div class="notes hidden">
+                <strong>Warum keine Prompt-Sammlung?</strong>
+                <ul>
+                    <li>Prompts veralten schnell (neue Modelle, neue Fähigkeiten)</li>
+                    <li>Copy-Paste funktioniert nicht für individuelle Anwendungsfälle</li>
+                    <li>Ohne Verständnis kann man Fehler nicht erkennen</li>
+                </ul>
+
+                <strong>Warum technisches Verständnis?</strong>
+                <ul>
+                    <li>Wer versteht WIE es funktioniert, kann SELBST gute Prompts schreiben</li>
+                    <li>Auch ein bisschen mathematisch — aber verständlich erklärt</li>
+                    <li>Warum Halluzinationen passieren (und warum sie unvermeidlich sind)</li>
+                    <li>Dieses Wissen gilt auch für GPT-5, GPT-6, Claude, etc.</li>
+                </ul>
+
+                <strong>Ergebnis:</strong>
+                <ul>
+                    <li>KI-Ausgaben realistisch einordnen können</li>
+                    <li>Risiken frühzeitig erkennen</li>
+                    <li>Eigene Prompts entwickeln statt kopieren</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

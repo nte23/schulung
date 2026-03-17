@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2rem; left: 3rem; z-index: 100; max-width: 280px; }
+  .label .ol { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.4rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub { font-size: 0.78rem; color: #999; margin-top: 0.3rem; line-height: 1.5; }
+  .hint { position: fixed; bottom: 1rem; right: 2rem; font-size: 0.6rem; color: #ccc; z-index: 100; }
+
+  /* Chat area — centered, with padding */
+  .chat-area {
+    position: fixed; top: 8rem; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    width: 540px; padding: 0;
+    overflow: hidden;
+  }
+
+  /* No fade mask — dissolved messages should stay visible as ghosts */
+
+  .chat-scroll {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 4rem 1rem 2rem;
+  }
+
+  /* Chat bubbles — left/right like a real chat */
+  .bubble-row {
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    position: relative;
+  }
+  .bubble-row.user { flex-direction: row-reverse; }
+
+  .bubble {
+    max-width: 72%; padding: 0.6rem 0.9rem;
+    border-radius: 14px; font-size: 0.72rem; line-height: 1.55;
+    position: relative;
+  }
+  .bubble.ai {
+    background: #f5f5f5; color: #333;
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.user-bubble {
+    background: #1a1a1a; color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble.user-bubble.angry {
+    background: #dc2626;
+  }
+  .bubble.system-bubble {
+    max-width: 90%; background: rgba(124,92,191,0.06);
+    color: #7c5cbf; border: 1px solid rgba(124,92,191,0.12);
+    font-size: 0.65rem; font-weight: 500;
+  }
+
+  .bubble-sender {
+    font-size: 0.5rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #bbb; margin-bottom: 0.2rem;
+  }
+  .bubble-row.user .bubble-sender { color: rgba(255,255,255,0.5); }
+
+  /* Important marker */
+  .bubble-row.important .bubble {
+    border: 1.5px solid #fabb43;
+  }
+  .important-tag {
+    position: absolute; top: -8px; right: 8px;
+    font-size: 0.5rem; font-weight: 700; color: #fabb43;
+    background: white; padding: 0 0.4rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .bubble-row.user.important .important-tag { left: 8px; right: auto; }
+
+  /* Dissolved */
+  .bubble-row.dissolved .bubble {
+    opacity: 0.2 !important;
+    filter: blur(1px);
+    text-decoration: line-through;
+    text-decoration-color: rgba(220,38,38,0.3);
+  }
+  .bubble-row.dissolved .bubble-sender { opacity: 0; }
+  .bubble-row.dissolved .important-tag { opacity: 0; }
+  .bubble-row.dissolving .bubble {
+    animation: dissolveFlash 0.7s ease;
+  }
+  @keyframes dissolveFlash {
+    0% { box-shadow: 0 0 0 2px rgba(220,38,38,0.3); }
+    40% { box-shadow: 0 0 20px 4px rgba(220,38,38,0.2); }
+    100% { box-shadow: none; }
+  }
+
+  /* Alert — big text that appears next to the dissolved message */
+  .dissolve-alert {
+    position: absolute;
+    font-size: 1.1rem; font-weight: 700; color: #dc2626;
+    white-space: nowrap; opacity: 0; z-index: 20;
+    pointer-events: none;
+    text-shadow: 0 0 30px rgba(220,38,38,0.15);
+  }
+  /* Position: to the right of AI messages, to the left of user messages */
+  .bubble-row:not(.user) .dissolve-alert { left: calc(72% + 1.5rem); top: 50%; transform: translateY(-50%); }
+  .bubble-row.user .dissolve-alert { right: calc(72% + 1.5rem); top: 50%; transform: translateY(-50%); text-align: right; }
+
+  /* Meter */
+  .meter {
+    position: fixed; right: 3rem; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    height: 280px; z-index: 50;
+  }
+  .meter-title { font-size: 0.5rem; font-weight: 600; color: #ccc; text-transform: uppercase; letter-spacing: 0.06em; }
+  .meter-bar { width: 6px; flex: 1; background: #f0f0f0; border-radius: 3px; position: relative; overflow: hidden; }
+  .meter-fill { position: absolute; bottom: 0; left: 0; right: 0; background: #16a34a; border-radius: 3px; transition: height 0.8s ease, background 0.5s; }
+  .meter-pct { font-size: 0.6rem; font-weight: 600; color: #ccc; transition: color 0.5s; }
+
+  .insight-box {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    max-width: 520px; width: 90%; padding: 1rem 1.3rem;
+    background: #fffbeb; border-left: 4px solid #fabb43; border-radius: 0 10px 10px 0;
+    font-size: 0.82rem; color: #92400e; line-height: 1.5; opacity: 0; z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Kontext-Fenster</div>
+  <h2>KI hat ein <span class="hl">Kurzzeitgedächtnis</span></h2>
+  <div class="sub">Alles was oben rausfällt, ist für die KI vergessen. Für immer.</div>
+</div>
+<div class="hint">Klick zum Weiter</div>
+
+<div class="chat-area">
+  <div class="chat-scroll" id="chatScroll">
+
+    <div class="bubble-row important" id="m0">
+      <div class="bubble system-bubble">
+        <div class="bubble-sender">System-Prompt</div>
+        Du bist ein erfahrener Patentanwalt mit Schwerpunkt Maschinenbau.
+      </div>
+      <div class="important-tag">★ Wichtig</div>
+      <div class="dissolve-alert" id="da0">VERLOREN!</div>
+    </div>
+
+    <div class="bubble-row user important" id="m1">
+      <div class="bubble user-bubble">
+        <div class="bubble-sender">Du</div>
+        Hier ist mein Patentanspruch: "Vorrichtung zum drahtlosen Laden, umfassend eine Sendespule, eine Empfangsspule und eine Steuereinheit..." Prüfe gegen DE 10 2020 456 789.
+      </div>
+      <div class="important-tag">★ Wichtig</div>
+      <div class="dissolve-alert" id="da1">VERLOREN!</div>
+    </div>
+
+    <div class="bubble-row" id="m2">
+      <div class="bubble ai">
+        <div class="bubble-sender">KI</div>
+        Verstanden. M1.1 Sendespule und M1.2 Empfangsspule sind offenbart. M1.3 Steuereinheit unterscheidet sich in der Regelungslogik.
+      </div>
+      <div class="dissolve-alert" id="da2">VERLOREN!</div>
+    </div>
+
+    <div class="bubble-row user" id="m3">
+      <div class="bubble user-bubble">
+        <div class="bubble-sender">Du</div>
+        Formuliere den Anspruch um — Regelungslogik betonen.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="meter">
+  <div class="meter-title">Kontext</div>
+  <div class="meter-bar"><div class="meter-fill" id="mFill" style="height:25%;"></div></div>
+  <div class="meter-pct" id="mPct">25%</div>
+</div>
+
+<div class="insight-box" id="insightBox">
+  ⚡ <strong>Jede Nachricht kostet Kontext.</strong> Irgendwann fallen deine wichtigsten Anweisungen raus — und die KI dreht sich im Kreis. Manchmal ist "Neuer Chat" mit einem vollständigen Prompt die beste Lösung.
+</div>
+
+<script>
+const chatScroll = document.getElementById('chatScroll');
+const mFill = document.getElementById('mFill');
+const mPct = document.getElementById('mPct');
+let step = -1;
+let busy = false;
+let msgCount = 4;
+let scrollOffset = 0;
+
+const steps = [
+  // Step 0: Just show the initial state
+  { add: [], dissolve: [], meter: 20, alerts: [] },
+  // Step 1: One round of good conversation
+  { add: [
+    { side: 'ai', text: 'Gerne. M1.1 Sendespule und M1.2 Empfangsspule sind offenbart. M1.3 Steuereinheit unterscheidet sich.' },
+  ], dissolve: [], meter: 35, alerts: [] },
+  // Step 2: A bit more, context filling
+  { add: [
+    { side: 'user', text: 'Gut. Jetzt betone die Regelungslogik stärker.' },
+    { side: 'ai', text: '"...wobei die Steuereinheit eine adaptive Frequenzregelung durchführt..."' },
+  ], dissolve: [], meter: 55, alerts: [] },
+  // Step 3: System prompt dissolves!
+  { add: [
+    { side: 'user', text: 'Berücksichtige auch die thermische Überwachung.' },
+  ], dissolve: ['m0'], meter: 72, alerts: ['da0'] },
+  // Step 4: Patent claim dissolves!
+  { add: [
+    { side: 'ai', text: 'Welche Druckschrift meinen Sie? Können Sie die Details nochmal nennen?' },
+  ], dissolve: ['m1'], meter: 85, alerts: ['da1'] },
+  // Step 5: Angry, contradictions
+  { add: [
+    { side: 'user', text: 'DE 10 2020 456 789!! Das hab ich dir am Anfang gegeben!', angry: true },
+    { side: 'ai', text: 'M1.1 scheint doch neuheitsschädlich... [widerspricht vorheriger Analyse]' },
+  ], dissolve: ['m2'], meter: 96, alerts: ['da2'] },
+];
+
+function addBubble(side, text, angry) {
+  const row = document.createElement('div');
+  row.className = 'bubble-row' + (side === 'user' ? ' user' : '');
+  row.id = 'm' + msgCount++;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + (side === 'user' ? 'user-bubble' : 'ai') + (angry ? ' angry' : '');
+
+  const sender = document.createElement('div');
+  sender.className = 'bubble-sender';
+  sender.textContent = side === 'user' ? 'Du' : 'KI';
+  bubble.appendChild(sender);
+  bubble.appendChild(document.createTextNode(text));
+  row.appendChild(bubble);
+
+  row.style.opacity = '0';
+  chatScroll.appendChild(row);
+  gsap.to(row, { opacity: 1, duration: 0.45 });
+
+  return row;
+}
+
+function dissolveRow(id, alertId) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.classList.add('dissolving');
+
+  // Show alert text next to it
+  if (alertId) {
+    const alert = document.getElementById(alertId);
+    if (alert) {
+      gsap.fromTo(alert, { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.4, delay: 0.2 });
+      gsap.to(alert, { opacity: 0, delay: 2.5, duration: 0.5 });
+    }
+  }
+
+  setTimeout(() => {
+    row.classList.remove('dissolving');
+    row.classList.add('dissolved');
+  }, 700);
+}
+
+function scrollChat(amount) {
+  scrollOffset -= amount;
+  // Clamp: don't scroll past the top
+  const maxScroll = 0;
+  scrollOffset = Math.min(scrollOffset, maxScroll);
+  gsap.to(chatScroll, { y: scrollOffset, duration: 0.7, ease: 'power2.out' });
+}
+
+function updateMeter(pct) {
+  gsap.to(mFill, { height: pct + '%', duration: 0.8 });
+  mPct.textContent = pct + '%';
+  if (pct > 55) {
+    mFill.style.background = pct > 80 ? '#dc2626' : '#fabb43';
+    mPct.style.color = pct > 80 ? '#dc2626' : '#e5a530';
+  }
+}
+
+function doStep(idx) {
+  const s = steps[idx];
+
+  // Dissolve
+  s.dissolve.forEach((id, i) => {
+    setTimeout(() => dissolveRow(id, s.alerts[i]), i * 400);
+  });
+
+  // Add new messages
+  const dissolveTime = s.dissolve.length * 400;
+  s.add.forEach((m, i) => {
+    setTimeout(() => {
+      addBubble(m.side, m.text, m.angry);
+    }, dissolveTime + 300 + i * 450);
+  });
+
+  // Scroll after adding
+  // Only scroll if content would go below the chat area
+  const chatArea = document.querySelector('.chat-area');
+  const scrollEl = document.getElementById('chatScroll');
+  const contentH = scrollEl.scrollHeight + s.add.length * 60;
+  const areaH = chatArea.offsetHeight;
+  const needsScroll = contentH + scrollOffset > areaH;
+  const totalMsgHeight = needsScroll ? s.add.length * 55 : 0;
+  if (s.add.length > 0) {
+    setTimeout(() => {
+      scrollChat(totalMsgHeight);
+    }, dissolveTime + s.add.length * 450 + 400);
+  }
+
+  // Meter
+  setTimeout(() => updateMeter(s.meter), dissolveTime + 200);
+}
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= steps.length) {
+    gsap.to('#insightBox', { opacity: 1, duration: 0.7 });
+    return;
+  }
+  busy = true;
+  doStep(step);
+  const s = steps[step];
+  const totalTime = s.dissolve.length * 400 + s.add.length * 450 + 800;
+  setTimeout(() => busy = false, totalTime);
+}
+
+document.addEventListener('click', advance);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+gsap.fromTo('.label .ol, .label h2, .label .sub', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.2 });
+</script>
+
+</body>
+</html>

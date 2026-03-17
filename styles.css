@@ -1,0 +1,323 @@
+/* === Base Reset & Variables === */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #ffffff;
+    --bg-card: #f8f8f8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555555;
+    --text-muted: #888888;
+    --accent: #fabb43;
+    --accent-dark: #e5a530;
+    --gradient: linear-gradient(135deg, #fabb43 0%, #f59e0b 50%, #ea580c 100%);
+    --gradient-soft: linear-gradient(135deg, rgba(250,187,67,0.15) 0%, rgba(234,88,12,0.08) 100%);
+    --border: rgba(0, 0, 0, 0.08);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+/* === Progress Bar === */
+.progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background: var(--gradient);
+    width: 0%;
+    z-index: 1000;
+    transition: width 0.4s ease;
+}
+
+/* === Navigation === */
+.slide-nav {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 100;
+}
+
+.slide-counter {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-right: 0.25rem;
+}
+
+.nav-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.nav-btn:disabled:hover {
+    background: var(--bg-primary);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+/* === Presentation === */
+.presentation {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* === Slides === */
+.slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.slide.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.slide-content {
+    max-width: 1000px;
+    width: 100%;
+}
+
+/* === Typography === */
+.overline {
+    display: inline-block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+}
+
+h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+h1 .highlight {
+    color: var(--accent);
+}
+
+h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 2rem;
+}
+
+.subtitle {
+    font-size: 1.35rem;
+    color: var(--text-secondary);
+    max-width: 550px;
+    line-height: 1.5;
+}
+
+/* === Title Slide === */
+.title-slide {
+    text-align: left;
+}
+
+.center-slide {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* === Check List === */
+.check-list {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.5rem;
+}
+
+.check-icon {
+    font-size: 2rem;
+    font-weight: 700;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.check-item.negative .check-icon {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}
+
+.check-item.positive .check-icon {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.1);
+}
+
+.check-item.negative .check-text {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.check-item.positive .check-text {
+    color: var(--text-primary);
+}
+
+/* === Hidden Notes in HTML === */
+.notes.hidden {
+    display: none;
+}
+
+/* === Speaker Notes Panel === */
+.speaker-notes {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: #1a1a1a;
+    color: #fff;
+    z-index: 2000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+}
+
+.speaker-notes.visible {
+    right: 0;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #333;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+}
+
+.notes-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.notes-close:hover {
+    color: #fff;
+}
+
+.notes-content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #ccc;
+}
+
+.notes-content strong {
+    display: block;
+    color: var(--accent);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.notes-content strong:first-child {
+    margin-top: 0;
+}
+
+.notes-content ul {
+    margin: 0 0 1rem 0;
+    padding-left: 1.25rem;
+}
+
+.notes-content li {
+    margin-bottom: 0.35rem;
+}
+
+.notes-hint {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #333;
+    font-size: 0.75rem;
+    color: #666;
+    text-align: center;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .slide {
+        padding: 2rem;
+    }
+
+    .slide-nav {
+        bottom: 1rem;
+        right: 1rem;
+    }
+}

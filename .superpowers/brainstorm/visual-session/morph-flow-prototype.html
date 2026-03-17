@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morph Flow Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* The persistent words that morph through everything */
+  .word {
+    position: absolute;
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: none; /* GSAP handles everything */
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  /* Token chip appearance */
+  .word .token-bg {
+    position: absolute; top: -6px; left: -12px; right: -12px; bottom: -6px;
+    border-radius: 10px; opacity: 0; z-index: -1;
+  }
+  .word .token-id {
+    position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; color: #aaa; font-variant-numeric: tabular-nums;
+    opacity: 0; white-space: nowrap;
+  }
+
+  /* Attention arcs (SVG overlay) */
+  #arcs {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 5; pointer-events: none;
+  }
+  #arcs path {
+    fill: none; stroke: #fabb43; stroke-linecap: round;
+  }
+
+  /* Embedding clusters */
+  .cluster-halo {
+    position: absolute; border-radius: 50%; z-index: 1;
+    opacity: 0; pointer-events: none;
+  }
+
+  /* Section label */
+  .section-label {
+    position: fixed; top: 2.5rem; left: 3rem; z-index: 100;
+  }
+  .section-label .overline {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43; opacity: 0;
+  }
+  .section-label h2 {
+    font-size: 1.8rem; font-weight: 600; line-height: 1.25; opacity: 0; margin-top: 0.4rem;
+  }
+  .section-label h2 .hl { color: #fabb43; }
+  .section-label .sub {
+    font-size: 0.95rem; color: #999; margin-top: 0.4rem; opacity: 0; max-width: 420px; line-height: 1.5;
+  }
+
+  /* Stage indicator */
+  .stages {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .stage-pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e0e0e0; transition: all 0.4s;
+  }
+  .stage-pip.on { background: #fabb43; transform: scale(1.3); }
+  .stage-pip.done { background: #e5a530; }
+
+  .hint {
+    position: fixed; bottom: 1.5rem; right: 2rem;
+    font-size: 0.65rem; color: #ccc; z-index: 100;
+  }
+
+  /* Typewriter cursor */
+  .cursor {
+    display: inline-block; width: 2px; height: 1.1em;
+    background: #fabb43; vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* The big question text for stage 0 */
+  #questionText {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 50;
+  }
+  #questionText .q-overline {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43; margin-bottom: 1rem; opacity: 0;
+  }
+  #questionText h1 {
+    font-size: 3rem; font-weight: 600; line-height: 1.15; opacity: 0;
+  }
+  #questionText h1 .hl { color: #fabb43; }
+
+  /* Prompt input bar */
+  #promptBar {
+    position: fixed; bottom: 40%; left: 50%; transform: translateX(-50%);
+    background: #f8f8f8; border: 1px solid #e8e8e8; border-radius: 12px;
+    padding: 1rem 1.5rem; font-size: 1.1rem; color: #555;
+    max-width: 600px; width: 90%; opacity: 0; z-index: 50;
+  }
+  #promptBar .typed { color: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<!-- Stage 0: The Question -->
+<div id="questionText">
+  <div class="q-overline">Teil 1</div>
+  <h1>Was passiert, wenn du<br><span class="hl">Enter</span> drückst?</h1>
+</div>
+
+<div id="promptBar">
+  <span class="typed" id="typedText"></span><span class="cursor" id="typeCursor"></span>
+</div>
+
+<!-- Section label (morphs per stage) -->
+<div class="section-label" id="sectionLabel">
+  <div class="overline" id="secOverline">Schritt 1: Tokenisierung</div>
+  <h2 id="secHeadline">Text wird in <span class="hl">Bausteine</span> zerlegt</h2>
+  <div class="sub" id="secSub"></div>
+</div>
+
+<!-- The 6 words that persist and morph -->
+<div class="word" id="w0" style="opacity:0;">Der<div class="token-bg" style="background:#4a90d9;"></div><div class="token-id">874</div></div>
+<div class="word" id="w1" style="opacity:0;">Patent<div class="token-bg" style="background:#7c5cbf;"></div><div class="token-id">28431</div></div>
+<div class="word" id="w2" style="opacity:0;">anspruch<div class="token-bg" style="background:#e8853d;"></div><div class="token-id">15229</div></div>
+<div class="word" id="w3" style="opacity:0;">betrifft<div class="token-bg" style="background:#3daa8f;"></div><div class="token-id">67234</div></div>
+<div class="word" id="w4" style="opacity:0;">eine<div class="token-bg" style="background:#d94a6e;"></div><div class="token-id">1653</div></div>
+<div class="word" id="w5" style="opacity:0;">Vorrichtung<div class="token-bg" style="background:#4a90d9;"></div><div class="token-id">44521</div></div>
+
+<!-- Cluster halos for embedding stage -->
+<div class="cluster-halo" id="halo1" style="width:180px;height:140px;background:radial-gradient(circle,rgba(74,144,217,0.08) 0%,transparent 70%);"></div>
+<div class="cluster-halo" id="halo2" style="width:140px;height:120px;background:radial-gradient(circle,rgba(232,133,61,0.08) 0%,transparent 70%);"></div>
+
+<!-- SVG for attention arcs -->
+<svg id="arcs" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+
+<!-- Stage pips -->
+<div class="stages" id="stages"></div>
+<div class="hint">click / → to continue</div>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight;
+const words = ['w0','w1','w2','w3','w4','w5'].map(id => document.getElementById(id));
+const wordTexts = ['Der', 'Patent', 'anspruch', 'betrifft', 'eine', 'Vorrichtung'];
+const promptText = 'Der Patentanspruch betrifft eine Vorrichtung zum drahtlosen Laden';
+
+let stage = -1;
+const STAGES = 6;
+let busy = false;
+
+// Build stage pips
+const stagesEl = document.getElementById('stages');
+for (let i = 0; i < STAGES; i++) {
+  const pip = document.createElement('div');
+  pip.className = 'stage-pip';
+  pip.id = 'pip' + i;
+  stagesEl.appendChild(pip);
+}
+
+function updatePips() {
+  for (let i = 0; i < STAGES; i++) {
+    const p = document.getElementById('pip' + i);
+    p.className = 'stage-pip' + (i === stage ? ' on' : i < stage ? ' done' : '');
+  }
+}
+
+// === POSITIONS FOR EACH STAGE ===
+
+// Stage 1 (Tokens): horizontal line, centered
+const tokenPositions = wordTexts.map((w, i) => {
+  const totalWidth = 750;
+  const startX = (W - totalWidth) / 2;
+  const spacing = totalWidth / wordTexts.length;
+  return { x: startX + i * spacing, y: H * 0.55 };
+});
+
+// Stage 2 (Embeddings): semantic clusters
+const embeddingPositions = [
+  { x: W * 0.25, y: H * 0.38 },  // Der — near grammar
+  { x: W * 0.35, y: H * 0.30 },  // Patent — legal cluster
+  { x: W * 0.30, y: H * 0.42 },  // anspruch — legal cluster
+  { x: W * 0.62, y: H * 0.55 },  // betrifft — verb area
+  { x: W * 0.55, y: H * 0.65 },  // eine — grammar
+  { x: W * 0.68, y: H * 0.42 },  // Vorrichtung — technical
+];
+
+// Stage 3 (Attention): spread out horizontally for arcs
+const attentionPositions = wordTexts.map((w, i) => ({
+  x: W * 0.15 + i * (W * 0.70 / (wordTexts.length - 1)),
+  y: H * 0.6,
+}));
+
+// Stage 4 (shrink to dots → neural network teaser)
+const dotPositions = wordTexts.map((w, i) => ({
+  x: W * 0.12,
+  y: H * 0.35 + i * 28,
+}));
+
+// === STAGE TRANSITIONS ===
+
+function showLabel(overline, headline, sub) {
+  const o = document.getElementById('secOverline');
+  const h = document.getElementById('secHeadline');
+  const s = document.getElementById('secSub');
+  o.textContent = overline;
+  h.innerHTML = headline;
+  s.textContent = sub || '';
+  gsap.fromTo([o, h, s], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' });
+}
+
+function hideLabel() {
+  const els = [document.getElementById('secOverline'), document.getElementById('secHeadline'), document.getElementById('secSub')];
+  return gsap.to(els, { opacity: 0, y: -15, duration: 0.3, ease: 'power2.in' });
+}
+
+// Stage 0: Question + Typewriter
+function stage0() {
+  const q = document.getElementById('questionText');
+  const qEls = q.querySelectorAll('.q-overline, h1');
+  gsap.to(qEls, { opacity: 1, duration: 0.8, stagger: 0.2, ease: 'power2.out' });
+
+  // Show prompt bar after delay
+  gsap.to('#promptBar', { opacity: 1, delay: 1.2, duration: 0.5 });
+
+  // Typewriter
+  const typed = document.getElementById('typedText');
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < promptText.length) {
+      typed.textContent = promptText.substring(0, i + 1);
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 45);
+}
+
+// Stage 1: Tokenize — question fades, words appear as tokens
+function stage1() {
+  const tl = gsap.timeline();
+
+  // Fade out question and prompt bar
+  tl.to('#questionText', { opacity: 0, y: -30, duration: 0.5 });
+  tl.to('#promptBar', { opacity: 0, y: 30, duration: 0.4 }, '<0.1');
+  tl.to('#typeCursor', { opacity: 0, duration: 0.1 }, '<');
+
+  // Show section label
+  tl.call(() => showLabel('Schritt 1: Tokenisierung', 'Text wird in <span class="hl">Bausteine</span> zerlegt', 'Computer können nicht mit Text arbeiten — zuerst wird er in nummerierte Bausteine zerlegt.'), null, '+=0.2');
+
+  // Words appear in a line (like the sentence)
+  const sentenceY = H * 0.5;
+  const totalW = 680;
+  const startX = (W - totalW) / 2;
+  const spacings = [0, 60, 130, 260, 370, 440]; // approximate word positions in sentence
+
+  words.forEach((w, i) => {
+    gsap.set(w, { left: startX + spacings[i], top: sentenceY, opacity: 0, fontSize: '1.8rem', color: '#1a1a1a' });
+  });
+
+  // Fade in as continuous sentence
+  tl.to(words, { opacity: 1, duration: 0.5, stagger: 0.06 }, '+=0.3');
+
+  // Pause — then SPLIT into tokens
+  tl.to({}, { duration: 0.8 }); // pause
+
+  // Move to token positions with spacing
+  words.forEach((w, i) => {
+    tl.to(w, {
+      left: tokenPositions[i].x,
+      top: tokenPositions[i].y,
+      duration: 0.7,
+      ease: 'back.out(1.2)',
+    }, i === 0 ? '+=0' : '<0.05');
+  });
+
+  // Show token backgrounds
+  tl.to('.token-bg', { opacity: 1, duration: 0.4, stagger: 0.05 }, '-=0.3');
+
+  // Change text color to white
+  tl.to(words, { color: '#ffffff', duration: 0.3, stagger: 0.05 }, '-=0.3');
+
+  // Show token IDs
+  tl.to('.token-id', { opacity: 1, duration: 0.4, stagger: 0.06 }, '+=0.2');
+}
+
+// Stage 2: Embeddings — tokens float to semantic positions
+function stage2() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+
+  // Hide token IDs
+  tl.to('.token-id', { opacity: 0, duration: 0.3 }, '+=0.1');
+
+  // Shrink token backgrounds slightly
+  tl.to('.token-bg', { opacity: 0.6, duration: 0.3 }, '<');
+
+  // Show new label
+  tl.call(() => showLabel('Schritt 2: Embeddings', 'Wörter werden zu <span class="hl">Punkten im Raum</span>', 'Ähnliche Bedeutung = nahe beieinander. "Patent" und "Anspruch" clustern zusammen.'), null, '+=0.1');
+
+  // Float words to embedding positions
+  words.forEach((w, i) => {
+    tl.to(w, {
+      left: embeddingPositions[i].x,
+      top: embeddingPositions[i].y,
+      duration: 1.2,
+      ease: 'power2.inOut',
+    }, i === 0 ? '+=0.3' : '<0.08');
+  });
+
+  // Show cluster halos
+  const h1 = document.getElementById('halo1');
+  const h2 = document.getElementById('halo2');
+  gsap.set(h1, { left: W * 0.22, top: H * 0.26 });
+  gsap.set(h2, { left: W * 0.56, top: H * 0.38 });
+  tl.to([h1, h2], { opacity: 1, duration: 0.8, stagger: 0.2 }, '-=0.5');
+
+  // Make words slightly smaller, more dot-like
+  tl.to(words, { fontSize: '1.3rem', duration: 0.5 }, '-=0.6');
+}
+
+// Stage 3: Attention — words spread out, arcs appear
+function stage3() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+
+  // Hide cluster halos
+  tl.to('.cluster-halo', { opacity: 0, duration: 0.3 });
+
+  // Show label
+  tl.call(() => showLabel('Schritt 3: Attention', 'Wörter <span class="hl">beobachten</span> einander', '"anspruch" achtet auf "Patent" — so versteht das Modell Kontext und Bezüge.'), null, '+=0.1');
+
+  // Move to attention positions (horizontal spread)
+  words.forEach((w, i) => {
+    tl.to(w, {
+      left: attentionPositions[i].x,
+      top: attentionPositions[i].y,
+      fontSize: '1.2rem',
+      duration: 0.8,
+      ease: 'power2.inOut',
+    }, i === 0 ? '+=0.3' : '<0.05');
+  });
+
+  // Draw attention arcs
+  tl.call(() => drawArcs(), null, '+=0.3');
+}
+
+function drawArcs() {
+  const svg = document.getElementById('arcs');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+
+  const arcsData = [
+    // [fromIndex, toIndex, strength]
+    [1, 2, 3],    // Patent → anspruch (strong)
+    [0, 1, 1.5],  // Der → Patent
+    [3, 5, 2],    // betrifft → Vorrichtung (strong)
+    [4, 5, 1],    // eine → Vorrichtung
+    [0, 3, 0.8],  // Der → betrifft (weak)
+  ];
+
+  arcsData.forEach(([fi, ti, strength], idx) => {
+    const fromEl = words[fi];
+    const toEl = words[ti];
+    const fx = parseFloat(fromEl.style.left) + fromEl.offsetWidth / 2;
+    const fy = parseFloat(fromEl.style.top);
+    const tx = parseFloat(toEl.style.left) + toEl.offsetWidth / 2;
+    const ty = parseFloat(toEl.style.top);
+
+    const midX = (fx + tx) / 2;
+    const arcHeight = Math.abs(tx - fx) * 0.35 + 30;
+    const midY = fy - arcHeight;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${fx} ${fy} Q ${midX} ${midY} ${tx} ${ty}`);
+    path.setAttribute('stroke-width', strength);
+    path.setAttribute('opacity', Math.min(0.8, strength * 0.25));
+
+    // Animate path drawing
+    const length = path.getTotalLength ? path.getTotalLength() : 300;
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+
+    svg.appendChild(path);
+
+    gsap.to(path.style, {
+      strokeDashoffset: 0,
+      duration: 0.8,
+      delay: idx * 0.15,
+      ease: 'power2.out',
+    });
+  });
+}
+
+// Stage 4: Words shrink to dots, enter neural network
+function stage4() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+
+  // Fade out arcs
+  tl.to('#arcs path', { opacity: 0, duration: 0.4 });
+
+  // Show label
+  tl.call(() => showLabel('Schritt 4: Das Neuronale Netz', 'Dein Prompt <span class="hl">fließt</span> durch das Netz', 'Die Token werden durch Hunderte Schichten verarbeitet — und am Ende kommt die Antwort.'), null, '+=0.1');
+
+  // Shrink words to small dots, move to left entry point
+  tl.to('.token-bg', { opacity: 0, duration: 0.3 }, '+=0.2');
+  tl.to(words, { color: '#1a1a1a', duration: 0.3 }, '<');
+
+  words.forEach((w, i) => {
+    tl.to(w, {
+      left: dotPositions[i].x,
+      top: dotPositions[i].y,
+      fontSize: '0.8rem',
+      duration: 0.8,
+      ease: 'power3.inOut',
+    }, i === 0 ? '+=0.1' : '<0.06');
+  });
+
+  // Then fade words out as they "enter" the network
+  tl.to(words, {
+    left: W * 0.08,
+    opacity: 0,
+    duration: 0.6,
+    stagger: 0.08,
+    ease: 'power2.in',
+  }, '+=0.5');
+
+  // Here the neural network canvas would take over
+  // For now, show a placeholder
+  tl.call(() => {
+    const placeholder = document.createElement('div');
+    placeholder.id = 'nnPlaceholder';
+    placeholder.style.cssText = `
+      position: fixed; top: 50%; left: 55%; transform: translate(-50%, -50%);
+      font-size: 1rem; color: #ccc; text-align: center; z-index: 5;
+      border: 2px dashed #e0e0e0; border-radius: 16px; padding: 3rem 4rem;
+    `;
+    placeholder.innerHTML = '[ Hier: 3D Neural Network Canvas ]<br><span style="font-size:0.8rem;">Flat → Rotate → Activate</span>';
+    document.body.appendChild(placeholder);
+    gsap.fromTo(placeholder, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+  }, null, '+=0.2');
+}
+
+// Stage 5: Next Token Prediction
+function stage5() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+
+  // Remove NN placeholder
+  const ph = document.getElementById('nnPlaceholder');
+  if (ph) tl.to(ph, { opacity: 0, duration: 0.3, onComplete: () => ph.remove() });
+
+  tl.call(() => showLabel('Das Kernprinzip', 'KI sagt das <span class="hl">wahrscheinlichste nächste Wort</span> vorher', 'Das Modell WEISS die Antwort nicht — es rät das plausibelste nächste Wort. Wort für Wort.'), null, '+=0.2');
+
+  // Build the next-token visualization
+  tl.call(() => {
+    const container = document.createElement('div');
+    container.id = 'ntpViz';
+    container.style.cssText = `position:fixed; top:45%; left:50%; transform:translate(-50%,-50%); z-index:20;`;
+
+    // The sentence being built
+    const sentence = document.createElement('div');
+    sentence.id = 'ntpSentence';
+    sentence.style.cssText = 'font-size:1.6rem; margin-bottom:2rem; color:#333;';
+    sentence.innerHTML = '<span style="color:#1a1a1a">Der Patent</span><span class="cursor"></span>';
+    container.appendChild(sentence);
+
+    // Probability bars
+    const barsData = [
+      { word: 'anspruch', pct: 34, top: true },
+      { word: 'inhaber', pct: 22, mid: true },
+      { word: 'schutz', pct: 18, mid: true },
+      { word: 'anwalt', pct: 11, low: true },
+      { word: 'amt', pct: 7, low: true },
+    ];
+
+    const barsContainer = document.createElement('div');
+    barsContainer.style.cssText = 'display:flex; flex-direction:column; gap:8px; width:450px;';
+
+    barsData.forEach((b, i) => {
+      const row = document.createElement('div');
+      row.className = 'ntp-row';
+      row.style.cssText = 'display:flex; align-items:center; gap:12px; opacity:0;';
+      row.innerHTML = `
+        <div style="width:90px; text-align:right; font-size:1rem; color:#555; font-weight:500;">${b.word}</div>
+        <div style="flex:1; height:24px; background:#f0f0f0; border-radius:6px; overflow:hidden;">
+          <div class="ntp-bar" style="height:100%; width:0%; border-radius:6px; background:${b.top ? 'linear-gradient(90deg,#fabb43,#ea580c)' : b.mid ? '#fabb43' : '#e0d5c0'}; ${b.mid ? 'opacity:0.6' : ''}"></div>
+        </div>
+        <div style="width:35px; font-size:0.8rem; color:#aaa;">${b.pct}%</div>
+      `;
+      barsContainer.appendChild(row);
+    });
+
+    container.appendChild(barsContainer);
+
+    // Insight box
+    const insight = document.createElement('div');
+    insight.style.cssText = 'margin-top:2rem; padding:1rem 1.2rem; background:#fffbeb; border-left:4px solid #fabb43; border-radius:0 8px 8px 0; font-size:0.9rem; color:#92400e; max-width:450px; opacity:0;';
+    insight.id = 'ntpInsight';
+    insight.innerHTML = '⚡ <strong>Das Modell WEISS die Antwort nicht.</strong> Es sagt das wahrscheinlichste nächste Wort vorher — Wort für Wort.';
+    container.appendChild(insight);
+
+    document.body.appendChild(container);
+
+    // Animate bars in
+    const rows = barsContainer.querySelectorAll('.ntp-row');
+    gsap.to(rows, { opacity: 1, duration: 0.4, stagger: 0.1, delay: 0.3 });
+
+    // Animate bar fills
+    const bars = barsContainer.querySelectorAll('.ntp-bar');
+    barsData.forEach((b, i) => {
+      gsap.to(bars[i], { width: b.pct * 2 + '%', duration: 0.8, delay: 0.5 + i * 0.12, ease: 'power2.out' });
+    });
+
+    // Show insight
+    gsap.to('#ntpInsight', { opacity: 1, delay: 1.8, duration: 0.6 });
+  }, null, '+=0.3');
+}
+
+// === STAGE CONTROLLER ===
+const stageFns = [stage0, stage1, stage2, stage3, stage4, stage5];
+
+function advance() {
+  if (busy) return;
+  if (stage >= STAGES - 1) return;
+  busy = true;
+  stage++;
+  updatePips();
+  stageFns[stage]();
+  setTimeout(() => busy = false, 1500);
+}
+
+// Input
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.stages')) return;
+  advance();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    advance();
+  }
+});
+
+// Start
+advance();
+</script>
+
+</body>
+</html>

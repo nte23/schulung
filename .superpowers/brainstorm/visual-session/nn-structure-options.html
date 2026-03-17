@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network Structure Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 2rem; }
+  h1 { text-align: center; font-size: 1.4rem; color: #555; margin-bottom: 0.5rem; font-weight: 400; }
+  .subtitle { text-align: center; font-size: 0.9rem; color: #999; margin-bottom: 2.5rem; }
+
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1200px; margin: 0 auto; }
+
+  .option-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    border: 3px solid transparent;
+  }
+  .option-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+  .option-card.selected { border-color: #fabb43; }
+
+  .option-canvas {
+    width: 100%; height: 320px; position: relative; overflow: hidden;
+    background: #ffffff;
+  }
+  .option-info { padding: 1.25rem 1.5rem; border-top: 1px solid #f0f0f0; }
+  .option-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.35rem; }
+  .option-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .option-desc { font-size: 0.8rem; color: #777; line-height: 1.5; }
+
+  /* Dot styles */
+  .dot {
+    position: absolute; border-radius: 50%;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .dot.idle { background: #c8d6e5; }
+  .dot.blue { background: #4a90d9; box-shadow: 0 0 4px rgba(74,144,217,0.3); }
+  .dot.active { background: #fabb43; box-shadow: 0 0 6px rgba(250,187,67,0.5); }
+  .dot.hot { background: #ea580c; box-shadow: 0 0 10px rgba(234,88,12,0.6); }
+
+  /* Connection lines via SVG */
+  .connections {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .prompt-label {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.65rem; color: #bbb; writing-mode: vertical-rl;
+  }
+  .output-label {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.65rem; color: #bbb; writing-mode: vertical-rl;
+  }
+  .arrow-in {
+    position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
+    color: #fabb43; font-size: 1.2rem;
+  }
+  .arrow-out {
+    position: absolute; right: 28px; top: 50%; transform: translateY(-50%);
+    color: #fabb43; font-size: 1.2rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>Neural Network — Structure Options</h1>
+<p class="subtitle">Which spatial arrangement feels right for the "brain" visualization? Click to select.</p>
+
+<div class="options-grid">
+
+  <div class="option-card" onclick="this.classList.toggle('selected')">
+    <div class="option-canvas" id="canvas-cube">
+      <div class="prompt-label">INPUT</div>
+      <div class="output-label">OUTPUT</div>
+      <div class="arrow-in">→</div>
+      <div class="arrow-out">→</div>
+    </div>
+    <div class="option-info">
+      <div class="option-label">Option A</div>
+      <div class="option-title">3D Cube / Lattice</div>
+      <div class="option-desc">Dots arranged in a regular 3D grid projected to 2D with perspective. Structured, orderly, shows depth. Rotation animation possible. Feels "engineered" and systematic.</div>
+    </div>
+  </div>
+
+  <div class="option-card" onclick="this.classList.toggle('selected')">
+    <div class="option-canvas" id="canvas-layers">
+      <div class="prompt-label">INPUT</div>
+      <div class="output-label">OUTPUT</div>
+      <div class="arrow-in">→</div>
+      <div class="arrow-out">→</div>
+    </div>
+    <div class="option-info">
+      <div class="option-label">Option B</div>
+      <div class="option-title">Layered Columns (Classic NN)</div>
+      <div class="option-desc">Vertical layers from left to right — like a classic neural network diagram but massive. Shows data flow direction clearly. Connections between layers visible. Most "technically accurate".</div>
+    </div>
+  </div>
+
+  <div class="option-card" onclick="this.classList.toggle('selected')">
+    <div class="option-canvas" id="canvas-sphere">
+      <div class="prompt-label">INPUT</div>
+      <div class="output-label">OUTPUT</div>
+      <div class="arrow-in">→</div>
+      <div class="arrow-out">→</div>
+    </div>
+    <div class="option-info">
+      <div class="option-label">Option C</div>
+      <div class="option-title">3D Sphere with Depth</div>
+      <div class="option-desc">Dots on the surface and inside a sphere with perspective (front dots bigger, back dots smaller/faded). Feels organic, brain-like. Slow rotation. Activation lights up a "hemisphere".</div>
+    </div>
+  </div>
+
+  <div class="option-card" onclick="this.classList.toggle('selected')">
+    <div class="option-canvas" id="canvas-hybrid">
+      <div class="prompt-label">INPUT</div>
+      <div class="output-label">OUTPUT</div>
+      <div class="arrow-in">→</div>
+      <div class="arrow-out">→</div>
+    </div>
+    <div class="option-info">
+      <div class="option-label">Option D</div>
+      <div class="option-title">3D Cube + Layered Flow</div>
+      <div class="option-desc">A cube structure but with subtle vertical layer grouping inside. Best of both: 3D depth + visible left-to-right data flow. Structured but with depth. Activation wave moves through layers.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Helper: project 3D point to 2D with perspective
+function project(x3, y3, z3, cx, cy, fov) {
+  const scale = fov / (fov + z3);
+  return { x: cx + x3 * scale, y: cy + y3 * scale, s: scale };
+}
+
+// Helper: create a dot element
+function makeDot(container, x, y, size, className) {
+  const d = document.createElement('div');
+  d.className = 'dot ' + className;
+  d.style.left = x - size/2 + 'px';
+  d.style.top = y - size/2 + 'px';
+  d.style.width = size + 'px';
+  d.style.height = size + 'px';
+  d.style.opacity = Math.max(0.3, Math.min(1, size / 6));
+  container.appendChild(d);
+  return d;
+}
+
+// Helper: create SVG connections
+function makeConnections(container, points, maxDist) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'connections');
+  svg.setAttribute('viewBox', `0 0 ${container.offsetWidth} ${container.offsetHeight}`);
+
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dx = points[i].x - points[j].x;
+      const dy = points[i].y - points[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < maxDist) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', points[i].x);
+        line.setAttribute('y1', points[i].y);
+        line.setAttribute('x2', points[j].x);
+        line.setAttribute('y2', points[j].y);
+        const opacity = (1 - dist/maxDist) * 0.12;
+        const isActive = points[i].active && points[j].active;
+        line.setAttribute('stroke', isActive ? '#fabb43' : '#cbd5e1');
+        line.setAttribute('stroke-width', isActive ? '1' : '0.5');
+        line.setAttribute('opacity', isActive ? opacity * 3 : opacity);
+        svg.appendChild(line);
+      }
+    }
+  }
+  container.insertBefore(svg, container.firstChild);
+}
+
+// ===== OPTION A: 3D CUBE =====
+(function() {
+  const c = document.getElementById('canvas-cube');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const cx = W/2, cy = H/2;
+  const gridSize = 8;
+  const spacing = 28;
+  const fov = 400;
+  const angleX = 0.35, angleY = 0.55;
+  const points = [];
+
+  for (let ix = 0; ix < gridSize; ix++) {
+    for (let iy = 0; iy < gridSize; iy++) {
+      for (let iz = 0; iz < gridSize; iz++) {
+        // Skip some interior points for visual clarity
+        if (Math.random() < 0.45) continue;
+
+        let x = (ix - gridSize/2 + 0.5) * spacing;
+        let y = (iy - gridSize/2 + 0.5) * spacing;
+        let z = (iz - gridSize/2 + 0.5) * spacing;
+
+        // Rotate around Y
+        let x1 = x * Math.cos(angleY) - z * Math.sin(angleY);
+        let z1 = x * Math.sin(angleY) + z * Math.cos(angleY);
+        // Rotate around X
+        let y1 = y * Math.cos(angleX) - z1 * Math.sin(angleX);
+        let z2 = y * Math.sin(angleX) + z1 * Math.cos(angleX);
+
+        const p = project(x1, y1, z2, cx, cy, fov);
+        const size = p.s * 5;
+
+        // Activation: left-front region
+        const normX = (ix / gridSize);
+        const isActive = normX < 0.5 && iy > 2 && iy < 6;
+        const isHot = normX < 0.3 && iy > 3 && iy < 5 && iz > 2 && iz < 6;
+
+        const cls = isHot ? 'hot' : isActive ? 'active' : normX < 0.6 ? 'blue' : 'idle';
+        makeDot(c, p.x, p.y, size, cls);
+        points.push({ x: p.x, y: p.y, active: isHot || isActive });
+      }
+    }
+  }
+  makeConnections(c, points, 35);
+})();
+
+// ===== OPTION B: LAYERED COLUMNS =====
+(function() {
+  const c = document.getElementById('canvas-layers');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const layers = [6, 10, 14, 18, 14, 10, 6];
+  const layerX = W / (layers.length + 1);
+  const points = [];
+
+  layers.forEach((count, li) => {
+    const x = layerX * (li + 1);
+    const ySpacing = Math.min(28, (H - 60) / count);
+    const startY = (H - (count - 1) * ySpacing) / 2;
+
+    for (let ni = 0; ni < count; ni++) {
+      const y = startY + ni * ySpacing;
+      const size = 5;
+
+      const isActive = li < 4;
+      const isHot = li >= 1 && li <= 3 && ni > count * 0.3 && ni < count * 0.7;
+      const cls = isHot ? 'hot' : isActive ? 'active' : 'blue';
+
+      makeDot(c, x, y, size, cls);
+      points.push({ x, y, layer: li, active: isHot || isActive });
+    }
+  });
+
+  // Draw connections between adjacent layers
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'connections');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const layerPoints = [];
+  let idx = 0;
+  layers.forEach((count) => {
+    layerPoints.push(points.slice(idx, idx + count));
+    idx += count;
+  });
+
+  for (let li = 0; li < layerPoints.length - 1; li++) {
+    const from = layerPoints[li];
+    const to = layerPoints[li + 1];
+    for (let i = 0; i < from.length; i++) {
+      for (let j = 0; j < to.length; j++) {
+        if (Math.random() < 0.15) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', from[i].x);
+          line.setAttribute('y1', from[i].y);
+          line.setAttribute('x2', to[j].x);
+          line.setAttribute('y2', to[j].y);
+          const active = from[i].active && to[j].active;
+          line.setAttribute('stroke', active ? '#fabb43' : '#e2e8f0');
+          line.setAttribute('stroke-width', '0.5');
+          line.setAttribute('opacity', active ? '0.25' : '0.08');
+          svg.appendChild(line);
+        }
+      }
+    }
+  }
+  c.insertBefore(svg, c.firstChild);
+})();
+
+// ===== OPTION C: 3D SPHERE =====
+(function() {
+  const c = document.getElementById('canvas-sphere');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const cx = W/2, cy = H/2;
+  const radius = 120;
+  const fov = 500;
+  const points = [];
+
+  // Fibonacci sphere for even distribution
+  const n = 300;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    const inclination = Math.acos(1 - 2 * t);
+    const azimuth = goldenAngle * i;
+
+    const r = radius * (0.3 + Math.random() * 0.7); // some inside too
+    let x = r * Math.sin(inclination) * Math.cos(azimuth);
+    let y = r * Math.sin(inclination) * Math.sin(azimuth);
+    let z = r * Math.cos(inclination);
+
+    // Slight rotation
+    const ay = 0.3;
+    const x1 = x * Math.cos(ay) - z * Math.sin(ay);
+    const z1 = x * Math.sin(ay) + z * Math.cos(ay);
+
+    const p = project(x1, y, z1, cx, cy, fov);
+    const size = p.s * 5.5;
+
+    // Activation: upper-left hemisphere
+    const isHot = x1 < -20 && y < 20 && z1 > -30;
+    const isActive = x1 < 30 && z1 > -50;
+
+    const cls = isHot ? 'hot' : isActive ? 'active' : z1 > 0 ? 'blue' : 'idle';
+    const dot = makeDot(c, p.x, p.y, size, cls);
+    dot.style.zIndex = Math.round(z1 + 200);
+    points.push({ x: p.x, y: p.y, active: isHot || isActive });
+  }
+  makeConnections(c, points, 25);
+})();
+
+// ===== OPTION D: CUBE + LAYERED FLOW =====
+(function() {
+  const c = document.getElementById('canvas-hybrid');
+  const W = c.offsetWidth, H = c.offsetHeight;
+  const cx = W/2, cy = H/2;
+  const fov = 450;
+  const angleX = 0.25, angleY = 0.4;
+  const points = [];
+
+  // 6 layers along X axis, each layer is a 2D grid in YZ
+  const numLayers = 7;
+  const gridPerLayer = 6;
+  const layerSpacing = 35;
+  const nodeSpacing = 22;
+
+  for (let li = 0; li < numLayers; li++) {
+    const nodesInLayer = li < 2 ? 4 : li > 4 ? 4 : gridPerLayer;
+
+    for (let yi = 0; yi < nodesInLayer; yi++) {
+      for (let zi = 0; zi < nodesInLayer; zi++) {
+        if (Math.random() < 0.3) continue;
+
+        let x = (li - numLayers/2 + 0.5) * layerSpacing;
+        let y = (yi - nodesInLayer/2 + 0.5) * nodeSpacing;
+        let z = (zi - nodesInLayer/2 + 0.5) * nodeSpacing;
+
+        // Rotate
+        let x1 = x * Math.cos(angleY) - z * Math.sin(angleY);
+        let z1 = x * Math.sin(angleY) + z * Math.cos(angleY);
+        let y1 = y * Math.cos(angleX) - z1 * Math.sin(angleX);
+        let z2 = y * Math.sin(angleX) + z1 * Math.cos(angleX);
+
+        const p = project(x1, y1, z2, cx, cy, fov);
+        const size = p.s * 5;
+
+        // Activation wave follows layers
+        const isHot = li >= 2 && li <= 4 && yi > 1 && yi < nodesInLayer - 1;
+        const isActive = li >= 1 && li <= 5;
+        const cls = isHot ? 'hot' : isActive ? 'active' : 'blue';
+
+        makeDot(c, p.x, p.y, size, cls);
+        points.push({ x: p.x, y: p.y, layer: li, active: isHot || isActive });
+      }
+    }
+  }
+  makeConnections(c, points, 30);
+})();
+</script>
+
+</body>
+</html>

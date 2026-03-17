@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN Style Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; padding: 2rem; overflow-y: auto; }
+
+  h1 { text-align: center; font-size: 1.3rem; color: #555; margin-bottom: 0.3rem; }
+  .sub { text-align: center; font-size: 0.8rem; color: #999; margin-bottom: 2rem; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
+
+  .option {
+    background: white; border-radius: 14px; border: 2px solid #eee;
+    overflow: hidden; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .option:hover { border-color: rgba(250,187,67,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+
+  .option canvas { display: block; width: 100%; height: 280px; }
+
+  .option-info { padding: 1rem 1.2rem; border-top: 1px solid #f0f0f0; }
+  .option-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fabb43; margin-bottom: 0.25rem; }
+  .option-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .option-desc { font-size: 0.72rem; color: #888; line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<h1>Neural Network Style — Pick one</h1>
+<div class="sub">Each shows the full flow: Input text → numbers → network fires → output. All looped.</div>
+
+<div class="grid">
+
+  <!-- A: Horizontal layers with particles flowing through -->
+  <div class="option">
+    <canvas id="cA" width="1000" height="560"></canvas>
+    <div class="option-info">
+      <div class="option-label">Option A</div>
+      <div class="option-title">Particle Flow — Horizontal Layers</div>
+      <div class="option-desc">Clean vertical columns. Particles stream left to right, connections flash as they pass. Orderly, technical, like a circuit board.</div>
+    </div>
+  </div>
+
+  <!-- B: Organic blob with ripples -->
+  <div class="option">
+    <canvas id="cB" width="1000" height="560"></canvas>
+    <div class="option-info">
+      <div class="option-label">Option B</div>
+      <div class="option-title">Organic Blob — Ripple Waves</div>
+      <div class="option-desc">No grid structure. Organic cloud of dots. Input enters left, ripple wave spreads through like a stone in water. More brain-like, less engineered.</div>
+    </div>
+  </div>
+
+  <!-- C: Circuit board / chip -->
+  <div class="option">
+    <canvas id="cC" width="1000" height="560"></canvas>
+    <div class="option-info">
+      <div class="option-label">Option C</div>
+      <div class="option-title">Circuit Board — Right Angles</div>
+      <div class="option-desc">Nodes on a grid connected with straight horizontal/vertical lines like a PCB. Signals travel along paths. Very "computer chip" aesthetic.</div>
+    </div>
+  </div>
+
+  <!-- D: Constellation / starfield -->
+  <div class="option">
+    <canvas id="cD" width="1000" height="560"></canvas>
+    <div class="option-info">
+      <div class="option-label">Option D</div>
+      <div class="option-title">Constellation — Starfield</div>
+      <div class="option-desc">Sparse, elegant dots like stars. Faint connecting lines appear only when nodes activate. Dark dots on white, minimal. Signals trace paths like shooting stars.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const dpr = Math.min(devicePixelRatio, 2);
+
+function setupCanvas(id) {
+  const c = document.getElementById(id);
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * dpr;
+  c.height = rect.height * dpr;
+  c.style.width = rect.width + 'px';
+  c.style.height = rect.height + 'px';
+  return { c, ctx: c.getContext('2d'), w: c.width, h: c.height };
+}
+
+// ===== OPTION A: Particle Flow Layers =====
+(function() {
+  const { c, ctx, w, h } = setupCanvas('cA');
+  const LAYERS = 6;
+  const NODES_PER = 8;
+  const nodes = [];
+  const particles = [];
+
+  for (let l = 0; l < LAYERS; l++) {
+    const x = w * 0.15 + (w * 0.7) * l / (LAYERS - 1);
+    for (let n = 0; n < NODES_PER; n++) {
+      const y = h * 0.15 + (h * 0.7) * n / (NODES_PER - 1);
+      nodes.push({ x, y, l, activation: 0 });
+    }
+  }
+
+  function spawnParticle() {
+    particles.push({
+      x: w * 0.05, y: h * 0.3 + Math.random() * h * 0.4,
+      vx: 2.5 * dpr + Math.random() * 1.5 * dpr, vy: (Math.random() - 0.5) * 0.8 * dpr,
+      life: 1, layer: 0
+    });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    // Input label
+    ctx.font = `${10 * dpr}px Inter`; ctx.fillStyle = '#ccc'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w * 0.05, h * 0.08);
+    ctx.fillText('OUTPUT', w * 0.95, h * 0.08);
+
+    if (Math.random() < 0.08) spawnParticle();
+
+    // Update particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += (Math.random() - 0.5) * 0.3 * dpr;
+
+      // Activate nearby nodes
+      for (const n of nodes) {
+        const dx = p.x - n.x, dy = p.y - n.y;
+        if (Math.sqrt(dx*dx + dy*dy) < 30 * dpr) {
+          n.activation = Math.min(1, n.activation + 0.15);
+        }
+      }
+
+      if (p.x > w * 0.95) particles.splice(i, 1);
+    }
+
+    // Edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        if (Math.abs(nodes[i].l - nodes[j].l) !== 1) continue;
+        const act = Math.min(nodes[i].activation, nodes[j].activation);
+        if (act > 0.05) {
+          ctx.strokeStyle = `rgba(250,160,30,${act * 0.3})`;
+          ctx.lineWidth = (0.5 + act * 1.5) * dpr;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+
+    // Nodes
+    for (const n of nodes) {
+      n.activation *= 0.96;
+      const s = (2 + n.activation * 3) * dpr;
+      ctx.fillStyle = n.activation > 0.2 ? `rgba(250,160,30,${0.3 + n.activation * 0.7})` : 'rgba(0,0,0,0.1)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Particles
+    for (const p of particles) {
+      ctx.fillStyle = `rgba(250,160,30,0.8)`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2 * dpr, 0, Math.PI * 2); ctx.fill();
+    }
+
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== OPTION B: Organic Blob Ripple =====
+(function() {
+  const { c, ctx, w, h } = setupCanvas('cB');
+  const cx = w / 2, cy = h / 2;
+  const nodes = [];
+  let rippleTime = -1;
+
+  for (let i = 0; i < 200; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * Math.min(w, h) * 0.35;
+    nodes.push({
+      x: cx + Math.cos(a) * r + (Math.random() - 0.5) * 20 * dpr,
+      y: cy + Math.sin(a) * r + (Math.random() - 0.5) * 20 * dpr,
+      activation: 0, phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.font = `${10 * dpr}px Inter`; ctx.fillStyle = '#ccc'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w * 0.08, h * 0.08);
+    ctx.fillText('OUTPUT', w * 0.92, h * 0.08);
+
+    // Spawn ripple periodically from left
+    if (Math.sin(t * 0.8) > 0.95) rippleTime = t;
+
+    // Update activations based on ripple wave
+    if (rippleTime > 0) {
+      const elapsed = (t - rippleTime) * 150 * dpr;
+      for (const n of nodes) {
+        const distFromLeft = n.x - w * 0.1;
+        const diff = Math.abs(distFromLeft - elapsed);
+        if (diff < 40 * dpr) {
+          n.activation = Math.max(n.activation, 0.8 * (1 - diff / (40 * dpr)));
+        }
+      }
+      if (elapsed > w) rippleTime = -1;
+    }
+
+    // Edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 40 * dpr) {
+          const act = Math.min(nodes[i].activation, nodes[j].activation);
+          ctx.strokeStyle = act > 0.15 ? `rgba(250,160,30,${act * 0.35})` : `rgba(0,0,0,0.03)`;
+          ctx.lineWidth = (0.3 + act * 1.2) * dpr;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+
+    for (const n of nodes) {
+      n.activation *= 0.97;
+      const s = (1.5 + n.activation * 3) * dpr;
+      const breathe = 1 + Math.sin(t + n.phase) * 0.05;
+      if (n.activation > 0.15) {
+        const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, s * 3);
+        gr.addColorStop(0, `rgba(250,160,30,${n.activation * 0.2})`);
+        gr.addColorStop(1, 'rgba(250,160,30,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(n.x, n.y, s * 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = n.activation > 0.15 ? `rgba(250,140,20,${0.3 + n.activation * 0.7})` : 'rgba(0,0,0,0.08)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s * breathe, 0, Math.PI * 2); ctx.fill();
+    }
+
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== OPTION C: Circuit Board =====
+(function() {
+  const { c, ctx, w, h } = setupCanvas('cC');
+  const COLS = 12, ROWS = 6;
+  const nodes = [];
+  const signals = [];
+
+  for (let col = 0; col < COLS; col++) {
+    for (let row = 0; row < ROWS; row++) {
+      nodes.push({
+        x: w * 0.1 + (w * 0.8) * col / (COLS - 1),
+        y: h * 0.15 + (h * 0.7) * row / (ROWS - 1),
+        col, row, activation: 0
+      });
+    }
+  }
+
+  // Build edges: horizontal and vertical only (circuit board style)
+  const edges = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dc = Math.abs(nodes[i].col - nodes[j].col);
+      const dr = Math.abs(nodes[i].row - nodes[j].row);
+      if ((dc === 1 && dr === 0) || (dc === 0 && dr === 1)) {
+        if (Math.random() < 0.7) edges.push([i, j]);
+      }
+    }
+  }
+
+  function spawnSignal() {
+    const startNode = Math.floor(Math.random() * ROWS);
+    signals.push({ nodeIdx: startNode, progress: 0, path: [startNode] });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.font = `${10 * dpr}px Inter`; ctx.fillStyle = '#ccc'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w * 0.05, h * 0.08);
+    ctx.fillText('OUTPUT', w * 0.95, h * 0.08);
+
+    if (Math.random() < 0.03) spawnSignal();
+
+    // Edges — right angle lines
+    ctx.lineWidth = 0.8 * dpr;
+    for (const [i, j] of edges) {
+      const a = nodes[i], b = nodes[j];
+      const act = Math.max(a.activation, b.activation);
+      ctx.strokeStyle = act > 0.15 ? `rgba(250,160,30,${act * 0.4})` : 'rgba(0,0,0,0.05)';
+      ctx.lineWidth = (0.5 + act * 1.5) * dpr;
+      // Right-angle path
+      ctx.beginPath();
+      if (a.col !== b.col) {
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, a.y); ctx.lineTo(b.x, b.y);
+      } else {
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+    }
+
+    // Simple signal propagation: activate nodes column by column
+    for (let i = signals.length - 1; i >= 0; i--) {
+      const sig = signals[i];
+      sig.progress += 0.4 * dpr;
+      const activeCol = Math.floor(sig.progress / (w * 0.8 / (COLS - 1)));
+      if (activeCol >= COLS) { signals.splice(i, 1); continue; }
+      const targetRow = sig.path[0] % ROWS;
+      for (const n of nodes) {
+        if (n.col === activeCol && Math.abs(n.row - targetRow) <= 1) {
+          n.activation = Math.min(1, n.activation + 0.2);
+        }
+      }
+    }
+
+    // Nodes
+    for (const n of nodes) {
+      n.activation *= 0.95;
+      const s = (2.5 + n.activation * 2) * dpr;
+      ctx.fillStyle = n.activation > 0.15 ? `rgba(250,160,30,${0.3 + n.activation * 0.7})` : 'rgba(0,0,0,0.08)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI * 2); ctx.fill();
+    }
+
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== OPTION D: Constellation =====
+(function() {
+  const { c, ctx, w, h } = setupCanvas('cD');
+  const nodes = [];
+  const trails = [];
+
+  for (let i = 0; i < 120; i++) {
+    nodes.push({
+      x: w * 0.1 + Math.random() * w * 0.8,
+      y: h * 0.1 + Math.random() * h * 0.8,
+      size: 1 + Math.random() * 2,
+      activation: 0, phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  function spawnTrail() {
+    // Find a node on the left side to start
+    const leftNodes = nodes.filter(n => n.x < w * 0.25);
+    if (leftNodes.length === 0) return;
+    const start = leftNodes[Math.floor(Math.random() * leftNodes.length)];
+    trails.push({ x: start.x, y: start.y, vx: 3 * dpr, vy: 0, history: [], life: 1 });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.font = `${10 * dpr}px Inter`; ctx.fillStyle = '#ccc'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w * 0.08, h * 0.08);
+    ctx.fillText('OUTPUT', w * 0.92, h * 0.08);
+
+    if (Math.random() < 0.04) spawnTrail();
+
+    // Update trails — they seek nearby nodes
+    for (let i = trails.length - 1; i >= 0; i--) {
+      const tr = trails[i];
+      tr.history.push({ x: tr.x, y: tr.y });
+      if (tr.history.length > 30) tr.history.shift();
+
+      // Find nearest unvisited node ahead
+      let nearest = null, nearDist = Infinity;
+      for (const n of nodes) {
+        if (n.x <= tr.x) continue;
+        const dx = n.x - tr.x, dy = n.y - tr.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < nearDist && d < 100 * dpr) { nearest = n; nearDist = d; }
+      }
+
+      if (nearest) {
+        const dx = nearest.x - tr.x, dy = nearest.y - tr.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        tr.vx += (dx / d) * 0.8 * dpr;
+        tr.vy += (dy / d) * 0.8 * dpr;
+        if (d < 10 * dpr) nearest.activation = Math.min(1, nearest.activation + 0.5);
+      }
+
+      const speed = Math.sqrt(tr.vx * tr.vx + tr.vy * tr.vy);
+      if (speed > 4 * dpr) { tr.vx *= 4 * dpr / speed; tr.vy *= 4 * dpr / speed; }
+
+      tr.x += tr.vx; tr.y += tr.vy;
+      if (tr.x > w * 0.95) trails.splice(i, 1);
+    }
+
+    // Draw connections only between active nodes
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].activation < 0.1) continue;
+      for (let j = i + 1; j < nodes.length; j++) {
+        if (nodes[j].activation < 0.1) continue;
+        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 80 * dpr) {
+          const act = Math.min(nodes[i].activation, nodes[j].activation);
+          ctx.strokeStyle = `rgba(250,160,30,${act * 0.25})`;
+          ctx.lineWidth = (0.3 + act) * dpr;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+
+    // Draw trail paths
+    for (const tr of trails) {
+      if (tr.history.length < 2) continue;
+      ctx.strokeStyle = 'rgba(250,160,30,0.4)';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(tr.history[0].x, tr.history[0].y);
+      for (let k = 1; k < tr.history.length; k++) {
+        ctx.lineTo(tr.history[k].x, tr.history[k].y);
+      }
+      ctx.stroke();
+
+      // Trail head
+      ctx.fillStyle = 'rgba(250,160,30,0.9)';
+      ctx.beginPath(); ctx.arc(tr.x, tr.y, 3 * dpr, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Nodes
+    for (const n of nodes) {
+      n.activation *= 0.97;
+      const breathe = 1 + Math.sin(t * 0.8 + n.phase) * 0.1;
+      const s = n.size * dpr * breathe * (1 + n.activation * 1.5);
+
+      if (n.activation > 0.2) {
+        const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, s * 4);
+        gr.addColorStop(0, `rgba(250,160,30,${n.activation * 0.15})`);
+        gr.addColorStop(1, 'rgba(250,160,30,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(n.x, n.y, s * 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.fillStyle = n.activation > 0.1 ? `rgba(200,120,20,${0.3 + n.activation * 0.7})` : 'rgba(0,0,0,0.12)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI * 2); ctx.fill();
+    }
+
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+</script>
+
+</body>
+</html>

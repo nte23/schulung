@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Side by Side Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; }
+
+  .header { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%); text-align: center; z-index: 100; }
+  .header .ol { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .header h2 { font-size: 1.4rem; font-weight: 600; margin-top: 0.3rem; }
+  .header h2 .hl { color: #fabb43; }
+
+  .container { display: flex; height: 100vh; padding: 6rem 2rem 2rem; gap: 2rem; }
+
+  .side {
+    flex: 1; position: relative; border: 1px solid #eee; border-radius: 16px;
+    overflow: hidden; background: #fefefe;
+  }
+  .side-label {
+    position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+    z-index: 10; text-align: center;
+  }
+  .side-label .prompt {
+    font-size: 0.75rem; color: #555; padding: 0.5rem 1rem;
+    background: rgba(255,255,255,0.9); border: 1px solid #eee;
+    border-radius: 10px; line-height: 1.4; max-width: 280px;
+  }
+  .side-label .prompt .rp { color: #7c5cbf; font-weight: 600; }
+
+  .side-tag {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.3rem 0.8rem; border-radius: 20px;
+    z-index: 10;
+  }
+  .side-tag.scattered { background: rgba(200,200,200,0.15); color: #999; }
+  .side-tag.focused { background: rgba(250,187,67,0.1); color: #e5a530; }
+
+  .nn-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  .insight {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    max-width: 600px; width: 90%; padding: 0.8rem 1.2rem;
+    background: #fffbeb; border-left: 4px solid #fabb43; border-radius: 0 8px 8px 0;
+    font-size: 0.78rem; color: #92400e; line-height: 1.5; z-index: 100; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="ol">Der Unterschied</div>
+  <h2>Generisch vs. <span class="hl">Fokussiert</span></h2>
+</div>
+
+<div class="container">
+  <div class="side" id="sideA">
+    <div class="side-label"><div class="prompt">"Erzähl mir eine Geschichte über Technologie"</div></div>
+    <div class="nn-box" id="boxA"></div>
+    <div class="side-tag scattered">Gestreut</div>
+  </div>
+  <div class="side" id="sideB">
+    <div class="side-label"><div class="prompt"><span class="rp">Du bist Patentanwalt.</span> Formuliere einen Vorrichtungsanspruch...</div></div>
+    <div class="nn-box" id="boxB"></div>
+    <div class="side-tag focused">Fokussiert</div>
+  </div>
+</div>
+
+<div class="insight">
+  → Gleiche Architektur, gleiche Anzahl Neuronen — aber der Rollen-Prompt lenkt die Aktivierung in bestimmte Muster.
+</div>
+
+<script>
+function buildSide(boxId, networkMode) {
+  const box = document.getElementById(boxId);
+  const rect = box.getBoundingClientRect();
+  const bW = rect.width, bH = rect.height;
+
+  const LAYERS = 8, BASE_N = 14;
+  const nodes = [], edges = [];
+
+  // Group by layer
+  const layerGroups = [];
+
+  for (let l = 0; l < LAYERS; l++) {
+    const t = 1 - Math.abs(2 * l / (LAYERS - 1) - 1);
+    const count = Math.round(5 + t * (BASE_N - 5));
+    const x = bW * 0.1 + (bW * 0.8) * l / (LAYERS - 1);
+    const layerIdxs = [];
+
+    for (let n = 0; n < count; n++) {
+      const spacing = bH * 0.55 / (count + 1);
+      const y = bH * 0.22 + (n + 1) * spacing;
+
+      const dot = document.createElement('div');
+      dot.style.cssText = `
+        position:absolute; left:${x}px; top:${y}px;
+        width:6px; height:6px; border-radius:50%;
+        background:#c0c0c0; transform:translate(-50%,-50%);
+        transition:background 0.3s, box-shadow 0.3s, transform 0.3s;
+      `;
+      box.appendChild(dot);
+      const idx = nodes.length;
+      nodes.push({ el: dot, x, y, l });
+      layerIdxs.push(idx);
+    }
+    layerGroups.push(layerIdxs);
+  }
+
+  // All edges between adjacent layers
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+  svg.setAttribute('viewBox', `0 0 ${bW} ${bH}`);
+  box.insertBefore(svg, box.firstChild);
+
+  for (let l = 0; l < LAYERS - 1; l++) {
+    for (const i of layerGroups[l]) {
+      for (const j of layerGroups[l + 1]) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', nodes[i].x); line.setAttribute('y1', nodes[i].y);
+        line.setAttribute('x2', nodes[j].x); line.setAttribute('y2', nodes[j].y);
+        line.setAttribute('stroke', 'rgba(0,0,0,0.03)');
+        line.setAttribute('stroke-width', '0.5');
+        line.style.transition = 'stroke 0.3s, stroke-width 0.3s';
+        svg.appendChild(line);
+        edges.push({ el: line, i, j });
+      }
+    }
+  }
+
+  // Bolt builder
+  function buildPath() {
+    const path = [];
+    let lastY = bH * 0.3 + Math.random() * bH * 0.4;
+
+    for (let l = 0; l < LAYERS; l++) {
+      const idxs = layerGroups[l];
+      const picked = [];
+
+      if (networkMode === 'scattered') {
+        const count = 1 + Math.floor(Math.random() * 2);
+        const sorted = [...idxs].sort((a, b) => Math.abs(nodes[a].y - lastY) - Math.abs(nodes[b].y - lastY));
+        for (let i = 0; i < Math.min(count, sorted.length); i++) picked.push(sorted[i]);
+        lastY = nodes[idxs[Math.floor(Math.random() * idxs.length)]].y;
+
+      } else {
+        // Focused: zigzag between top and bottom clusters
+        const topIdxs = idxs.filter(i => nodes[i].y < bH * 0.38);
+        const botIdxs = idxs.filter(i => nodes[i].y > bH * 0.62);
+
+        let targetY;
+        if (lastY < bH * 0.4) {
+          targetY = Math.random() < 0.6 ? bH * 0.25 + Math.random() * bH * 0.1 : bH * 0.7 + Math.random() * bH * 0.1;
+        } else if (lastY > bH * 0.6) {
+          targetY = Math.random() < 0.6 ? bH * 0.7 + Math.random() * bH * 0.1 : bH * 0.25 + Math.random() * bH * 0.1;
+        } else {
+          targetY = Math.random() < 0.5 ? bH * 0.25 : bH * 0.75;
+        }
+        lastY += (targetY - lastY) * (0.4 + Math.random() * 0.3);
+
+        const sorted = [...idxs].sort((a, b) => Math.abs(nodes[a].y - lastY) - Math.abs(nodes[b].y - lastY));
+        const mainCount = 2 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < Math.min(mainCount, sorted.length); i++) picked.push(sorted[i]);
+
+        const inTop = lastY < bH * 0.45;
+        const inBot = lastY > bH * 0.55;
+        const clusterSrc = inTop ? topIdxs : inBot ? botIdxs : [];
+        const extra = 1 + Math.floor(Math.random() * 3);
+        const shuffled = [...clusterSrc].sort(() => Math.random() - 0.5);
+        for (let i = 0; i < Math.min(extra, shuffled.length); i++) {
+          if (!picked.includes(shuffled[i])) picked.push(shuffled[i]);
+        }
+      }
+      path.push(picked);
+    }
+    return path;
+  }
+
+  // Animation loop
+  const STEP_MS = 140, FADE_MS = 450, PAUSE_MS = 500;
+  let boltPath = [], boltHead = -1, boltTimer = 0;
+  let lastTime = null, pausing = false, pauseTimer = 0;
+  const litItems = [];
+
+  function lightNode(idx, isCluster) {
+    const n = nodes[idx];
+    if (isCluster) {
+      n.el.style.background = '#ea580c';
+      n.el.style.boxShadow = '0 0 12px rgba(234,88,12,0.5)';
+      n.el.style.transform = 'translate(-50%,-50%) scale(1.5)';
+    } else {
+      n.el.style.background = '#fabb43';
+      n.el.style.boxShadow = '0 0 6px rgba(250,187,67,0.3)';
+      n.el.style.transform = 'translate(-50%,-50%) scale(1.2)';
+    }
+    litItems.push({ idx, time: performance.now() });
+  }
+
+  function fadeNode(idx) {
+    const n = nodes[idx];
+    n.el.style.background = '#c0c0c0';
+    n.el.style.boxShadow = 'none';
+    n.el.style.transform = 'translate(-50%,-50%) scale(1)';
+    edges.forEach(e => {
+      if (e.i === idx || e.j === idx) {
+        e.el.setAttribute('stroke', 'rgba(0,0,0,0.03)');
+        e.el.setAttribute('stroke-width', '0.5');
+      }
+    });
+  }
+
+  function fullReset() {
+    nodes.forEach(n => { n.el.style.background='#c0c0c0'; n.el.style.boxShadow='none'; n.el.style.transform='translate(-50%,-50%) scale(1)'; });
+    edges.forEach(e => { e.el.setAttribute('stroke','rgba(0,0,0,0.03)'); e.el.setAttribute('stroke-width','0.5'); });
+    litItems.length = 0;
+  }
+
+  function tick(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = ts - lastTime; lastTime = ts;
+
+    if (pausing) {
+      pauseTimer += dt;
+      for (let i = litItems.length-1; i >= 0; i--) {
+        if (ts - litItems[i].time > FADE_MS) { fadeNode(litItems[i].idx); litItems.splice(i,1); }
+      }
+      if (pauseTimer > PAUSE_MS && litItems.length === 0) {
+        pausing = false; pauseTimer = 0; fullReset();
+        boltPath = buildPath(); boltHead = -1; boltTimer = 0;
+      }
+      requestAnimationFrame(tick); return;
+    }
+
+    boltTimer += dt;
+    while (boltTimer > STEP_MS && boltHead < LAYERS - 1) {
+      boltTimer -= STEP_MS;
+      boltHead++;
+      const nodeIdxs = boltPath[boltHead];
+      const prevIdxs = boltHead > 0 ? boltPath[boltHead-1] : [];
+
+      nodeIdxs.forEach(idx => {
+        const n = nodes[idx];
+        const isCluster = networkMode === 'focused' && (n.y < bH * 0.38 || n.y > bH * 0.62);
+        lightNode(idx, isCluster);
+        prevIdxs.forEach(pi => {
+          edges.forEach(e => {
+            if ((e.i===pi && e.j===idx)||(e.i===idx && e.j===pi)) {
+              e.el.setAttribute('stroke', isCluster ? 'rgba(234,88,12,0.3)' : 'rgba(250,187,67,0.18)');
+              e.el.setAttribute('stroke-width', isCluster ? '2' : '1.2');
+            }
+          });
+        });
+      });
+    }
+
+    for (let i = litItems.length-1; i >= 0; i--) {
+      if (ts - litItems[i].time > FADE_MS) { fadeNode(litItems[i].idx); litItems.splice(i,1); }
+    }
+
+    if (boltHead >= LAYERS-1 && boltTimer > STEP_MS) { pausing = true; pauseTimer = 0; }
+
+    requestAnimationFrame(tick);
+  }
+
+  boltPath = buildPath();
+  requestAnimationFrame(tick);
+}
+
+// Build both sides
+buildSide('boxA', 'scattered');
+buildSide('boxB', 'focused');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window Brainstorm</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2.5rem; left: 3rem; z-index: 100; }
+  .label .ol { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.6rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub { font-size: 0.85rem; color: #999; margin-top: 0.3rem; max-width: 380px; line-height: 1.5; }
+
+  .hint { position: fixed; bottom: 1.2rem; right: 2rem; font-size: 0.65rem; color: #ccc; z-index: 100; }
+
+  /* Chat simulation */
+  .chat-frame {
+    position: fixed; top: 50%; left: 55%; transform: translate(-50%, -50%);
+    width: 480px; height: 520px;
+    background: #fafafa; border: 1px solid #e8e8e8; border-radius: 16px;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+
+  .chat-header {
+    padding: 0.8rem 1.2rem; border-bottom: 1px solid #eee;
+    font-size: 0.75rem; font-weight: 600; color: #999;
+    display: flex; align-items: center; gap: 0.5rem;
+    background: white;
+  }
+  .chat-header .dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+
+  .chat-body {
+    flex: 1; overflow: hidden; position: relative;
+  }
+  .chat-scroll {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 1rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+    transition: transform 0.8s ease;
+  }
+
+  .msg {
+    max-width: 88%; padding: 0.6rem 0.9rem; border-radius: 12px;
+    font-size: 0.72rem; line-height: 1.5; opacity: 0;
+    position: relative;
+  }
+  .msg.user {
+    align-self: flex-end; background: #1a1a1a; color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai {
+    align-self: flex-start; background: white; color: #333;
+    border: 1px solid #eee; border-bottom-left-radius: 4px;
+  }
+  .msg.system {
+    align-self: center; background: rgba(124,92,191,0.08);
+    color: #7c5cbf; font-size: 0.6rem; font-weight: 500;
+    border-radius: 20px; padding: 0.3rem 0.8rem;
+    border: 1px solid rgba(124,92,191,0.15);
+  }
+  .msg.user.angry { background: #dc2626; }
+
+  /* Context meter */
+  .context-meter {
+    position: fixed; top: 50%; right: 8%; transform: translateY(-50%);
+    width: 36px; height: 420px;
+    display: flex; flex-direction: column; align-items: center;
+    z-index: 50;
+  }
+  .meter-label { font-size: 0.55rem; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; writing-mode: vertical-rl; text-orientation: mixed; }
+  .meter-track {
+    width: 12px; flex: 1; background: #f0f0f0; border-radius: 6px;
+    position: relative; overflow: hidden;
+  }
+  .meter-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #16a34a 0%, #fabb43 60%, #dc2626 90%);
+    border-radius: 6px;
+    transition: height 0.8s ease;
+  }
+  .meter-markers {
+    position: absolute; left: 18px; top: 0; bottom: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .meter-mark { font-size: 0.45rem; color: #bbb; white-space: nowrap; }
+
+  /* Alert toast */
+  .alert-toast {
+    position: fixed; top: auto; right: 3rem;
+    background: #fef2f2; border: 1px solid rgba(220,38,38,0.2);
+    border-radius: 10px; padding: 0.6rem 1rem;
+    font-size: 0.72rem; color: #991b1b; z-index: 200;
+    box-shadow: 0 4px 16px rgba(220,38,38,0.1);
+    opacity: 0; display: flex; align-items: center; gap: 0.5rem;
+    max-width: 280px;
+  }
+  .alert-toast .alert-icon { font-size: 1rem; }
+
+  /* Insight */
+  .insight-box {
+    position: fixed; bottom: 3rem; left: 3rem; max-width: 420px;
+    padding: 1rem 1.3rem; background: #fffbeb;
+    border-left: 4px solid #fabb43; border-radius: 0 10px 10px 0;
+    font-size: 0.85rem; color: #92400e; line-height: 1.5;
+    opacity: 0; z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Kontext-Fenster</div>
+  <h2>KI hat ein <span class="hl">Kurzzeitgedächtnis</span></h2>
+  <div class="sub">Je länger das Gespräch, desto mehr vergisst sie vom Anfang.</div>
+</div>
+
+<div class="hint">Klick zum Weiter</div>
+
+<!-- Chat -->
+<div class="chat-frame">
+  <div class="chat-header"><div class="dot"></div> ChatGPT / Claude</div>
+  <div class="chat-body">
+    <div class="chat-scroll" id="chatScroll">
+      <!-- Messages get added dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- Context meter -->
+<div class="context-meter">
+  <div class="meter-track">
+    <div class="meter-fill" id="meterFill" style="height:0%;"></div>
+  </div>
+  <div class="meter-markers">
+    <div class="meter-mark">100% voll</div>
+    <div class="meter-mark">75%</div>
+    <div class="meter-mark">50%</div>
+    <div class="meter-mark">25%</div>
+    <div class="meter-mark">leer</div>
+  </div>
+</div>
+
+<!-- Alert toasts (positioned dynamically) -->
+<div class="alert-toast" id="alert1"><span class="alert-icon">⚠️</span> <span>"Du bist ein Patentanwalt" ist gerade aus dem Kontext gefallen!</span></div>
+<div class="alert-toast" id="alert2"><span class="alert-icon">⚠️</span> <span>Der Patentanspruch-Text von vorhin ist nicht mehr im Kontext!</span></div>
+<div class="alert-toast" id="alert3"><span class="alert-icon">⚠️</span> <span>Die KI hat vergessen, was du am Anfang wolltest.</span></div>
+
+<div class="insight-box" id="insightBox">
+  ⚡ <strong>Manchmal ist "Neuer Chat" die beste Lösung.</strong> Statt sich im Kreis zu drehen — lieber neu starten mit einem klaren, vollständigen Prompt.
+</div>
+
+<script>
+const chatScroll = document.getElementById('chatScroll');
+const meterFill = document.getElementById('meterFill');
+let step = -1;
+let busy = false;
+
+const conversation = [
+  // Step 0: Good start
+  [
+    { type: 'system', text: 'System: Du bist ein erfahrener Patentanwalt mit Schwerpunkt Maschinenbau.' },
+    { type: 'user', text: 'Hier ist mein Patentanspruch: "Vorrichtung zum drahtlosen Laden, umfassend eine Sendespule, eine Empfangsspule und eine Steuereinheit..."' },
+    { type: 'ai', text: 'Ich sehe den Anspruch. Die Merkmale sind klar gegliedert. Soll ich eine Merkmalsgliederung erstellen oder die Neuheit gegenüber einem Stand der Technik prüfen?' },
+  ],
+  // Step 1: Conversation continues
+  [
+    { type: 'user', text: 'Erstelle eine Merkmalsgliederung und prüfe gegen DE 10 2020 456 789 A1.' },
+    { type: 'ai', text: 'Merkmalsgliederung:\nM1: Vorrichtung zum drahtlosen Laden\nM1.1: Sendespule\nM1.2: Empfangsspule\nM1.3: Steuereinheit\n\nBezüglich DE 10 2020 456 789: M1.1 und M1.2 sind offenbart, M1.3 unterscheidet sich in der Regelungslogik...' },
+  ],
+  // Step 2: More messages, meter grows
+  [
+    { type: 'user', text: 'Gut. Jetzt formuliere den Anspruch um, sodass er die Regelungslogik stärker betont.' },
+    { type: 'ai', text: 'Vorgeschlagene Umformulierung:\n"Vorrichtung zum drahtlosen Laden, umfassend [...], wobei die Steuereinheit dazu eingerichtet ist, eine adaptive Frequenzregelung basierend auf der Kopplungseffizienz durchzuführen..."' },
+    { type: 'user', text: 'Hmm, aber das "wobei" ist zu schwach. Kannst du das als eigenes Merkmal formulieren?' },
+    { type: 'ai', text: 'Natürlich. Alternative:\n"...c) eine Steuereinheit, die eine adaptive Frequenzregelung durchführt, d) wobei die Frequenzregelung auf einer Echtzeitmessung der Kopplungseffizienz basiert..."' },
+  ],
+  // Step 3: Context getting full, quality drops — ALERT 1
+  [
+    { type: 'user', text: 'Nein, das ist auch nicht gut. Der abhängige Anspruch sollte die Regelungslogik genauer definieren. Und die Frequenz ist nicht das einzige Merkmal.' },
+    { type: 'ai', text: 'Entschuldigung, ich habe mich zu sehr auf die Frequenz konzentriert. Hier ein breiterer Ansatz für den abhängigen Anspruch...' },
+    { type: 'user', text: 'Warte, du hast das Prioritätsdokument vergessen. Ich hatte dir doch gesagt du sollst es berücksichtigen.' },
+    { type: 'ai', text: 'Welches Prioritätsdokument meinen Sie? Können Sie mir die Details nochmal nennen?' },
+  ],
+  // Step 4: Degradation, arguing — ALERT 2
+  [
+    { type: 'user', text: 'Das hab ich dir am Anfang gesagt! DE 10 2020 456 789!' },
+    { type: 'ai', text: 'Ah ja, richtig. Ich berücksichtige die Druckschrift. Hier ist eine aktualisierte Analyse...\n\n[Analyse enthält jetzt andere Merkmale als vorher]' },
+    { type: 'user', text: 'Nein! Du widersprichst dir selbst. Vorhin hast du gesagt M1.1 und M1.2 sind offenbart, jetzt sagst du M1.1 ist neu?' },
+    { type: 'ai', text: 'Sie haben Recht, da war ein Fehler. Lassen Sie mich die Analyse nochmal von vorn...' },
+  ],
+  // Step 5: Full degradation, angry loop — ALERT 3
+  [
+    { type: 'user', text: 'Du machst es schon wieder falsch. Du bist doch Patentanwalt!', angry: true },
+    { type: 'ai', text: 'Ich entschuldige mich. Lassen Sie mich den Anspruch nochmal komplett analysieren. Die Vorrichtung umfasst...' },
+    { type: 'user', text: 'NEIN. Ich habe dir 5x gesagt dass es um die Regelungslogik geht, nicht um die Spulen!', angry: true },
+    { type: 'ai', text: 'Sie haben Recht, die Regelungslogik ist der zentrale Aspekt. Hier ist ein neuer Versuch...\n\n[Wiederholt im Wesentlichen die gleiche falsche Analyse]' },
+  ],
+];
+
+const meterLevels = [15, 30, 55, 72, 88, 98];
+const alertSteps = { 3: 'alert1', 4: 'alert2', 5: 'alert3' };
+const alertPositions = { alert1: '35%', alert2: '45%', alert3: '55%' };
+
+function addMessages(msgs) {
+  msgs.forEach((m, i) => {
+    const el = document.createElement('div');
+    el.className = 'msg ' + m.type + (m.angry ? ' angry' : '');
+    el.textContent = m.text;
+    el.style.opacity = '0';
+    chatScroll.appendChild(el);
+    gsap.to(el, { opacity: 1, duration: 0.4, delay: i * 0.3 });
+  });
+
+  // Scroll: push older messages up by moving container
+  setTimeout(() => {
+    const scrollH = chatScroll.scrollHeight;
+    const parentH = chatScroll.parentElement.offsetHeight;
+    if (scrollH > parentH) {
+      gsap.to(chatScroll, {
+        y: -(scrollH - parentH),
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    }
+  }, msgs.length * 300 + 200);
+
+  // Fade out old messages at the top
+  setTimeout(() => {
+    const allMsgs = chatScroll.querySelectorAll('.msg');
+    const cutoff = Math.max(0, allMsgs.length - 8);
+    for (let i = 0; i < cutoff; i++) {
+      gsap.to(allMsgs[i], { opacity: 0.15, duration: 0.6 });
+    }
+  }, msgs.length * 300 + 600);
+}
+
+function advance() {
+  if (busy) return;
+  step++;
+
+  if (step >= conversation.length) {
+    // Show insight
+    gsap.to('#insightBox', { opacity: 1, duration: 0.7 });
+    return;
+  }
+
+  busy = true;
+
+  // Add messages
+  addMessages(conversation[step]);
+
+  // Update meter
+  gsap.to(meterFill, { height: meterLevels[step] + '%', duration: 0.8, ease: 'power2.out' });
+
+  // Change meter color at high fill
+  if (meterLevels[step] > 70) {
+    meterFill.style.background = 'linear-gradient(to top, #fabb43 0%, #dc2626 70%)';
+  }
+  if (meterLevels[step] > 90) {
+    meterFill.style.background = '#dc2626';
+  }
+
+  // Alerts
+  if (alertSteps[step]) {
+    const alertId = alertSteps[step];
+    const alertEl = document.getElementById(alertId);
+    alertEl.style.top = alertPositions[alertId];
+    gsap.fromTo(alertEl, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.5, delay: conversation[step].length * 0.3 + 0.5 });
+    // Auto-fade after 4s
+    gsap.to(alertEl, { opacity: 0, delay: conversation[step].length * 0.3 + 4, duration: 0.5 });
+  }
+
+  setTimeout(() => busy = false, conversation[step].length * 350 + 800);
+}
+
+// Input
+document.addEventListener('click', advance);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+// Init label
+gsap.fromTo('.label .ol, .label h2, .label .sub', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, delay: 0.3 });
+</script>
+
+</body>
+</html>

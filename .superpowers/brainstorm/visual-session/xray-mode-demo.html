@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; transition: background 0.8s; background: #ffffff; color: #1a1a1a; }
+  body.xray { background: #0a0a0a; color: #ffffff; }
+
+  /* === NORMAL VIEW (white) === */
+  .normal-view {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem; z-index: 20;
+    transition: opacity 0.8s;
+  }
+  body.xray .normal-view { opacity: 0; pointer-events: none; }
+
+  .normal-inner { max-width: 900px; width: 100%; }
+  .n-overline { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: #fabb43; margin-bottom: 1rem; }
+  .n-h1 { font-size: 2.5rem; font-weight: 600; line-height: 1.15; margin-bottom: 1.5rem; }
+  .n-h1 .hl { color: #fabb43; }
+
+  .prompt-compare { display: flex; gap: 1.5rem; }
+  .prompt-side { flex: 1; border-radius: 14px; padding: 1.3rem 1.5rem; }
+  .prompt-side.bad { background: #fef2f2; border: 1px solid rgba(220,38,38,0.12); }
+  .prompt-side.good { background: rgba(22,163,74,0.03); border: 1px solid rgba(22,163,74,0.12); }
+  .prompt-side-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .prompt-side-label.bad { color: #dc2626; }
+  .prompt-side-label.good { color: #16a34a; }
+  .prompt-side p { font-size: 0.88rem; line-height: 1.6; color: #555; }
+  .prompt-side p .rp { color: #7c5cbf; font-weight: 600; }
+  .prompt-side p .ctx { color: #4a90d9; font-weight: 600; }
+  .prompt-side p .task { color: #e8853d; font-weight: 600; }
+
+  /* X-Ray toggle button */
+  .xray-toggle {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    z-index: 200; display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 1.2rem; border-radius: 30px;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+    cursor: pointer; transition: all 0.4s;
+    border: 1px solid #e0e0e0; background: white; color: #555;
+  }
+  body.xray .xray-toggle {
+    background: rgba(250,187,67,0.1); border-color: rgba(250,187,67,0.3); color: #fabb43;
+  }
+  .xray-toggle .icon { font-size: 1rem; }
+  .xray-toggle .label-text { transition: opacity 0.3s; }
+
+  /* === X-RAY VIEW (dark) === */
+  .xray-view {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 10; opacity: 0; pointer-events: none;
+    transition: opacity 0.8s;
+  }
+  body.xray .xray-view { opacity: 1; pointer-events: auto; }
+
+  .xray-header {
+    position: fixed; top: 2rem; left: 50%; transform: translateX(-50%);
+    text-align: center; z-index: 30;
+  }
+  .xray-header .x-ol { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(250,187,67,0.5); }
+  .xray-header .x-h2 { font-size: 1.3rem; font-weight: 500; color: rgba(255,255,255,0.7); margin-top: 0.3rem; }
+  .xray-header .x-h2 .hl { color: #fabb43; }
+
+  .xray-panels { display: flex; flex-direction: column; height: 100vh; padding: 5rem 3rem 4rem; gap: 1rem; }
+
+  .xray-panel {
+    flex: 1; position: relative; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.02);
+  }
+  .panel-label {
+    position: absolute; top: 0.8rem; left: 50%; transform: translateX(-50%);
+    z-index: 10; text-align: center;
+  }
+  .panel-prompt {
+    font-size: 0.65rem; color: rgba(255,255,255,0.4); padding: 0.4rem 0.8rem;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; line-height: 1.4; max-width: 250px;
+  }
+  .panel-prompt .rp { color: #fabb43; font-weight: 600; }
+  .panel-tag {
+    position: absolute; top: 50%; left: -0.5rem; transform: translateY(-50%) rotate(-90deg);
+    font-size: 0.55rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; padding: 0.25rem 0.7rem; border-radius: 20px; z-index: 10;
+    white-space: nowrap;
+  }
+  .panel-tag.s { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.25); }
+  .panel-tag.f { background: rgba(250,187,67,0.1); color: rgba(250,187,67,0.6); }
+
+  .nn-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  .xray-insight {
+    position: fixed; bottom: 4rem; left: 50%; transform: translateX(-50%);
+    max-width: 550px; width: 90%; padding: 0.7rem 1rem;
+    background: rgba(250,187,67,0.06); border-left: 3px solid rgba(250,187,67,0.3);
+    border-radius: 0 8px 8px 0; font-size: 0.72rem;
+    color: rgba(255,255,255,0.45); line-height: 1.5; z-index: 30; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- NORMAL VIEW -->
+<div class="normal-view">
+  <div class="normal-inner">
+    <div class="n-overline">Warum Formulierung alles verändert</div>
+    <div class="n-h1">Rollen-Prompts <span class="hl">fokussieren</span> das Modell</div>
+    <div class="prompt-compare">
+      <div class="prompt-side bad">
+        <div class="prompt-side-label bad">Generisch</div>
+        <p>"Erzähl mir eine Geschichte über Technologie und Patente."</p>
+      </div>
+      <div class="prompt-side good">
+        <div class="prompt-side-label good">Mit Rolle + Kontext</div>
+        <p><span class="rp">Du bist ein erfahrener Patentanwalt.</span> <span class="ctx">Gegeben ist ein Anspruch für drahtloses Laden.</span> <span class="task">Formuliere einen Vorrichtungsanspruch.</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- X-RAY VIEW -->
+<div class="xray-view">
+  <div class="xray-header">
+    <div class="x-ol">AI-Ansicht</div>
+    <div class="x-h2">So sieht es <span class="hl">im Modell</span> aus</div>
+  </div>
+
+  <div class="xray-panels">
+    <div class="xray-panel" id="panelA">
+      <div class="panel-label"><div class="panel-prompt">"Erzähl mir eine Geschichte..."</div></div>
+      <div class="nn-box" id="nnA"></div>
+      <div class="panel-tag s">Gestreut</div>
+    </div>
+    <div class="xray-panel" id="panelB">
+      <div class="panel-label"><div class="panel-prompt"><span class="rp">Du bist Patentanwalt.</span> Formuliere...</div></div>
+      <div class="nn-box" id="nnB"></div>
+      <div class="panel-tag f">Fokussiert</div>
+    </div>
+  </div>
+
+  <div class="xray-insight">
+    Gleiche Architektur, gleiche Neuronen — aber der Rollen-Prompt lenkt die Aktivierung in bestimmte Muster.
+  </div>
+</div>
+
+<!-- Toggle -->
+<div class="xray-toggle" id="toggle">
+  <span class="icon">⚡</span>
+  <span class="label-text" id="toggleLabel">AI-Ansicht aktivieren</span>
+</div>
+
+<script>
+// Toggle
+const toggle = document.getElementById('toggle');
+let isXray = false;
+
+toggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isXray = !isXray;
+  document.body.classList.toggle('xray', isXray);
+  document.getElementById('toggleLabel').textContent = isXray ? 'Normale Ansicht' : 'AI-Ansicht aktivieren';
+  if (isXray && !networksBuilt) buildNetworks();
+});
+
+// Also toggle on click anywhere (except the toggle button)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.xray-toggle')) return;
+  isXray = !isXray;
+  document.body.classList.toggle('xray', isXray);
+  document.getElementById('toggleLabel').textContent = isXray ? 'Normale Ansicht' : 'AI-Ansicht aktivieren';
+  if (isXray && !networksBuilt) buildNetworks();
+});
+
+let networksBuilt = false;
+
+function buildNetworks() {
+  networksBuilt = true;
+  buildSide('nnA', 'scattered');
+  buildSide('nnB', 'focused');
+}
+
+function buildSide(boxId, netMode) {
+  const box = document.getElementById(boxId);
+  // Wait for layout
+  setTimeout(() => {
+    const rect = box.getBoundingClientRect();
+    const bW = rect.width, bH = rect.height;
+    if (bW < 10 || bH < 10) return;
+
+    const LAYERS = 12, BASE_N = 18;
+    const nodes = [], edges = [], layerGroups = [];
+
+    for (let l = 0; l < LAYERS; l++) {
+      const t = 1 - Math.abs(2 * l / (LAYERS-1) - 1);
+      const count = Math.round(5 + t * (BASE_N - 5));
+      const x = bW * 0.1 + (bW * 0.8) * l / (LAYERS-1);
+      const idxs = [];
+      for (let n = 0; n < count; n++) {
+        const spacing = bH * 0.52 / (count+1);
+        const y = bH * 0.24 + (n+1) * spacing;
+        const dot = document.createElement('div');
+        dot.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transform:translate(-50%,-50%);transition:background 0.3s,box-shadow 0.3s,transform 0.3s;`;
+        box.appendChild(dot);
+        const idx = nodes.length;
+        nodes.push({ el:dot, x, y, l });
+        idxs.push(idx);
+      }
+      layerGroups.push(idxs);
+    }
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+    svg.setAttribute('viewBox',`0 0 ${bW} ${bH}`);
+    box.insertBefore(svg, box.firstChild);
+
+    for (let l = 0; l < LAYERS-1; l++) {
+      for (const i of layerGroups[l]) {
+        for (const j of layerGroups[l+1]) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+          line.setAttribute('x1',nodes[i].x); line.setAttribute('y1',nodes[i].y);
+          line.setAttribute('x2',nodes[j].x); line.setAttribute('y2',nodes[j].y);
+          line.setAttribute('stroke','rgba(255,255,255,0.1)');
+          line.setAttribute('stroke-width','0.7');
+          line.style.transition = 'stroke 0.3s,stroke-width 0.3s';
+          svg.appendChild(line);
+          edges.push({el:line,i,j});
+        }
+      }
+    }
+
+    // Bolt
+    function buildPath() {
+      const path = [];
+      let lastY = bH * 0.3 + Math.random() * bH * 0.4;
+      for (let l = 0; l < LAYERS; l++) {
+        const idxs = layerGroups[l];
+        const picked = [];
+        if (netMode === 'scattered') {
+          const c = 1 + Math.floor(Math.random()*2.5);
+          const sorted = [...idxs].sort((a,b) => Math.abs(nodes[a].y-lastY)-Math.abs(nodes[b].y-lastY));
+          for (let i=0;i<Math.min(c,sorted.length);i++) picked.push(sorted[i]);
+          lastY = nodes[idxs[Math.floor(Math.random()*idxs.length)]].y;
+        } else {
+          const topI = idxs.filter(i => nodes[i].y < bH*0.38);
+          const botI = idxs.filter(i => nodes[i].y > bH*0.62);
+          let tgtY;
+          if (lastY < bH*0.4) tgtY = Math.random()<0.6 ? bH*0.25+Math.random()*bH*0.1 : bH*0.7+Math.random()*bH*0.1;
+          else if (lastY > bH*0.6) tgtY = Math.random()<0.6 ? bH*0.7+Math.random()*bH*0.1 : bH*0.25+Math.random()*bH*0.1;
+          else tgtY = Math.random()<0.5 ? bH*0.25 : bH*0.75;
+          lastY += (tgtY-lastY)*(0.4+Math.random()*0.3);
+          const sorted = [...idxs].sort((a,b)=>Math.abs(nodes[a].y-lastY)-Math.abs(nodes[b].y-lastY));
+          const mc = 2+Math.floor(Math.random()*2);
+          for (let i=0;i<Math.min(mc,sorted.length);i++) picked.push(sorted[i]);
+          const inT = lastY<bH*0.45, inB = lastY>bH*0.55;
+          const cs = inT?topI:inB?botI:[];
+          const ex = 1+Math.floor(Math.random()*3);
+          const sh = [...cs].sort(()=>Math.random()-0.5);
+          for (let i=0;i<Math.min(ex,sh.length);i++) if (!picked.includes(sh[i])) picked.push(sh[i]);
+        }
+        path.push(picked);
+      }
+      return path;
+    }
+
+    const STEP=140, FADE=450, PAUSE=500;
+    let bp=[], bh=-1, bt=0, lt=null, p=false, pt=0;
+    const lit=[];
+
+    function lightN(idx,cl) {
+      const n=nodes[idx];
+      if (cl) { n.el.style.background='#ea580c'; n.el.style.boxShadow='0 0 12px rgba(234,88,12,0.6)'; n.el.style.transform='translate(-50%,-50%) scale(1.6)'; }
+      else { n.el.style.background='#fabb43'; n.el.style.boxShadow='0 0 6px rgba(250,187,67,0.4)'; n.el.style.transform='translate(-50%,-50%) scale(1.3)'; }
+      lit.push({idx,time:performance.now()});
+    }
+    const BASE_STROKE = 'rgba(255,255,255,0.1)';
+    const BASE_SW = '0.7';
+    const BASE_DOT = 'rgba(255,255,255,0.2)';
+    function fadeN(idx) {
+      nodes[idx].el.style.background=BASE_DOT; nodes[idx].el.style.boxShadow='none'; nodes[idx].el.style.transform='translate(-50%,-50%) scale(1)';
+      edges.forEach(e=>{if(e.i===idx||e.j===idx){e.el.setAttribute('stroke',BASE_STROKE);e.el.setAttribute('stroke-width',BASE_SW);}});
+    }
+    function fullR() {
+      nodes.forEach(n=>{n.el.style.background=BASE_DOT;n.el.style.boxShadow='none';n.el.style.transform='translate(-50%,-50%) scale(1)';});
+      edges.forEach(e=>{e.el.setAttribute('stroke',BASE_STROKE);e.el.setAttribute('stroke-width',BASE_SW);});
+      lit.length=0;
+    }
+
+    function tick(ts) {
+      if(!lt) lt=ts; const dt=ts-lt; lt=ts;
+      if(p) {
+        pt+=dt;
+        for(let i=lit.length-1;i>=0;i--) if(ts-lit[i].time>FADE){fadeN(lit[i].idx);lit.splice(i,1);}
+        if(pt>PAUSE&&lit.length===0){p=false;pt=0;fullR();bp=buildPath();bh=-1;bt=0;}
+        requestAnimationFrame(tick);return;
+      }
+      bt+=dt;
+      while(bt>STEP&&bh<LAYERS-1) {
+        bt-=STEP; bh++;
+        const ni=bp[bh], pi=bh>0?bp[bh-1]:[];
+        ni.forEach(idx=>{
+          const n=nodes[idx]; const cl=netMode==='focused'&&(n.y<bH*0.38||n.y>bH*0.62);
+          lightN(idx,cl);
+          pi.forEach(p2=>{edges.forEach(e=>{
+            if((e.i===p2&&e.j===idx)||(e.i===idx&&e.j===p2)){
+              e.el.setAttribute('stroke',cl?'rgba(234,88,12,0.55)':'rgba(250,187,67,0.35)');
+              e.el.setAttribute('stroke-width',cl?'2':'1.2');
+            }
+          });});
+        });
+      }
+      for(let i=lit.length-1;i>=0;i--) if(ts-lit[i].time>FADE){fadeN(lit[i].idx);lit.splice(i,1);}
+      if(bh>=LAYERS-1&&bt>STEP){p=true;pt=0;}
+      requestAnimationFrame(tick);
+    }
+    bp=buildPath();
+    requestAnimationFrame(tick);
+  }, 100);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    overflow: hidden;
+    height: 100vh;
+    -webkit-user-select: none; user-select: none;
+  }
+  canvas { display: block; position: fixed; top: 0; left: 0; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+
+  .controls {
+    position: fixed; top: 1rem; right: 1rem; z-index: 100;
+    background: rgba(255,255,255,0.95); border: 1px solid #eee;
+    border-radius: 12px; padding: 1.2rem; width: 260px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    font-size: 0.8rem;
+  }
+  .controls h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.8rem; }
+
+  .coord-display {
+    background: #f5f5f5; border-radius: 8px; padding: 0.8rem;
+    margin-bottom: 1rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem;
+  }
+  .coord-row { display: flex; justify-content: space-between; margin-bottom: 0.25rem; color: #555; }
+  .coord-row span:last-child { font-weight: 600; color: #1a1a1a; }
+
+  .btn-row { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .btn {
+    flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px;
+    background: white; cursor: pointer; font-family: inherit; font-size: 0.75rem;
+    font-weight: 500; transition: all 0.2s; text-align: center;
+  }
+  .btn:hover { border-color: #fabb43; background: rgba(250,187,67,0.05); }
+  .btn.active { background: #fabb43; color: white; border-color: #fabb43; }
+
+  .slider-group { margin-bottom: 0.6rem; }
+  .slider-label { display: flex; justify-content: space-between; margin-bottom: 0.2rem; font-size: 0.7rem; color: #888; }
+  .slider-label span:last-child { font-weight: 600; color: #555; }
+  input[type=range] {
+    width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+    background: #eee; border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: #fabb43; cursor: pointer;
+  }
+
+  .divider { height: 1px; background: #eee; margin: 0.8rem 0; }
+
+  .hint-text { font-size: 0.65rem; color: #bbb; line-height: 1.4; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="controls">
+  <h3>Playground</h3>
+
+  <div class="coord-display">
+    <div class="coord-row"><span>Rotation Y:</span><span id="dispY">0.0°</span></div>
+    <div class="coord-row"><span>Rotation X:</span><span id="dispX">0.0°</span></div>
+    <div class="coord-row"><span>Zoom:</span><span id="dispZ">1.0x</span></div>
+  </div>
+
+  <div class="btn-row">
+    <div class="btn" id="btnReset">Reset View</div>
+    <div class="btn" id="btnFire">▶ Fire Prompt</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="slider-group">
+    <div class="slider-label"><span>Connection randomness</span><span id="randVal">50%</span></div>
+    <input type="range" id="randSlider" min="0" max="100" value="50">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Node jitter</span><span id="jitVal">40%</span></div>
+    <input type="range" id="jitSlider" min="0" max="100" value="40">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Spacing X/Y (face)</span><span id="spXYVal">38</span></div>
+    <input type="range" id="spXYSlider" min="15" max="80" value="38">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Spacing Z (depth)</span><span id="spZVal">38</span></div>
+    <input type="range" id="spZSlider" min="8" max="80" value="38">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Depth layers</span><span id="dzVal">25</span></div>
+    <input type="range" id="dzSlider" min="5" max="50" value="25">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Edge fade (outer dots)</span><span id="opVal">70%</span></div>
+    <input type="range" id="opSlider" min="0" max="100" value="70">
+  </div>
+  <div class="slider-group">
+    <div class="slider-label"><span>Inner opacity boost</span><span id="ioVal">50%</span></div>
+    <input type="range" id="ioSlider" min="0" max="100" value="50">
+  </div>
+
+  <div class="divider"></div>
+  <div class="hint-text">
+    Drag to rotate. Scroll to zoom.<br>
+    Adjust sliders to find the right look.<br>
+    "Fire Prompt" to test activation.<br>
+    Tell me the rotation angles you like!
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const dpr = Math.min(devicePixelRatio, 2);
+
+let W, H, cx, cy;
+function resize() {
+  W = cv.width = window.innerWidth * dpr;
+  H = cv.height = window.innerHeight * dpr;
+  cx = W / 2; cy = H / 2;
+  cv.style.width = window.innerWidth + 'px';
+  cv.style.height = window.innerHeight + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== PARAMS =====
+let rotY = 0, rotX = 0;
+let zoom = 1.0;
+let FOV = 900 * dpr;
+let connectionRand = 0.5;
+let nodeJitter = 0.4;
+let spacingXY = 38;
+let spacingZ = 38;
+let depthLayers = 25;
+let edgeFade = 0.7;
+let innerBoost = 0.5;
+
+const NX = 7;
+const NY = 10;
+
+// ===== BUILD NETWORK =====
+let nodes = [];
+let edges = [];
+let wave = -1;
+
+function buildNetwork() {
+  nodes = [];
+  edges = [];
+
+  const spXY = spacingXY * dpr;
+  const spZ = spacingZ * dpr;
+  const jitXY = nodeJitter * spXY * 0.3;
+  const jitZ = nodeJitter * spZ * 0.3;
+  const NZ = depthLayers;
+
+  // Seed random for consistent jitter
+  let seed = 12345;
+  function seededRandom() {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  }
+
+  // Create nodes with diamond shape — layers in the middle are wider
+  const grid = [];
+  // Precompute how many X and Y nodes each depth layer gets
+  const layerSizes = [];
+  for (let z = 0; z < NZ; z++) {
+    // Diamond: 0 at edges → 1 at center
+    const t = 1 - Math.abs(2 * z / (NZ - 1) - 1); // 0→1→0
+    const curve = 0.4 + 0.6 * Math.sin(t * Math.PI / 2); // smooth ease, min 40% of max
+    const nxLayer = Math.max(3, Math.round(NX * curve));
+    const nyLayer = Math.max(4, Math.round(NY * curve));
+    layerSizes.push({ nx: nxLayer, ny: nyLayer });
+  }
+
+  for (let x = 0; x < NX; x++) {
+    grid[x] = [];
+    for (let z = 0; z < NZ; z++) {
+      grid[x][z] = [];
+      const { nx: nxL, ny: nyL } = layerSizes[z];
+      for (let y = 0; y < NY; y++) {
+        // Skip nodes outside this layer's diamond size
+        if (x >= nxL || y >= nyL) {
+          grid[x][z][y] = null;
+          continue;
+        }
+        const node = {
+          bx: (x - nxL/2 + 0.5) * spXY + (seededRandom() - 0.5) * jitXY,
+          by: (y - nyL/2 + 0.5) * spXY + (seededRandom() - 0.5) * jitXY,
+          bz: (z - NZ/2 + 0.5) * spZ + (seededRandom() - 0.5) * jitZ,
+          ix: x, iz: z, iy: y,
+          activation: 0,
+          targetAct: 0,
+          rand: seededRandom(),
+          centrality: 1 - Math.sqrt(
+            Math.pow((x - nxL/2 + 0.5) / (NX/2), 2) +
+            Math.pow((y - nyL/2 + 0.5) / (NY/2), 2) +
+            Math.pow((z - NZ/2 + 0.5) / (NZ/2), 2)
+          ) / Math.sqrt(3),
+        };
+        grid[x][z][y] = node;
+        nodes.push(node);
+      }
+    }
+  }
+
+  // Create edges — mix of structured + random
+  // Every node connects to SOME neighbors, not all (more organic)
+  for (let x = 0; x < NX; x++) {
+    for (let z = 0; z < NZ; z++) {
+      for (let y = 0; y < NY; y++) {
+        const n = grid[x][z][y];
+        if (!n) continue;
+
+        // Adjacent connections (keep some, skip some based on randomness)
+        const neighbors = [];
+        if (x+1 < NX && grid[x+1][z][y]) neighbors.push(grid[x+1][z][y]);
+        if (y+1 < NY && grid[x][z][y+1]) neighbors.push(grid[x][z][y+1]);
+        if (z+1 < NZ && grid[x][z+1] && grid[x][z+1][y]) neighbors.push(grid[x][z+1][y]);
+
+        // Diagonal connections for more organic feel
+        if (x+1 < NX && y+1 < NY && grid[x+1][z][y+1]) neighbors.push(grid[x+1][z][y+1]);
+        if (x+1 < NX && y-1 >= 0 && grid[x+1][z][y-1]) neighbors.push(grid[x+1][z][y-1]);
+        if (z+1 < NZ && y+1 < NY && grid[x][z+1] && grid[x][z+1][y+1]) neighbors.push(grid[x][z+1][y+1]);
+        if (z+1 < NZ && y-1 >= 0 && grid[x][z+1] && grid[x][z+1][y-1]) neighbors.push(grid[x][z+1][y-1]);
+        if (x+1 < NX && z+1 < NZ && grid[x+1][z+1] && grid[x+1][z+1][y]) neighbors.push(grid[x+1][z+1][y]);
+
+        for (const nb of neighbors) {
+          // connectionRand: 0 = all connections, 1 = very few
+          const keepChance = 1 - connectionRand * 0.85;
+          // Straight connections (same axis) more likely than diagonals
+          const isStraight = (nb.ix === x && nb.iy === y) || (nb.iz === z && nb.iy === y) || (nb.ix === x && nb.iz === z);
+          const threshold = isStraight ? keepChance : keepChance * 0.5;
+
+          if (seededRandom() < threshold) {
+            edges.push([n, nb]);
+          }
+        }
+      }
+    }
+  }
+
+  // Generate activation targets
+  const NZ2 = NZ;
+  for (let z = 0; z < NZ2; z++) {
+    const pathY = Math.floor(4 + Math.sin(z * 0.35) * 2.5);
+    const pathX = Math.floor(3 + Math.sin(z * 0.22) * 1.8);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const yy = pathY + dy, xx = pathX + dx;
+        if (yy >= 0 && yy < NY && xx >= 0 && xx < NX && z < NZ2 && grid[xx][z][yy]) {
+          const str = 1 - Math.sqrt(dx*dx+dy*dy) * 0.35;
+          grid[xx][z][yy].targetAct = Math.max(grid[xx][z][yy].targetAct, str);
+        }
+      }
+    }
+  }
+  // Cluster
+  for (let x = 1; x < Math.min(5,NX); x++)
+    for (let z = Math.floor(NZ2*0.45); z < Math.floor(NZ2*0.75); z++)
+      for (let y = 3; y < Math.min(7,NY); y++)
+        if (z < NZ2 && grid[x][z][y]) grid[x][z][y].targetAct = Math.max(grid[x][z][y].targetAct, 0.4 + seededRandom()*0.5);
+}
+
+buildNetwork();
+
+// ===== MOUSE DRAG =====
+let dragging = false, lastMX = 0, lastMY = 0;
+
+cv.addEventListener('mousedown', e => {
+  dragging = true; lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - lastMX, dy = e.clientY - lastMY;
+  rotY += dx * 0.005;
+  rotX += dy * 0.005;
+  rotX = Math.max(-1.2, Math.min(1.2, rotX));
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener('mouseup', () => dragging = false);
+
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.3, Math.min(3, zoom - e.deltaY * 0.001));
+}, { passive: false });
+
+// ===== CONTROLS =====
+document.getElementById('btnReset').addEventListener('click', () => {
+  rotY = 0; rotX = 0; zoom = 1; wave = -1;
+  nodes.forEach(n => n.activation = 0);
+});
+document.getElementById('btnFire').addEventListener('click', () => {
+  wave = -0.05;
+  nodes.forEach(n => n.activation = 0);
+});
+
+const randSlider = document.getElementById('randSlider');
+const jitSlider = document.getElementById('jitSlider');
+const spXYSlider = document.getElementById('spXYSlider');
+const spZSlider = document.getElementById('spZSlider');
+const dzSlider = document.getElementById('dzSlider');
+const opSlider = document.getElementById('opSlider');
+
+function onSliderChange() {
+  connectionRand = randSlider.value / 100;
+  nodeJitter = jitSlider.value / 100;
+  spacingXY = +spXYSlider.value;
+  spacingZ = +spZSlider.value;
+  depthLayers = +dzSlider.value;
+  edgeFade = opSlider.value / 100;
+  document.getElementById('randVal').textContent = randSlider.value + '%';
+  document.getElementById('jitVal').textContent = jitSlider.value + '%';
+  document.getElementById('spXYVal').textContent = spXYSlider.value;
+  document.getElementById('spZVal').textContent = spZSlider.value;
+  document.getElementById('dzVal').textContent = dzSlider.value;
+  document.getElementById('opVal').textContent = opSlider.value + '%';
+  wave = -1;
+  buildNetwork();
+}
+randSlider.addEventListener('input', onSliderChange);
+jitSlider.addEventListener('input', onSliderChange);
+spXYSlider.addEventListener('input', onSliderChange);
+spZSlider.addEventListener('input', onSliderChange);
+dzSlider.addEventListener('input', onSliderChange);
+const ioSlider = document.getElementById('ioSlider');
+opSlider.addEventListener('input', () => {
+  edgeFade = opSlider.value / 100;
+  document.getElementById('opVal').textContent = opSlider.value + '%';
+});
+ioSlider.addEventListener('input', () => {
+  innerBoost = ioSlider.value / 100;
+  document.getElementById('ioVal').textContent = ioSlider.value + '%';
+});
+
+// ===== RENDER =====
+let time = 0;
+
+function proj(x, y, z) {
+  const f = FOV * zoom;
+  const s = f / (f + z);
+  return [cx + x * s, cy + y * s, s, z];
+}
+
+function render() {
+  time += 0.016;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Update display
+  const degY = (rotY * 180 / Math.PI).toFixed(1);
+  const degX = (rotX * 180 / Math.PI).toFixed(1);
+  document.getElementById('dispY').textContent = degY + '°';
+  document.getElementById('dispX').textContent = degX + '°';
+  document.getElementById('dispZ').textContent = zoom.toFixed(2) + 'x';
+
+  const cY = Math.cos(rotY), sY = Math.sin(rotY);
+  const cX = Math.cos(rotX), sX = Math.sin(rotX);
+
+  // Wave
+  if (wave >= -0.05 && wave < 1.8) wave += 0.005;
+
+  // Update activations
+  if (wave >= 0) {
+    const NZ = depthLayers;
+    for (const n of nodes) {
+      const wp = (n.ix / NX) * 0.25 + (n.iz / NZ) * 0.75;
+      const d = wave - wp;
+      if (d > 0 && d < 0.35 && n.targetAct > 0) {
+        n.activation = Math.min(n.targetAct, n.activation + 0.03 * n.targetAct);
+      } else if (d > 0.6) {
+        n.activation = Math.max(0, n.activation - 0.004);
+      }
+    }
+  }
+
+  // Project nodes
+  const pMap = new Map();
+  for (const n of nodes) {
+    const x1 = n.bx * cY - n.bz * sY;
+    const z1 = n.bx * sY + n.bz * cY;
+    const y1 = n.by * cX - z1 * sX;
+    const z2 = n.by * sX + z1 * cX;
+    pMap.set(n, proj(x1, y1, z2));
+  }
+
+  // Draw edges
+  for (const [a, b] of edges) {
+    const pa = pMap.get(a), pb = pMap.get(b);
+    const minS = Math.min(pa[2], pb[2]);
+    if (minS < 0.15) continue;
+
+    const bothAct = a.activation > 0.15 && b.activation > 0.15;
+    const actLvl = Math.min(a.activation, b.activation);
+    const edgeCentral = Math.min(a.centrality, b.centrality);
+    const cFade = (1 - edgeFade) + edgeCentral * edgeFade;
+
+    if (bothAct) {
+      ctx.strokeStyle = `rgba(250, 160, 30, ${Math.min(0.75, actLvl * 0.9 * minS * cFade)})`;
+      ctx.lineWidth = (0.6 + actLvl * 1.8) * dpr * minS;
+    } else {
+      ctx.strokeStyle = `rgba(0, 0, 0, ${Math.min(0.12, 0.15 * minS * minS * cFade)})`;
+      ctx.lineWidth = 0.5 * dpr * minS;
+    }
+    ctx.beginPath();
+    ctx.moveTo(pa[0], pa[1]);
+    ctx.lineTo(pb[0], pb[1]);
+    ctx.stroke();
+  }
+
+  // Sort and draw nodes
+  const sorted = [...pMap.entries()].sort((a, b) => a[1][3] - b[1][3]);
+
+  for (const [n, p] of sorted) {
+    const [px, py, sc] = p;
+    if (sc < 0.15) continue;
+    const act = n.activation;
+    const baseR = 2.2 * dpr * sc;
+
+    let r, g, b;
+    if (act > 0.5) { r=234; g=120; b=20; }
+    else if (act > 0.1) { const t=act/0.5; r=Math.round(30+204*t); g=Math.round(30+90*t); b=Math.round(30-10*t); }
+    else { r=30; g=30; b=30; }
+
+    // Inner nodes more opaque, outer nodes fade out
+    // Edge fade: outer dots become more transparent
+    const edgeDim = (1 - edgeFade) + n.centrality * edgeFade;
+    // Inner boost: center dots become more opaque
+    const innerMult = 1 + n.centrality * innerBoost;
+    const alpha = Math.max(0.06, Math.min(1, sc * 1.2 * edgeDim * innerMult));
+    const finalR = baseR * (1 + act * 0.5);
+
+    if (act > 0.25) {
+      const glR = finalR * 4;
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, glR);
+      grad.addColorStop(0, `rgba(250,170,40,${act*0.3*alpha})`);
+      grad.addColorStop(1, 'rgba(250,170,40,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(px, py, glR, 0, Math.PI*2); ctx.fill();
+    }
+
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.beginPath(); ctx.arc(px, py, finalR, 0, Math.PI*2); ctx.fill();
+  }
+
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>

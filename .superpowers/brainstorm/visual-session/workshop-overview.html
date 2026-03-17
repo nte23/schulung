@@ -1,0 +1,69 @@
+<h2>Workshop Structure — 4 Acts, ~2 Hours</h2>
+<p class="subtitle">Click the section you'd like to explore visually first</p>
+
+<div class="options">
+  <div class="option" data-choice="act1" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Wie KI funktioniert (~30 min)</h3>
+      <p>Deep dive: Tokenisierung → Embeddings → Attention → Neuronales Netz → Next-Token-Prediction → Training. The technical foundation that makes everything else click.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="act2" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Grenzen & Halluzinationen (~15 min)</h3>
+      <p>Why AI lies convincingly, what we know vs. don't know, patent-specific risks. The "aha moment" where technical understanding meets practical consequences.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="act3" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Prompting-Techniken (~30 min)</h3>
+      <p>Zero-Shot, Few-Shot, Chain-of-Thought, Role Prompting, der Prompt-Baukasten (Rolle + Kontext + Aufgabe + Format). Side-by-side neural network comparison animation.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="act4" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Praxis-Übungen (~30 min)</h3>
+      <p>3 hands-on exercises: Prompt verbessern, Halluzination erkennen, Patent-Prompts bauen. Group work with discussion.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem;">
+  <h3>Key Animation Highlights</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🧠</div>
+      <strong>Neural Network Brain</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">500 dots in brain shape. Prompt enters → activation waves ripple through → regions light up. Compare "tell me a story" vs "act as patent attorney"</p>
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔤</div>
+      <strong>Tokenizer</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">German text breaks into colored blocks with spring physics. Token IDs appear below. Shows why German costs more tokens.</p>
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+      <strong>Next-Token Bars</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Animated probability chart. "Der Patent___" → bars show candidates. Word selected, sentence builds left to right.</p>
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💥</div>
+      <strong>Hallucination Glitch</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Confident patent citation appears normal. Then glitch effect reveals every detail is fabricated. Red marks appear.</p>
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🌐</div>
+      <strong>Embedding Space</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Words float in 2D space. "Patent" near "Erfindung", "Katze" near "Hund". Clusters glow with soft halos.</p>
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔗</div>
+      <strong>Attention Arcs</strong>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Curved lines connect words. "schlief" attends to "Katze" not "Matte". Lines draw themselves, thickness = weight.</p>
+    </div>
+  </div>
+</div>

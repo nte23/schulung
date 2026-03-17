@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morph Flow v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff; color: #1a1a1a;
+    overflow: hidden; height: 100vh;
+    cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  .word {
+    position: absolute; font-size: 1.8rem; font-weight: 500;
+    color: #1a1a1a; white-space: nowrap; z-index: 10;
+    opacity: 0;
+  }
+  .word .token-bg {
+    position: absolute; top: -6px; left: -12px; right: -12px; bottom: -6px;
+    border-radius: 10px; opacity: 0; z-index: -1;
+  }
+  .word .token-id {
+    position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; color: #aaa; font-variant-numeric: tabular-nums;
+    opacity: 0; white-space: nowrap;
+  }
+  /* Bracket showing "1 Wort → 2 Tokens" */
+  #splitBracket {
+    position: absolute; z-index: 20; opacity: 0; pointer-events: none;
+    text-align: center;
+  }
+  #splitBracket .bracket-line {
+    width: 100%; height: 20px; border-bottom: 2px solid #e8853d;
+    border-left: 2px solid #e8853d; border-right: 2px solid #e8853d;
+    border-radius: 0 0 8px 8px;
+  }
+  #splitBracket .bracket-label {
+    font-size: 0.7rem; color: #e8853d; font-weight: 600; margin-top: 4px;
+  }
+
+  #arcs {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 5; pointer-events: none;
+  }
+  #arcs path { fill: none; stroke: #fabb43; stroke-linecap: round; }
+
+  .cluster-halo {
+    position: absolute; border-radius: 50%; z-index: 1;
+    opacity: 0; pointer-events: none;
+  }
+  .cluster-label {
+    position: absolute; z-index: 2; opacity: 0; pointer-events: none;
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 3px 10px; border-radius: 20px;
+  }
+
+  .section-label { position: fixed; top: 2.5rem; left: 3rem; z-index: 100; }
+  .section-label .overline {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43; opacity: 0;
+  }
+  .section-label h2 {
+    font-size: 1.8rem; font-weight: 600; line-height: 1.25; opacity: 0; margin-top: 0.4rem;
+  }
+  .section-label h2 .hl { color: #fabb43; }
+  .section-label .sub {
+    font-size: 0.95rem; color: #999; margin-top: 0.4rem; opacity: 0;
+    max-width: 420px; line-height: 1.5;
+  }
+
+  .stages {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .stage-pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e0e0e0; transition: all 0.4s;
+  }
+  .stage-pip.on { background: #fabb43; transform: scale(1.3); }
+  .stage-pip.done { background: #e5a530; }
+
+  .hint { position: fixed; bottom: 1.5rem; right: 2rem; font-size: 0.65rem; color: #ccc; z-index: 100; }
+
+  .cursor {
+    display: inline-block; width: 2px; height: 1.1em;
+    background: #fabb43; vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  #questionText {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 50;
+  }
+  #questionText .q-overline {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43; margin-bottom: 1rem; opacity: 0;
+  }
+  #questionText h1 { font-size: 3rem; font-weight: 600; line-height: 1.15; opacity: 0; }
+  #questionText h1 .hl { color: #fabb43; }
+
+  #typeArea {
+    max-width: 80%; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="questionText">
+  <div class="q-overline">Teil 1</div>
+  <h1>Was passiert, wenn du<br><span class="hl">Enter</span> drückst?</h1>
+</div>
+
+<!-- Typing happens directly on white background, no box -->
+<div id="typeArea" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.8rem; font-weight:500; color:#1a1a1a; z-index:50; opacity:0; white-space:nowrap;">
+  <span id="typedText"></span><span class="cursor" id="typeCursor"></span>
+</div>
+
+<div class="section-label">
+  <div class="overline" id="secOL"></div>
+  <h2 id="secHL"></h2>
+  <div class="sub" id="secSub"></div>
+</div>
+
+<!-- Words: initially "Patentanspruch" is ONE word, then splits into Patent + anspruch -->
+<div class="word" id="w_der">Der<div class="token-bg" style="background:#4a90d9;"></div><div class="token-id">874</div></div>
+<div class="word" id="w_patent">Patent<div class="token-bg" style="background:#7c5cbf;"></div><div class="token-id">28431</div></div>
+<div class="word" id="w_anspruch">anspruch<div class="token-bg" style="background:#e8853d;"></div><div class="token-id">15229</div></div>
+<div class="word" id="w_betrifft">betrifft<div class="token-bg" style="background:#3daa8f;"></div><div class="token-id">67234</div></div>
+<div class="word" id="w_eine">eine<div class="token-bg" style="background:#d94a6e;"></div><div class="token-id">1653</div></div>
+<div class="word" id="w_vorrichtung">Vorrichtung<div class="token-bg" style="background:#4a90d9;"></div><div class="token-id">44521</div></div>
+
+<!-- Bracket for split visualization -->
+<div id="splitBracket">
+  <div class="bracket-line"></div>
+  <div class="bracket-label">1 Wort → 2 Tokens</div>
+</div>
+
+<!-- Cluster halos + labels -->
+<div class="cluster-halo" id="halo1" style="width:220px;height:180px;background:radial-gradient(circle,rgba(74,144,217,0.1) 0%,transparent 70%);"></div>
+<div class="cluster-halo" id="halo2" style="width:160px;height:140px;background:radial-gradient(circle,rgba(232,133,61,0.1) 0%,transparent 70%);"></div>
+<div class="cluster-label" id="clabel1" style="color:#4a90d9; background:rgba(74,144,217,0.08);">Recht / Patent</div>
+<div class="cluster-label" id="clabel2" style="color:#e8853d; background:rgba(232,133,61,0.08);">Technik</div>
+
+<svg id="arcs"></svg>
+
+<div class="stages" id="stages"></div>
+<div class="hint">Klick / → zum Weiter</div>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight;
+
+const wDer = document.getElementById('w_der');
+const wPatent = document.getElementById('w_patent');
+const wAnspruch = document.getElementById('w_anspruch');
+const wBetrifft = document.getElementById('w_betrifft');
+const wEine = document.getElementById('w_eine');
+const wVorrichtung = document.getElementById('w_vorrichtung');
+const allWords = [wDer, wPatent, wAnspruch, wBetrifft, wEine, wVorrichtung];
+
+const promptText = 'Der Patentanspruch betrifft eine Vorrichtung zum drahtlosen Laden';
+
+let stage = -1;
+const STAGES = 6;
+let busy = false;
+
+// Build pips
+const stagesEl = document.getElementById('stages');
+for (let i = 0; i < STAGES; i++) {
+  const p = document.createElement('div');
+  p.className = 'stage-pip'; p.id = 'pip' + i;
+  stagesEl.appendChild(p);
+}
+function updatePips() {
+  for (let i = 0; i < STAGES; i++) {
+    document.getElementById('pip' + i).className = 'stage-pip' + (i === stage ? ' on' : i < stage ? ' done' : '');
+  }
+}
+
+// === LABEL HELPERS ===
+function showLabel(ol, hl, sub) {
+  const oEl = document.getElementById('secOL');
+  const hEl = document.getElementById('secHL');
+  const sEl = document.getElementById('secSub');
+  oEl.textContent = ol; hEl.innerHTML = hl; sEl.textContent = sub || '';
+  gsap.fromTo([oEl, hEl, sEl], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power2.out' });
+}
+function hideLabel() {
+  return gsap.to([document.getElementById('secOL'), document.getElementById('secHL'), document.getElementById('secSub')],
+    { opacity: 0, y: -15, duration: 0.4, ease: 'power2.in' });
+}
+
+// === STAGE 0: Question appears ===
+function doStage0() {
+  const q = document.getElementById('questionText');
+  gsap.to(q.querySelectorAll('.q-overline, h1'), { opacity: 1, duration: 0.8, stagger: 0.25 });
+}
+
+// === STAGE 1: Question fades → Typewriter types → Words become tokens ===
+function doStage1() {
+  const tl = gsap.timeline();
+
+  // Fade out question smoothly
+  tl.to('#questionText', { opacity: 0, scale: 0.97, duration: 0.8, ease: 'power2.inOut' });
+
+  // Show typing area (clean white bg, no box)
+  tl.to('#typeArea', { opacity: 1, duration: 0.3 }, '-=0.3');
+
+  // Typewriter effect
+  const typed = document.getElementById('typedText');
+  const shortPrompt = 'Der Patentanspruch betrifft eine Vorrichtung';
+  let charIdx = 0;
+  tl.call(() => {
+    const iv = setInterval(() => {
+      if (charIdx < shortPrompt.length) { typed.textContent = shortPrompt.substring(0, ++charIdx); }
+      else clearInterval(iv);
+    }, 50);
+  });
+
+  // Wait for typing to finish
+  tl.to({}, { duration: shortPrompt.length * 0.05 + 0.8 });
+
+  // Cursor stops blinking
+  tl.to('#typeCursor', { opacity: 0, duration: 0.2 });
+
+  // Pause — let it sink in
+  tl.to({}, { duration: 0.8 });
+
+  // Show label
+  tl.call(() => showLabel(
+    'Schritt 1: Tokenisierung',
+    'Text wird in <span class="hl">Bausteine</span> zerlegt',
+    'Computer können nicht mit Text arbeiten — zuerst wird er in nummerierte Bausteine zerlegt.'
+  ));
+
+  // Fade out typed text — the word elements will replace it
+  tl.to('#typeArea', { opacity: 0, duration: 0.4 }, '+=0.3');
+
+  // Position word elements as continuous sentence (Patent+anspruch touching)
+  const sentenceY = H * 0.52;
+  const cx = W / 2;
+  const charW = 16;
+  const sentenceWords = [
+    { el: wDer, text: 'Der', gap: 12 },
+    { el: wPatent, text: 'Patent', gap: 0 },
+    { el: wAnspruch, text: 'anspruch', gap: 12 },
+    { el: wBetrifft, text: 'betrifft', gap: 12 },
+    { el: wEine, text: 'eine', gap: 12 },
+    { el: wVorrichtung, text: 'Vorrichtung', gap: 0 },
+  ];
+
+  let totalW = 0;
+  sentenceWords.forEach((sw, i) => {
+    totalW += sw.text.length * charW;
+    if (i < sentenceWords.length - 1) totalW += sentenceWords[i].gap;
+  });
+
+  let curX = cx - totalW / 2;
+  sentenceWords.forEach((sw) => {
+    gsap.set(sw.el, { left: curX, top: sentenceY, opacity: 0, fontSize: '1.8rem', color: '#1a1a1a' });
+    curX += sw.text.length * charW + sw.gap;
+  });
+
+  // Fade in word elements (looking identical to the typed text)
+  tl.to(allWords, { opacity: 1, duration: 0.3, stagger: 0.02 }, '-=0.1');
+
+  // Hold
+  tl.to({}, { duration: 1 });
+
+  // SPLIT into tokens — Patent and anspruch separate!
+  const tokenGap = 24;
+  const tokenWidths = [3, 6, 8, 7, 4, 11].map(n => n * charW + 24);
+  const totalTokenW = tokenWidths.reduce((a, b) => a + b, 0) + tokenGap * 5;
+  let tokX = cx - totalTokenW / 2;
+  const tokenPos = tokenWidths.map((tw) => {
+    const x = tokX;
+    tokX += tw + tokenGap;
+    return { x, y: H * 0.52 };
+  });
+
+  allWords.forEach((w, i) => {
+    tl.to(w, {
+      left: tokenPos[i].x,
+      top: tokenPos[i].y,
+      duration: 0.9,
+      ease: 'back.out(1.1)',
+    }, i === 0 ? '+=0' : '<0.06');
+  });
+
+  // Token backgrounds appear
+  tl.to(allWords.map(w => w.querySelector('.token-bg')), {
+    opacity: 1, duration: 0.5, stagger: 0.06
+  }, '-=0.4');
+
+  // Text goes white
+  tl.to(allWords, { color: '#ffffff', duration: 0.4, stagger: 0.04 }, '-=0.3');
+
+  // Hold
+  tl.to({}, { duration: 0.5 });
+
+  // Token IDs
+  tl.to(allWords.map(w => w.querySelector('.token-id')), {
+    opacity: 1, duration: 0.5, stagger: 0.08
+  });
+
+  // Bracket under Patent + anspruch
+  tl.call(() => {
+    const bracket = document.getElementById('splitBracket');
+    const pRect = wPatent.getBoundingClientRect();
+    const aRect = wAnspruch.getBoundingClientRect();
+    const left = pRect.left - 4;
+    const width = aRect.right - pRect.left + 8;
+    const top = pRect.bottom + 26;
+    gsap.set(bracket, { left, top, width });
+    gsap.to(bracket, { opacity: 1, duration: 0.5 });
+  }, null, '+=0.3');
+}
+
+// === STAGE 2: Embeddings ===
+function doStage2() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+  tl.to({}, { duration: 0.5 });
+
+  // Hide bracket and token IDs
+  tl.to('#splitBracket', { opacity: 0, duration: 0.3 });
+  tl.to(allWords.map(w => w.querySelector('.token-id')), { opacity: 0, duration: 0.3 }, '<');
+
+  // New label
+  tl.call(() => showLabel(
+    'Schritt 2: Embeddings',
+    'Wörter werden zu <span class="hl">Punkten im Raum</span>',
+    'Ähnliche Bedeutung = nahe beieinander. "Patent" und "Anspruch" clustern zusammen.'
+  ));
+
+  tl.to({}, { duration: 0.4 });
+
+  // Embedding positions — semantically grouped
+  const positions = [
+    { x: W * 0.28, y: H * 0.50 },  // Der — function word, slightly aside
+    { x: W * 0.38, y: H * 0.35 },  // Patent — legal cluster
+    { x: W * 0.33, y: H * 0.44 },  // anspruch — legal cluster (near Patent)
+    { x: W * 0.58, y: H * 0.58 },  // betrifft — verb, middle
+    { x: W * 0.23, y: H * 0.60 },  // eine — function word
+    { x: W * 0.63, y: H * 0.38 },  // Vorrichtung — technical cluster
+  ];
+
+  // Float to positions
+  allWords.forEach((w, i) => {
+    tl.to(w, {
+      left: positions[i].x,
+      top: positions[i].y,
+      fontSize: '1.2rem',
+      duration: 1.4,
+      ease: 'power2.inOut',
+    }, i === 0 ? '+=0.2' : '<0.1');
+  });
+
+  // Soften token backgrounds
+  tl.to(allWords.map(w => w.querySelector('.token-bg')), { opacity: 0.5, duration: 0.5 }, '-=0.8');
+
+  // Show cluster halos
+  const h1 = document.getElementById('halo1');
+  const h2 = document.getElementById('halo2');
+  const cl1 = document.getElementById('clabel1');
+  const cl2 = document.getElementById('clabel2');
+  gsap.set(h1, { left: W * 0.22, top: H * 0.28 });
+  gsap.set(h2, { left: W * 0.55, top: H * 0.30 });
+  gsap.set(cl1, { left: W * 0.26, top: H * 0.28 });
+  gsap.set(cl2, { left: W * 0.62, top: H * 0.31 });
+  tl.to([h1, h2], { opacity: 1, duration: 1, stagger: 0.3 }, '-=0.6');
+  tl.to([cl1, cl2], { opacity: 1, duration: 0.6, stagger: 0.3 }, '-=0.6');
+}
+
+// === STAGE 3: Attention ===
+function doStage3() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+  tl.to({}, { duration: 0.5 });
+
+  // Hide halos + cluster labels
+  tl.to('.cluster-halo, .cluster-label', { opacity: 0, duration: 0.4 });
+
+  // Token bg fully visible again, shrink text a bit
+  tl.to(allWords.map(w => w.querySelector('.token-bg')), { opacity: 0.85, duration: 0.3 }, '<');
+
+  tl.call(() => showLabel(
+    'Schritt 3: Attention',
+    'Wörter <span class="hl">beobachten</span> einander',
+    '"anspruch" achtet auf "Patent" — so versteht das Modell Kontext und Bezüge.'
+  ));
+
+  tl.to({}, { duration: 0.3 });
+
+  // Spread words horizontally
+  const margin = W * 0.1;
+  const usable = W * 0.8;
+  const attPos = allWords.map((w, i) => ({
+    x: margin + i * (usable / (allWords.length - 1)),
+    y: H * 0.58,
+  }));
+
+  allWords.forEach((w, i) => {
+    tl.to(w, {
+      left: attPos[i].x - 30, // offset for centering
+      top: attPos[i].y,
+      fontSize: '1.1rem',
+      duration: 1,
+      ease: 'power2.inOut',
+    }, i === 0 ? '+=0.2' : '<0.06');
+  });
+
+  // Wait for words to settle, then draw arcs
+  tl.to({}, { duration: 0.4 });
+  tl.call(() => drawArcs(attPos));
+}
+
+function drawArcs(positions) {
+  const svg = document.getElementById('arcs');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+
+  const arcsData = [
+    [1, 2, 3.5, '#e8853d'],   // Patent → anspruch (strongest — same original word!)
+    [0, 1, 1.5, '#fabb43'],   // Der → Patent
+    [3, 5, 2.5, '#fabb43'],   // betrifft → Vorrichtung
+    [4, 5, 1.2, '#fabb43'],   // eine → Vorrichtung
+    [2, 3, 1, '#fabb43'],     // anspruch → betrifft
+  ];
+
+  arcsData.forEach(([fi, ti, strength, color], idx) => {
+    const fx = positions[fi].x;
+    const fy = positions[fi].y;
+    const tx = positions[ti].x;
+    const ty = positions[ti].y;
+
+    const midX = (fx + tx) / 2;
+    const arcHeight = Math.abs(tx - fx) * 0.3 + 40;
+    const midY = fy - arcHeight;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${fx} ${fy} Q ${midX} ${midY} ${tx} ${ty}`);
+    path.setAttribute('stroke-width', strength);
+    path.setAttribute('stroke', color);
+    path.setAttribute('opacity', Math.min(0.85, strength * 0.22));
+
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+    svg.appendChild(path);
+
+    gsap.to(path.style, {
+      strokeDashoffset: 0,
+      duration: 1,
+      delay: idx * 0.2,
+      ease: 'power2.out',
+    });
+  });
+}
+
+// === STAGE 4: Neural Network ===
+function doStage4() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+  tl.to({}, { duration: 0.4 });
+
+  // Fade arcs
+  tl.to('#arcs path', { opacity: 0, duration: 0.5 });
+
+  // Remove token backgrounds
+  tl.to(allWords.map(w => w.querySelector('.token-bg')), { opacity: 0, duration: 0.4 }, '<');
+  tl.to(allWords, { color: '#1a1a1a', duration: 0.4 }, '<');
+
+  tl.call(() => showLabel(
+    'Schritt 4: Das Neuronale Netz',
+    'Dein Prompt <span class="hl">fließt</span> durch das Netz',
+    'Die Tokens werden durch Hunderte Schichten verarbeitet — und am Ende kommt die Antwort.'
+  ));
+
+  tl.to({}, { duration: 0.3 });
+
+  // Words shrink and stack on the left
+  allWords.forEach((w, i) => {
+    tl.to(w, {
+      left: W * 0.08,
+      top: H * 0.32 + i * 32,
+      fontSize: '0.85rem',
+      duration: 0.9,
+      ease: 'power3.inOut',
+    }, i === 0 ? '+=0.2' : '<0.08');
+  });
+
+  tl.to({}, { duration: 0.6 });
+
+  // Words fly into the network and disappear
+  allWords.forEach((w, i) => {
+    tl.to(w, {
+      left: W * 0.18,
+      opacity: 0,
+      duration: 0.5,
+      ease: 'power2.in',
+    }, i === 0 ? '+=0' : '<0.1');
+  });
+
+  // NN placeholder
+  tl.call(() => {
+    const ph = document.createElement('div');
+    ph.id = 'nnPlaceholder';
+    ph.style.cssText = `
+      position:fixed; top:50%; left:55%; transform:translate(-50%,-50%);
+      font-size:1rem; color:#bbb; text-align:center; z-index:5;
+      border:2px dashed #e0e0e0; border-radius:16px; padding:3rem 4rem;
+    `;
+    ph.innerHTML = '[ 3D Neural Network Canvas ]<br><span style="font-size:0.8rem;color:#ccc;">Flat → Rotation → Aktivierungswelle</span>';
+    document.body.appendChild(ph);
+    gsap.fromTo(ph, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6 });
+  }, null, '+=0.3');
+}
+
+// === STAGE 5: Next Token Prediction ===
+function doStage5() {
+  const tl = gsap.timeline();
+
+  tl.call(() => hideLabel());
+  tl.to({}, { duration: 0.4 });
+
+  const ph = document.getElementById('nnPlaceholder');
+  if (ph) tl.to(ph, { opacity: 0, scale: 0.95, duration: 0.4, onComplete: () => ph.remove() });
+
+  tl.call(() => showLabel(
+    'Das Kernprinzip',
+    'KI sagt das <span class="hl">wahrscheinlichste nächste Wort</span> vorher',
+    'Das Modell WEISS die Antwort nicht — es rät das plausibelste nächste Wort. Wort für Wort.'
+  ));
+
+  tl.to({}, { duration: 0.5 });
+
+  tl.call(() => {
+    const container = document.createElement('div');
+    container.id = 'ntpViz';
+    container.style.cssText = 'position:fixed; top:48%; left:50%; transform:translate(-50%,-50%); z-index:20;';
+
+    // Sentence
+    const sentence = document.createElement('div');
+    sentence.style.cssText = 'font-size:1.6rem; margin-bottom:2.5rem; color:#333;';
+    sentence.innerHTML = '<span>Der Patent</span><span class="cursor"></span>';
+    container.appendChild(sentence);
+
+    // Bars
+    const barsData = [
+      { word: 'anspruch', pct: 34, color: 'linear-gradient(90deg,#fabb43,#ea580c)' },
+      { word: 'inhaber', pct: 22, color: '#fabb43' },
+      { word: 'schutz', pct: 18, color: '#fabb43' },
+      { word: 'anwalt', pct: 11, color: '#e0d5c0' },
+      { word: 'amt', pct: 7, color: '#e0d5c0' },
+    ];
+
+    const bc = document.createElement('div');
+    bc.style.cssText = 'display:flex; flex-direction:column; gap:10px; width:480px;';
+
+    barsData.forEach(b => {
+      const row = document.createElement('div');
+      row.className = 'ntp-row';
+      row.style.cssText = 'display:flex; align-items:center; gap:14px; opacity:0;';
+      row.innerHTML = `
+        <div style="width:100px;text-align:right;font-size:1rem;color:#555;font-weight:500;">${b.word}</div>
+        <div style="flex:1;height:26px;background:#f0f0f0;border-radius:6px;overflow:hidden;">
+          <div class="ntp-bar" style="height:100%;width:0%;border-radius:6px;background:${b.color};${b.pct < 15 ? '' : b.pct < 25 ? 'opacity:0.65;' : ''}"></div>
+        </div>
+        <div style="width:40px;font-size:0.8rem;color:#aaa;text-align:right;">${b.pct}%</div>
+      `;
+      bc.appendChild(row);
+    });
+    container.appendChild(bc);
+
+    // Insight
+    const insight = document.createElement('div');
+    insight.id = 'ntpInsight';
+    insight.style.cssText = 'margin-top:2.5rem;padding:1.1rem 1.3rem;background:#fffbeb;border-left:4px solid #fabb43;border-radius:0 8px 8px 0;font-size:0.9rem;color:#92400e;max-width:480px;opacity:0;line-height:1.55;';
+    insight.innerHTML = '⚡ <strong>Das Modell WEISS die Antwort nicht.</strong> Es sagt das wahrscheinlichste nächste Wort vorher — Wort für Wort. Alles andere ergibt sich daraus.';
+    container.appendChild(insight);
+
+    document.body.appendChild(container);
+
+    // Animate
+    const rows = bc.querySelectorAll('.ntp-row');
+    gsap.to(rows, { opacity: 1, duration: 0.5, stagger: 0.12, delay: 0.3 });
+
+    const bars = bc.querySelectorAll('.ntp-bar');
+    barsData.forEach((b, i) => {
+      gsap.to(bars[i], { width: Math.min(b.pct * 2.2, 100) + '%', duration: 1, delay: 0.6 + i * 0.15, ease: 'power2.out' });
+    });
+
+    gsap.to('#ntpInsight', { opacity: 1, delay: 2.2, duration: 0.7 });
+  });
+}
+
+// === CONTROLLER ===
+const stageFns = [doStage0, doStage1, doStage2, doStage3, doStage4, doStage5];
+
+function advance() {
+  if (busy || stage >= STAGES - 1) return;
+  busy = true;
+  stage++;
+  updatePips();
+  stageFns[stage]();
+  // Dynamic busy duration — longer for complex stages
+  const durations = [1200, 8000, 4000, 3500, 3500, 3000];
+  setTimeout(() => busy = false, durations[stage]);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.stages')) return;
+  advance();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault(); advance();
+  }
+});
+
+advance();
+</script>
+
+</body>
+</html>

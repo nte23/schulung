@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intro Flow v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a;
+    overflow: hidden; height: 100vh; cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #fabb43, #ea580c); z-index: 1000; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); width: 0%; }
+
+  /* All text lives in one container, absolutely positioned */
+  .stage {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4rem;
+  }
+  .content { max-width: 900px; width: 100%; position: relative; }
+
+  /* Elements that morph */
+  .el {
+    position: absolute; opacity: 0;
+    transition: none; /* GSAP only */
+  }
+
+  /* Overline — small label */
+  .overline {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #fabb43;
+  }
+
+  /* Big centered statement */
+  .big-text {
+    font-size: clamp(2.5rem, 5.5vw, 4rem); font-weight: 600;
+    line-height: 1.1; letter-spacing: -0.03em;
+  }
+  .big-text .hl { color: #fabb43; }
+
+  /* Medium heading (after shrink) */
+  .med-text {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem); font-weight: 600;
+    line-height: 1.15; letter-spacing: -0.02em;
+  }
+  .med-text .hl { color: #fabb43; }
+
+  /* Subtitle */
+  .sub-text {
+    font-size: 1.15rem; color: #888; line-height: 1.55; max-width: 500px;
+  }
+
+  /* Check items */
+  .check-item {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 1.25rem;
+  }
+  .check-icon {
+    font-size: 1.4rem; font-weight: 700; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .check-item.neg .check-icon { color: #dc2626; background: rgba(220,38,38,0.06); }
+  .check-item.pos .check-icon { color: #16a34a; background: rgba(22,163,74,0.06); }
+  .check-item.neg .check-text { color: #bbb; text-decoration: line-through; }
+
+  /* Roadmap cards */
+  .rm-row { display: flex; gap: 1rem; width: 100%; }
+  .rm-card {
+    flex: 1; background: #fafafa; border: 1px solid #eee;
+    border-radius: 14px; padding: 1.3rem 1.2rem;
+    transition: border-color 0.2s;
+  }
+  .rm-card:hover { border-color: rgba(250,187,67,0.3); }
+  .rm-num { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.4rem; }
+  .rm-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .rm-desc { font-size: 0.72rem; color: #999; line-height: 1.4; }
+  .rm-time { font-size: 0.55rem; font-weight: 600; color: #ccc; margin-top: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rm-arrow { display: flex; align-items: center; color: #e0e0e0; font-size: 0.9rem; flex-shrink: 0; }
+
+  .nav { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.4rem; z-index: 100; }
+  .nav-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e8e8e8;
+    background: white; color: #999; cursor: pointer; font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: #fabb43; border-color: #fabb43; color: white; }
+  .step-counter { font-size: 0.6rem; color: #ccc; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="stage">
+  <div class="content" id="content">
+    <!-- Everything gets created/positioned by JS -->
+  </div>
+</div>
+
+<div class="nav">
+  <span class="step-counter" id="stepCounter"></span>
+  <button class="nav-btn" id="prevBtn">←</button>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<script>
+const content = document.getElementById('content');
+const W = window.innerWidth, H = window.innerHeight;
+let step = -1, busy = false;
+
+// Helper: create an element
+function make(tag, cls, html, styles) {
+  const el = document.createElement(tag);
+  el.className = cls;
+  if (html) el.innerHTML = html;
+  Object.assign(el.style, styles || {});
+  el.style.opacity = '0';
+  content.appendChild(el);
+  return el;
+}
+
+// Helper: show element (fade in from below)
+function show(el, opts = {}) {
+  const { delay = 0, from = 'below', dur = 0.6 } = opts;
+  const y = from === 'below' ? 30 : from === 'above' ? -20 : 0;
+  gsap.fromTo(el, { opacity: 0, y }, { opacity: 1, y: 0, duration: dur, delay, ease: 'power3.out' });
+}
+
+// Helper: hide element
+function hide(el, opts = {}) {
+  const { delay = 0, dir = 'up', dur = 0.4 } = opts;
+  const y = dir === 'up' ? -25 : dir === 'down' ? 25 : 0;
+  return gsap.to(el, { opacity: 0, y, duration: dur, delay, ease: 'power2.in' });
+}
+
+// Helper: morph position/size
+function morph(el, props, opts = {}) {
+  return gsap.to(el, { ...props, duration: opts.dur || 0.7, ease: opts.ease || 'power2.inOut', delay: opts.delay || 0 });
+}
+
+// ========================================
+// STEP DEFINITIONS
+// Each step = one click = one thing happens
+// ========================================
+
+// Pre-create all elements
+const elOverline1 = make('div', 'el overline', 'Workshop');
+const elTitle1 = make('div', 'el big-text', 'Grundlagen der<br><span class="hl">generativen KI</span>');
+const elSub1 = make('div', 'el sub-text', 'Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie du sie effektiv einsetzt.');
+
+const elZielLabel = make('div', 'el overline', 'Ziel dieses Workshops');
+const elZielBig = make('div', 'el big-text', 'Selbst <span class="hl">prompten</span> können');
+
+const elCheck1 = make('div', 'el check-item pos', '<span class="check-icon">✓</span><span class="check-text">Technisch verstehen, wie es funktioniert</span>');
+const elCheck2 = make('div', 'el check-item pos', '<span class="check-icon">✓</span><span class="check-text">Eigene Prompts entwickeln können</span>');
+const elCheck3 = make('div', 'el check-item neg', '<span class="check-icon">✗</span><span class="check-text">Prompt-Sammlung zum Kopieren</span>');
+
+const elFahrplanLabel = make('div', 'el overline', 'Fahrplan');
+const elFahrplanTitle = make('div', 'el med-text', 'Unser Weg <span class="hl">heute</span>');
+const elRoadmap = make('div', 'el rm-row', `
+  <div class="rm-card"><div class="rm-num">Teil 1</div><div class="rm-title">Wie KI funktioniert</div><div class="rm-desc">Tokens, Neuronales Netz, Next-Token-Prediction</div><div class="rm-time">~35 min</div></div>
+  <div class="rm-arrow">→</div>
+  <div class="rm-card"><div class="rm-num">Teil 2</div><div class="rm-title">Grenzen & Halluzinationen</div><div class="rm-desc">Warum KI falsch liegt, Risiken</div><div class="rm-time">~15 min</div></div>
+  <div class="rm-arrow">→</div>
+  <div class="rm-card"><div class="rm-num">Teil 3</div><div class="rm-title">Prompting-Techniken</div><div class="rm-desc">Zero-Shot, Few-Shot, CoT, Baukasten</div><div class="rm-time">~30 min</div></div>
+  <div class="rm-arrow">→</div>
+  <div class="rm-card"><div class="rm-num">Teil 4</div><div class="rm-title">Praxis</div><div class="rm-desc">Übungen, Patent-Prompts</div><div class="rm-time">~30 min</div></div>
+`);
+
+const elTeil1Label = make('div', 'el overline', 'Teil 1');
+const elTeil1Title = make('div', 'el big-text', 'Was passiert, wenn du<br><span class="hl">Enter</span> drückst?');
+
+// No pre-positioning — we use flexbox centering and let GSAP handle transforms
+
+// ========================================
+// STEPS
+// ========================================
+const steps = [
+  // 0: Title appears
+  () => {
+    show(elOverline1);
+    show(elTitle1, { delay: 0.15 });
+    show(elSub1, { delay: 0.35 });
+  },
+
+  // 1: Title fades → "Ziel" appears BIG and alone
+  () => {
+    hide(elOverline1);
+    hide(elTitle1, { delay: 0.05 });
+    hide(elSub1, { delay: 0.1 });
+    setTimeout(() => {
+      show(elZielLabel, { delay: 0 });
+      show(elZielBig, { delay: 0.12 });
+    }, 500);
+  },
+
+  // 2: First check item — technical understanding
+  () => { show(elCheck1); },
+
+  // 3: Second check item — own prompts
+  () => { show(elCheck2); },
+
+  // 4: Third check item — NOT a prompt library (the strike-through)
+  () => { show(elCheck3); },
+
+  // 5: Everything fades → Fahrplan
+  () => {
+    hide(elZielLabel);
+    hide(elZielBig, { delay: 0.05 });
+    hide(elCheck1, { delay: 0.08 });
+    hide(elCheck2, { delay: 0.11 });
+    hide(elCheck3, { delay: 0.14 });
+    setTimeout(() => {
+      show(elFahrplanLabel);
+      show(elFahrplanTitle, { delay: 0.1 });
+      show(elRoadmap, { delay: 0.25 });
+    }, 550);
+  },
+
+  // 6: Fahrplan fades → Teil 1 opener (centered, dramatic)
+  () => {
+    hide(elFahrplanLabel);
+    hide(elFahrplanTitle, { delay: 0.05 });
+    hide(elRoadmap, { delay: 0.1 });
+    setTimeout(() => {
+      show(elTeil1Label, { delay: 0 });
+      show(elTeil1Title, { delay: 0.15 });
+    }, 550);
+  },
+];
+
+const TOTAL_STEPS = steps.length;
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= TOTAL_STEPS) return;
+  busy = true;
+  steps[step]();
+  document.getElementById('progress').style.width = ((step + 1) / TOTAL_STEPS * 100) + '%';
+  document.getElementById('stepCounter').textContent = (step + 1) + '/' + TOTAL_STEPS;
+  setTimeout(() => busy = false, step === 1 || step === 5 || step === 6 ? 800 : 400);
+}
+
+document.addEventListener('click', e => { if (!e.target.closest('.nav')) advance(); });
+document.getElementById('nextBtn').addEventListener('click', e => { e.stopPropagation(); advance(); });
+document.getElementById('prevBtn').addEventListener('click', e => { e.stopPropagation(); /* TODO: back */ });
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); }
+});
+
+// Start
+advance();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intro Flow v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #fabb43, #ea580c); z-index: 1000; width: 0%; transition: width 0.5s; }
+
+  /* Each "page" is a full-screen centered container */
+  .page {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    padding: 0 10vw;
+    opacity: 0; visibility: hidden;
+  }
+  .page.active { opacity: 1; visibility: visible; }
+  .page.centered { align-items: center; text-align: center; }
+
+  .overline { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; margin-bottom: 1rem; }
+  .hero { font-size: clamp(2.5rem, 5.5vw, 4rem); font-weight: 600; line-height: 1.1; letter-spacing: -0.03em; }
+  .hero .hl { color: #fabb43; }
+  .subtitle { font-size: 1.2rem; color: #888; line-height: 1.55; max-width: 520px; margin-top: 1.2rem; }
+
+  /* Ziel page — title shrinks up, items appear below */
+  .ziel-title {
+    font-size: clamp(2.5rem, 5.5vw, 4rem); font-weight: 600;
+    line-height: 1.1; letter-spacing: -0.03em;
+    transition: font-size 0.6s, margin-bottom 0.6s;
+  }
+  .ziel-title .hl { color: #fabb43; }
+  .ziel-title.shrunk {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .items { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1.5rem; }
+  .item {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 1.25rem; opacity: 0;
+  }
+  .item-icon {
+    font-size: 1.4rem; font-weight: 700; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .item.pos .item-icon { color: #16a34a; background: rgba(22,163,74,0.06); }
+  .item.neg .item-icon { color: #dc2626; background: rgba(220,38,38,0.06); }
+  .item.neg .item-text { color: #bbb; text-decoration: line-through; }
+
+  /* Roadmap */
+  .rm { display: flex; gap: 1rem; margin-top: 2rem; width: 100%; }
+  .rm-card {
+    flex: 1; background: #fafafa; border: 1px solid #eee; border-radius: 14px;
+    padding: 1.3rem; transition: border-color 0.2s;
+  }
+  .rm-card:hover { border-color: rgba(250,187,67,0.3); }
+  .rm-num { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #fabb43; margin-bottom: 0.4rem; }
+  .rm-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .rm-desc { font-size: 0.72rem; color: #999; line-height: 1.4; }
+  .rm-time { font-size: 0.55rem; font-weight: 600; color: #ccc; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rm-arrow { display: flex; align-items: center; color: #e0e0e0; font-size: 0.9rem; flex-shrink: 0; }
+
+  .step-info { position: fixed; bottom: 1.5rem; right: 2rem; font-size: 0.6rem; color: #ccc; z-index: 100; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- PAGE 1: Title -->
+<div class="page active" id="pg1">
+  <div class="overline" id="p1_ol">Workshop</div>
+  <div class="hero" id="p1_h">Grundlagen der<br><span class="hl">generativen KI</span></div>
+  <div class="subtitle" id="p1_sub">Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie du sie effektiv einsetzt.</div>
+</div>
+
+<!-- PAGE 2: Ziel — starts as single big statement, items appear below -->
+<div class="page" id="pg2">
+  <div class="overline" id="p2_ol">Ziel dieses Workshops</div>
+  <div class="ziel-title" id="p2_title">Selbst <span class="hl">prompten</span> können</div>
+  <div class="items" id="p2_items">
+    <div class="item pos" id="item1"><span class="item-icon">✓</span><span class="item-text">Technisch verstehen, wie es funktioniert</span></div>
+    <div class="item pos" id="item2"><span class="item-icon">✓</span><span class="item-text">Eigene Prompts entwickeln können</span></div>
+    <div class="item neg" id="item3"><span class="item-icon">✗</span><span class="item-text">Prompt-Sammlung zum Kopieren</span></div>
+  </div>
+</div>
+
+<!-- PAGE 3: Fahrplan -->
+<div class="page" id="pg3">
+  <div class="overline" id="p3_ol">Fahrplan</div>
+  <div class="hero" id="p3_h" style="font-size:clamp(1.8rem,3.5vw,2.5rem);">Unser Weg <span class="hl">heute</span></div>
+  <div class="rm" id="p3_rm">
+    <div class="rm-card"><div class="rm-num">Teil 1</div><div class="rm-title">Wie KI funktioniert</div><div class="rm-desc">Tokens, Neuronales Netz, Next-Token-Prediction</div><div class="rm-time">~35 min</div></div>
+    <div class="rm-arrow">→</div>
+    <div class="rm-card"><div class="rm-num">Teil 2</div><div class="rm-title">Grenzen & Halluzinationen</div><div class="rm-desc">Warum KI falsch liegt, Risiken</div><div class="rm-time">~15 min</div></div>
+    <div class="rm-arrow">→</div>
+    <div class="rm-card"><div class="rm-num">Teil 3</div><div class="rm-title">Prompting-Techniken</div><div class="rm-desc">Zero-Shot, Few-Shot, CoT, Baukasten</div><div class="rm-time">~30 min</div></div>
+    <div class="rm-arrow">→</div>
+    <div class="rm-card"><div class="rm-num">Teil 4</div><div class="rm-title">Praxis</div><div class="rm-desc">Übungen, Patent-Prompts</div><div class="rm-time">~30 min</div></div>
+  </div>
+</div>
+
+<!-- PAGE 4: Teil 1 Opener -->
+<div class="page centered" id="pg4">
+  <div class="overline" id="p4_ol">Teil 1</div>
+  <div class="hero" id="p4_h">Was passiert, wenn du<br><span class="hl">Enter</span> drückst?</div>
+</div>
+
+<div class="step-info" id="stepInfo">1/10</div>
+
+<script>
+let step = -1, busy = false;
+
+function fadeInEl(el, delay = 0) {
+  gsap.fromTo(el, { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.65, delay, ease: 'power3.out' });
+}
+function fadeOutEl(el, delay = 0) {
+  return gsap.to(el, { opacity: 0, y: -20, duration: 0.4, delay, ease: 'power2.in' });
+}
+function switchPage(from, to, delay = 0) {
+  setTimeout(() => {
+    document.getElementById(from).classList.remove('active');
+    document.getElementById(from).style.opacity = '0';
+    document.getElementById(from).style.visibility = 'hidden';
+    const pg = document.getElementById(to);
+    pg.classList.add('active');
+    pg.style.opacity = '1';
+    pg.style.visibility = 'visible';
+  }, delay);
+}
+
+const steps = [
+  // 0: Show title page
+  () => {
+    fadeInEl(document.getElementById('p1_ol'));
+    fadeInEl(document.getElementById('p1_h'), 0.12);
+    fadeInEl(document.getElementById('p1_sub'), 0.28);
+  },
+
+  // 1: Fade title → Show "Ziel" page with just the big title (no items yet)
+  () => {
+    fadeOutEl(document.getElementById('p1_ol'));
+    fadeOutEl(document.getElementById('p1_h'), 0.05);
+    fadeOutEl(document.getElementById('p1_sub'), 0.1);
+
+    switchPage('pg1', 'pg2', 500);
+    setTimeout(() => {
+      fadeInEl(document.getElementById('p2_ol'));
+      fadeInEl(document.getElementById('p2_title'), 0.12);
+    }, 550);
+  },
+
+  // 2: Title shrinks up, first item appears
+  () => {
+    document.getElementById('p2_title').classList.add('shrunk');
+    gsap.to('#p2_items', { opacity: 1, duration: 0.01 }); // make container visible
+    setTimeout(() => fadeInEl(document.getElementById('item1')), 300);
+  },
+
+  // 3: Second item
+  () => { fadeInEl(document.getElementById('item2')); },
+
+  // 4: Third item (strikethrough)
+  () => { fadeInEl(document.getElementById('item3')); },
+
+  // 5: Fade ziel → Fahrplan
+  () => {
+    fadeOutEl(document.getElementById('p2_ol'));
+    fadeOutEl(document.getElementById('p2_title'), 0.03);
+    fadeOutEl(document.getElementById('item1'), 0.06);
+    fadeOutEl(document.getElementById('item2'), 0.09);
+    fadeOutEl(document.getElementById('item3'), 0.12);
+
+    switchPage('pg2', 'pg3', 500);
+    setTimeout(() => {
+      fadeInEl(document.getElementById('p3_ol'));
+      fadeInEl(document.getElementById('p3_h'), 0.1);
+      fadeInEl(document.getElementById('p3_rm'), 0.25);
+    }, 550);
+  },
+
+  // 6: Fade fahrplan → Teil 1 opener
+  () => {
+    fadeOutEl(document.getElementById('p3_ol'));
+    fadeOutEl(document.getElementById('p3_h'), 0.05);
+    fadeOutEl(document.getElementById('p3_rm'), 0.1);
+
+    switchPage('pg3', 'pg4', 500);
+    setTimeout(() => {
+      fadeInEl(document.getElementById('p4_ol'));
+      fadeInEl(document.getElementById('p4_h'), 0.15);
+    }, 550);
+  },
+];
+
+const TOTAL = steps.length;
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= TOTAL) return;
+  busy = true;
+  steps[step]();
+  document.getElementById('progress').style.width = ((step + 1) / TOTAL * 100) + '%';
+  document.getElementById('stepInfo').textContent = (step + 1) + '/' + TOTAL;
+  // Longer busy for page transitions, shorter for item reveals
+  const waitTime = (step === 1 || step === 5 || step === 6) ? 900 : 500;
+  setTimeout(() => busy = false, waitTime);
+}
+
+document.addEventListener('click', advance);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); }
+});
+
+advance();
+</script>
+
+</body>
+</html>

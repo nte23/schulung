@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN Final v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; }
+
+  #networkBox {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    cursor: pointer;
+  }
+
+  .label { position: fixed; top: 2.5rem; left: 3rem; z-index: 100; max-width: 350px; pointer-events: none; }
+  .label .ol { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub-text { font-size: 0.8rem; color: #999; margin-top: 0.3rem; line-height: 1.5; }
+
+  .prompt-bar {
+    position: fixed; bottom: 4rem; left: 50%; transform: translateX(-50%);
+    max-width: 550px; width: 85%; z-index: 100; pointer-events: none;
+    padding: 0.8rem 1.3rem; background: rgba(255,255,255,0.95);
+    border: 1px solid #e8e8e8; border-radius: 12px;
+    font-size: 0.9rem; color: #555; line-height: 1.5;
+    opacity: 0;
+  }
+  .prompt-bar .rp { color: #7c5cbf; font-weight: 600; }
+
+  .io { position: fixed; top: 50%; z-index: 100; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #ccc; transform: translateY(-50%); pointer-events: none; }
+  .io.inp { left: 1.5rem; }
+  .io.out { right: 1.5rem; }
+
+  .mystery-box {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 60; opacity: 0; pointer-events: none;
+  }
+  .mystery-box .big-q { font-size: 5rem; font-weight: 200; color: rgba(0,0,0,0.08); }
+  .mystery-box .mt { font-size: 0.95rem; color: #999; max-width: 400px; line-height: 1.6; margin-top: 0.5rem; }
+
+  .insight-box {
+    position: fixed; bottom: 2.5rem; left: 3rem; max-width: 380px; pointer-events: none;
+    padding: 0.8rem 1.1rem; background: rgba(255,251,235,0.95); border-left: 4px solid #fabb43;
+    border-radius: 0 8px 8px 0; font-size: 0.75rem; color: #92400e; line-height: 1.5;
+    opacity: 0; z-index: 100;
+  }
+
+  .hint-text { position: fixed; bottom: 1rem; right: 2rem; font-size: 0.6rem; color: #ccc; z-index: 100; pointer-events: none; }
+  .pips { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; pointer-events: none; }
+  .pip { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: all 0.4s; }
+  .pip.on { background: #fabb43; transform: scale(1.3); }
+  .pip.done { background: #e5a530; }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol" id="lOl">Warum Formulierung alles verändert</div>
+  <h2 id="lH2">Rollen-Prompts <span class="hl">fokussieren</span> das Modell</h2>
+  <div class="sub-text" id="lSub">Ein generischer Prompt aktiviert das Netzwerk breit und zufällig.</div>
+</div>
+
+<div class="io inp">Input</div>
+<div class="io out">Output</div>
+<div class="prompt-bar" id="pBar">"Erzähl mir eine Geschichte über Technologie"</div>
+
+<div class="mystery-box" id="myst">
+  <div class="big-q">?</div>
+  <div class="mt">Wir wissen nicht, WO in diesen Milliarden Parametern das Wissen steckt. Es gibt keine "Patent-Abteilung."</div>
+</div>
+
+<div class="insight-box" id="ins">
+  Es ist nicht wie ein Gehirn mit Abteilungen — aber wir können beobachten, dass bestimmte Muster stärker aktiviert werden. Rollen-Prompts verschieben die Wahrscheinlichkeitsverteilung.
+</div>
+
+<div class="hint-text">Klick zum Weiter</div>
+<div class="pips"><div class="pip on" id="p0"></div><div class="pip" id="p1"></div><div class="pip" id="p2"></div></div>
+
+<!-- Network rendered as DIVs, not canvas -->
+<div id="networkBox"></div>
+
+<script>
+const box = document.getElementById('networkBox');
+const W = window.innerWidth, H = window.innerHeight;
+
+// ===== BUILD NETWORK WITH DIVS =====
+const LAYERS = 10, BASE_NODES = 16;
+const allNodes = [];
+const allEdges = [];
+
+for (let l = 0; l < LAYERS; l++) {
+  const t = 1 - Math.abs(2 * l / (LAYERS - 1) - 1);
+  const count = Math.round(5 + t * (BASE_NODES - 5));
+  const x = W * 0.1 + (W * 0.8) * l / (LAYERS - 1);
+
+  for (let n = 0; n < count; n++) {
+    const spacing = H * 0.62 / (count + 1);
+    const y = H * 0.19 + (n + 1) * spacing;
+
+    const dot = document.createElement('div');
+    dot.style.cssText = `
+      position: absolute; left: ${x}px; top: ${y}px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #c0c0c0; transform: translate(-50%, -50%);
+      transition: background 0.4s, box-shadow 0.4s, transform 0.4s;
+    `;
+    box.appendChild(dot);
+
+    allNodes.push({
+      el: dot, x, y, l, n, count,
+      domain: (n / count + l / LAYERS) / 2 + Math.random() * 0.08,
+    });
+  }
+}
+
+// Build edges — connect EVERY node to ALL nodes in the next layer (dense)
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+box.appendChild(svg);
+
+for (let i = 0; i < allNodes.length; i++) {
+  for (let j = i + 1; j < allNodes.length; j++) {
+    if (Math.abs(allNodes[i].l - allNodes[j].l) !== 1) continue;
+    // Connect all pairs between adjacent layers
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', allNodes[i].x);
+    line.setAttribute('y1', allNodes[i].y);
+    line.setAttribute('x2', allNodes[j].x);
+    line.setAttribute('y2', allNodes[j].y);
+    line.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+    line.setAttribute('stroke-width', '0.5');
+    line.style.transition = 'stroke 0.35s, stroke-width 0.35s';
+    svg.appendChild(line);
+    allEdges.push({ el: line, i, j });
+  }
+}
+
+// ===== MODES =====
+let animFrame = null;
+let mode = 'idle';
+
+function resetAll() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  allNodes.forEach(n => {
+    n.el.style.background = '#c0c0c0';
+    n.el.style.boxShadow = 'none';
+    n.el.style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+  allEdges.forEach(e => {
+    e.el.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+    e.el.setAttribute('stroke-width', '0.5');
+  });
+}
+
+// Group nodes by layer once
+const layerGroups = [];
+for (let l = 0; l < LAYERS; l++) {
+  layerGroups.push(allNodes.map((n, idx) => ({ n, idx })).filter(o => o.n.l === l));
+}
+
+// Build bolt path: array of arrays (multiple nodes per layer step)
+function buildBoltPath() {
+  const path = [];
+  let lastY = H * 0.3 + Math.random() * H * 0.4; // starting y position
+
+  for (let l = 0; l < LAYERS; l++) {
+    const layer = layerGroups[l];
+
+    if (mode === 'scattered') {
+      // 1-3 nodes per layer, random, zigzag from lastY
+      const count = 1 + Math.floor(Math.random() * 2.5); // 1-3
+      const sorted = [...layer].sort((a, b) => Math.abs(a.n.y - lastY) - Math.abs(b.n.y - lastY));
+      const picked = sorted.slice(0, count).map(o => o.idx);
+      lastY = layer[Math.floor(Math.random() * layer.length)].n.y; // random next target
+      path.push(picked);
+
+    } else if (mode === 'focused') {
+      // The bolt zigzags between top and bottom cluster zones
+      // Decide where the main thread goes: top cluster, bottom cluster, or crossing through middle
+      const topNodes = layer.filter(o => o.n.y < H * 0.38);
+      const bottomNodes = layer.filter(o => o.n.y > H * 0.62);
+
+      const picked = [];
+
+      // Main thread: zigzag toward nearest cluster zone
+      // Pull toward top if lastY is in upper half, bottom if lower, with random jumps
+      let targetY;
+      if (lastY < H * 0.4) {
+        // In top zone — sometimes stay, sometimes dive to bottom
+        targetY = Math.random() < 0.65 ? H * 0.25 + Math.random() * H * 0.1 : H * 0.7 + Math.random() * H * 0.1;
+      } else if (lastY > H * 0.6) {
+        // In bottom zone — sometimes stay, sometimes jump to top
+        targetY = Math.random() < 0.65 ? H * 0.7 + Math.random() * H * 0.1 : H * 0.25 + Math.random() * H * 0.1;
+      } else {
+        // In middle — head toward a cluster
+        targetY = Math.random() < 0.5 ? H * 0.25 + Math.random() * H * 0.1 : H * 0.7 + Math.random() * H * 0.1;
+      }
+
+      // Move lastY toward target
+      lastY += (targetY - lastY) * (0.4 + Math.random() * 0.3);
+
+      // Pick nearest nodes to the main thread position
+      const sortedByDist = [...layer].sort((a, b) => Math.abs(a.n.y - lastY) - Math.abs(b.n.y - lastY));
+      // Take 2-3 nodes near the main thread
+      const mainCount = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < Math.min(mainCount, sortedByDist.length); i++) {
+        picked.push(sortedByDist[i].idx);
+      }
+
+      // Plus: extra nodes in whichever cluster zone the thread is near
+      const inTopZone = lastY < H * 0.45;
+      const inBotZone = lastY > H * 0.55;
+      if (inTopZone && topNodes.length > 0) {
+        const extra = 1 + Math.floor(Math.random() * 3);
+        const shuffled = [...topNodes].sort(() => Math.random() - 0.5);
+        for (let i = 0; i < Math.min(extra, shuffled.length); i++) {
+          if (!picked.includes(shuffled[i].idx)) picked.push(shuffled[i].idx);
+        }
+      }
+      if (inBotZone && bottomNodes.length > 0) {
+        const extra = 1 + Math.floor(Math.random() * 3);
+        const shuffled = [...bottomNodes].sort(() => Math.random() - 0.5);
+        for (let i = 0; i < Math.min(extra, shuffled.length); i++) {
+          if (!picked.includes(shuffled[i].idx)) picked.push(shuffled[i].idx);
+        }
+      }
+
+      path.push(picked);
+    }
+  }
+  return path;
+}
+
+function runBoltLoop() {
+  let boltPath = []; // array of arrays: [[nodeIdx, ...], [nodeIdx, ...], ...]
+  let boltHead = -1;
+  let boltTimer = 0;
+  const STEP_MS = 150;
+  const FADE_MS = 500; // how long a node stays lit before fading
+  const PAUSE_MS = 600;
+  let lastTime = null;
+  let pausing = false;
+  let pauseTimer = 0;
+
+  // Track every lit node with timestamp
+  const litItems = []; // { idx, time, isCluster }
+
+  function lightNode(idx, timestamp, isCluster) {
+    const n = allNodes[idx];
+    if (isCluster) {
+      n.el.style.background = '#ea580c';
+      n.el.style.boxShadow = '0 0 14px rgba(234,88,12,0.5)';
+      n.el.style.transform = 'translate(-50%, -50%) scale(1.4)';
+    } else {
+      n.el.style.background = '#fabb43';
+      n.el.style.boxShadow = '0 0 8px rgba(250,187,67,0.35)';
+      n.el.style.transform = 'translate(-50%, -50%) scale(1.2)';
+    }
+    litItems.push({ idx, time: timestamp, isCluster });
+  }
+
+  function lightEdge(idxA, idxB, strong) {
+    allEdges.forEach(e => {
+      if ((e.i === idxA && e.j === idxB) || (e.i === idxB && e.j === idxA)) {
+        e.el.setAttribute('stroke', strong ? 'rgba(234,88,12,0.35)' : 'rgba(250,187,67,0.2)');
+        e.el.setAttribute('stroke-width', strong ? '2.5' : '1.5');
+      }
+    });
+  }
+
+  function fadeNode(idx) {
+    const n = allNodes[idx];
+    n.el.style.background = '#c0c0c0';
+    n.el.style.boxShadow = 'none';
+    n.el.style.transform = 'translate(-50%, -50%) scale(1)';
+    // Fade connected edges
+    allEdges.forEach(e => {
+      if (e.i === idx || e.j === idx) {
+        e.el.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+        e.el.setAttribute('stroke-width', '0.5');
+      }
+    });
+  }
+
+  function fullReset() {
+    allNodes.forEach(n => {
+      n.el.style.background = '#c0c0c0';
+      n.el.style.boxShadow = 'none';
+      n.el.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    allEdges.forEach(e => {
+      e.el.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+      e.el.setAttribute('stroke-width', '0.5');
+    });
+    litItems.length = 0;
+  }
+
+  function tick(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Pause between bolts
+    if (pausing) {
+      pauseTimer += dt;
+      // Fade remaining lit nodes during pause
+      for (let i = litItems.length - 1; i >= 0; i--) {
+        if (timestamp - litItems[i].time > FADE_MS) {
+          fadeNode(litItems[i].idx);
+          litItems.splice(i, 1);
+        }
+      }
+      if (pauseTimer > PAUSE_MS && litItems.length === 0) {
+        pausing = false;
+        pauseTimer = 0;
+        fullReset();
+        boltPath = buildBoltPath();
+        boltHead = -1;
+        boltTimer = 0;
+      }
+      animFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    boltTimer += dt;
+
+    // Advance bolt
+    while (boltTimer > STEP_MS && boltHead < LAYERS - 1) {
+      boltTimer -= STEP_MS;
+      boltHead++;
+
+      const nodeIndices = boltPath[boltHead];
+      const prevIndices = boltHead > 0 ? boltPath[boltHead - 1] : [];
+
+      nodeIndices.forEach(idx => {
+        const n = allNodes[idx];
+        const isTop = n.y < H * 0.38;
+        const isBot = n.y > H * 0.62;
+        const isCluster = mode === 'focused' && (isTop || isBot);
+        lightNode(idx, timestamp, isCluster);
+
+        // Connect to previous layer nodes
+        prevIndices.forEach(prevIdx => {
+          lightEdge(prevIdx, idx, isCluster);
+        });
+      });
+    }
+
+    // Fade old lit nodes
+    for (let i = litItems.length - 1; i >= 0; i--) {
+      if (timestamp - litItems[i].time > FADE_MS) {
+        fadeNode(litItems[i].idx);
+        litItems.splice(i, 1);
+      }
+    }
+
+    // Bolt finished → start pause
+    if (boltHead >= LAYERS - 1 && boltTimer > STEP_MS) {
+      pausing = true;
+      pauseTimer = 0;
+    }
+
+    animFrame = requestAnimationFrame(tick);
+  }
+
+  boltPath = buildBoltPath();
+  boltHead = -1;
+  boltTimer = 0;
+  animFrame = requestAnimationFrame(tick);
+}
+
+function setScattered() {
+  resetAll();
+  mode = 'scattered';
+  runBoltLoop();
+}
+
+function setDimmed() {
+  resetAll();
+  mode = 'idle';
+  allNodes.forEach(n => { n.el.style.background = '#e0e0e0'; });
+  allEdges.forEach(e => { e.el.setAttribute('stroke', 'rgba(0,0,0,0.02)'); });
+}
+
+function setFocused() {
+  resetAll();
+  mode = 'focused';
+  runBoltLoop();
+}
+
+// ===== STEPS =====
+let step = -1, busy = false;
+
+function doStep0() {
+  document.getElementById('lSub').textContent = 'Ein generischer Prompt aktiviert das Netzwerk breit und zufällig.';
+  document.getElementById('pBar').innerHTML = '"Erzähl mir eine Geschichte über Technologie"';
+  gsap.to('#pBar', { opacity: 1, duration: 0.5, delay: 0.3 });
+  gsap.fromTo('#lSub', { opacity: 0 }, { opacity: 1, duration: 0.5 });
+  setScattered();
+}
+
+function doStep1() {
+  gsap.to('#pBar', { opacity: 0, duration: 0.3 });
+  gsap.to('#lH2', { opacity: 0, duration: 0.3 });
+  gsap.to('#lSub', { opacity: 0, duration: 0.3 });
+  setTimeout(() => {
+    document.getElementById('lH2').innerHTML = 'Wo steckt das <span class="hl">Wissen</span>?';
+    gsap.to('#lH2', { opacity: 1, duration: 0.5 });
+  }, 400);
+  gsap.to('#myst', { opacity: 1, duration: 0.8, delay: 0.5 });
+  setDimmed();
+}
+
+function doStep2() {
+  gsap.to('#myst', { opacity: 0, duration: 0.4 });
+  gsap.to('#lH2', { opacity: 0, duration: 0.3 });
+  setTimeout(() => {
+    document.getElementById('lH2').innerHTML = 'Rollen-Prompts <span class="hl">fokussieren</span> das Modell';
+    document.getElementById('lSub').textContent = 'Bestimmte Muster aktivieren sich stärker — das Modell "denkt" in der Fachdomäne.';
+    gsap.to('#lH2', { opacity: 1, duration: 0.5 });
+    gsap.to('#lSub', { opacity: 1, duration: 0.5, delay: 0.15 });
+  }, 400);
+  document.getElementById('pBar').innerHTML = '<span class="rp">Du bist ein erfahrener Patentanwalt.</span> Formuliere einen Vorrichtungsanspruch für drahtloses Laden.';
+  gsap.to('#pBar', { opacity: 1, duration: 0.5, delay: 0.6 });
+  gsap.to('#ins', { opacity: 1, duration: 0.6, delay: 2 });
+  setFocused();
+}
+
+const fns = [doStep0, doStep1, doStep2];
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= 3) return;
+  busy = true;
+  for (let i = 0; i < 3; i++) document.getElementById('p'+i).className = 'pip'+(i===step?' on':i<step?' done':'');
+  fns[step]();
+  setTimeout(() => busy = false, 1000);
+}
+
+// Click handler on the network box itself
+box.addEventListener('click', advance);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+gsap.fromTo('.label .ol, .label h2', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.2 });
+advance();
+</script>
+
+</body>
+</html>

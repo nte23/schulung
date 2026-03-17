@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN Style — A/D Variants</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; padding: 2rem; overflow-y: auto; }
+  h1 { text-align: center; font-size: 1.3rem; color: #555; margin-bottom: 0.3rem; }
+  .sub { text-align: center; font-size: 0.8rem; color: #999; margin-bottom: 2rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
+  .option { background: white; border-radius: 14px; border: 2px solid #eee; overflow: hidden; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
+  .option:hover { border-color: rgba(250,187,67,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+  .option canvas { display: block; width: 100%; height: 280px; }
+  .option-info { padding: 1rem 1.2rem; border-top: 1px solid #f0f0f0; }
+  .option-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fabb43; margin-bottom: 0.25rem; }
+  .option-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .option-desc { font-size: 0.72rem; color: #888; line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<h1>Variants of A & D — Layered vs. Constellation</h1>
+<div class="sub">All 2D, left-to-right flow, looping. Variations on density, style, and how signals travel.</div>
+
+<div class="grid">
+
+  <div class="option">
+    <canvas id="c1"></canvas>
+    <div class="option-info">
+      <div class="option-label">E — Dense Layers + Streams</div>
+      <div class="option-title">Thick layered grid, flowing particle streams</div>
+      <div class="option-desc">More nodes per layer (12), tighter spacing. Multiple particles flow at once as continuous streams, not single dots. Feels like data flowing through a dense processor.</div>
+    </div>
+  </div>
+
+  <div class="option">
+    <canvas id="c2"></canvas>
+    <div class="option-info">
+      <div class="option-label">F — Minimal Layers + Pulse</div>
+      <div class="option-title">Few layers, big nodes, pulse wave</div>
+      <div class="option-desc">Only 4 layers with larger nodes. Instead of particles, a pulse wave sweeps left to right — nodes light up in sequence. Clean, simple, very readable from a distance.</div>
+    </div>
+  </div>
+
+  <div class="option">
+    <canvas id="c3"></canvas>
+    <div class="option-info">
+      <div class="option-label">G — Constellation + Pathfinder</div>
+      <div class="option-title">Sparse dots, signal finds its own path</div>
+      <div class="option-desc">Like D but with thicker trail lines and the signal "searches" for the best path through the network. Branches and sometimes dead-ends before finding the output. Exploratory feel.</div>
+    </div>
+  </div>
+
+  <div class="option">
+    <canvas id="c4"></canvas>
+    <div class="option-info">
+      <div class="option-label">H — Highway Lanes</div>
+      <div class="option-title">Horizontal lanes with vertical crossings</div>
+      <div class="option-desc">Horizontal "highway" lines with dots at intersections. Signals travel along highways, occasionally jumping lanes vertically. Clean, modern, like a data highway diagram.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const dpr = Math.min(devicePixelRatio, 2);
+function setup(id) {
+  const c = document.getElementById(id);
+  const r = c.getBoundingClientRect();
+  c.width = r.width * dpr; c.height = r.height * dpr;
+  c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+  return { ctx: c.getContext('2d'), w: c.width, h: c.height };
+}
+
+// ===== E: Dense Layers + Streams =====
+(function() {
+  const { ctx, w, h } = setup('c1');
+  const LAYERS = 8, NP = 12;
+  const nodes = [];
+  const streams = [];
+
+  for (let l = 0; l < LAYERS; l++) {
+    const count = l === 0 || l === LAYERS-1 ? 6 : NP;
+    const x = w * 0.1 + (w * 0.8) * l / (LAYERS - 1);
+    for (let n = 0; n < count; n++) {
+      const y = h / 2 + (n - count / 2 + 0.5) * (h * 0.7 / count);
+      nodes.push({ x, y, l, activation: 0 });
+    }
+  }
+
+  function spawnStream() {
+    const y = h * 0.2 + Math.random() * h * 0.6;
+    for (let i = 0; i < 5; i++) {
+      streams.push({ x: w * 0.02 - i * 8 * dpr, y, vx: 3 * dpr, vy: 0, life: 1 });
+    }
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.font = `${9*dpr}px Inter`; ctx.fillStyle = '#ddd'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w*0.05, h*0.06); ctx.fillText('OUTPUT', w*0.95, h*0.06);
+
+    if (Math.random() < 0.04) spawnStream();
+
+    for (let i = streams.length - 1; i >= 0; i--) {
+      const s = streams[i];
+      s.x += s.vx; s.vy += (Math.random()-0.5) * 0.5 * dpr; s.vy *= 0.95; s.y += s.vy;
+      for (const n of nodes) {
+        const dx = s.x-n.x, dy = s.y-n.y;
+        if (Math.sqrt(dx*dx+dy*dy) < 25*dpr) n.activation = Math.min(1, n.activation + 0.1);
+      }
+      if (s.x > w) streams.splice(i, 1);
+    }
+
+    // Edges between adjacent layers
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        if (Math.abs(nodes[i].l - nodes[j].l) !== 1) continue;
+        const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
+        if (Math.sqrt(dx*dx+dy*dy) > h*0.35) continue;
+        const act = Math.min(nodes[i].activation, nodes[j].activation);
+        ctx.strokeStyle = act > 0.08 ? `rgba(250,160,30,${act*0.25})` : 'rgba(0,0,0,0.02)';
+        ctx.lineWidth = (0.3+act*1.2)*dpr;
+        ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
+      }
+    }
+
+    for (const n of nodes) {
+      n.activation *= 0.955;
+      const s = (1.5+n.activation*3)*dpr;
+      ctx.fillStyle = n.activation > 0.15 ? `rgba(250,150,20,${0.3+n.activation*0.7})` : 'rgba(0,0,0,0.07)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI*2); ctx.fill();
+    }
+
+    for (const s of streams) {
+      ctx.fillStyle = 'rgba(250,160,30,0.7)';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 1.5*dpr, 0, Math.PI*2); ctx.fill();
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== F: Minimal Layers + Pulse =====
+(function() {
+  const { ctx, w, h } = setup('c2');
+  const LAYERS = 5, NP = 6;
+  const nodes = [];
+
+  for (let l = 0; l < LAYERS; l++) {
+    const count = l === 0 || l === LAYERS-1 ? 3 : NP;
+    const x = w * 0.15 + (w * 0.7) * l / (LAYERS - 1);
+    for (let n = 0; n < count; n++) {
+      const y = h / 2 + (n - count / 2 + 0.5) * (h * 0.55 / count);
+      nodes.push({ x, y, l, activation: 0, size: 4 + Math.random() * 3 });
+    }
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.font = `${9*dpr}px Inter`; ctx.fillStyle = '#ddd'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w*0.07, h*0.06); ctx.fillText('OUTPUT', w*0.93, h*0.06);
+
+    // Pulse wave
+    const pulseX = ((t * 0.5) % 1.4 - 0.2) * w;
+    const pulseWidth = w * 0.15;
+
+    for (const n of nodes) {
+      const dist = Math.abs(n.x - pulseX);
+      if (dist < pulseWidth) {
+        n.activation = Math.max(n.activation, 0.8 * (1 - dist / pulseWidth));
+      }
+      n.activation *= 0.96;
+    }
+
+    // Edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        if (Math.abs(nodes[i].l - nodes[j].l) !== 1) continue;
+        const act = Math.min(nodes[i].activation, nodes[j].activation);
+        if (act > 0.03) {
+          ctx.strokeStyle = act > 0.15 ? `rgba(250,160,30,${act*0.35})` : 'rgba(0,0,0,0.03)';
+          ctx.lineWidth = (0.5+act*2)*dpr;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+
+    for (const n of nodes) {
+      const s = n.size * dpr * (1 + n.activation * 0.6);
+      if (n.activation > 0.2) {
+        const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, s*3);
+        gr.addColorStop(0, `rgba(250,160,30,${n.activation*0.2})`);
+        gr.addColorStop(1, 'rgba(250,160,30,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(n.x, n.y, s*3, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = n.activation > 0.15 ? `rgba(250,140,20,${0.3+n.activation*0.7})` : 'rgba(0,0,0,0.1)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI*2); ctx.fill();
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== G: Constellation Pathfinder =====
+(function() {
+  const { ctx, w, h } = setup('c3');
+  const nodes = [];
+  const seekers = [];
+
+  for (let i = 0; i < 90; i++) {
+    nodes.push({
+      x: w*0.08 + Math.random()*w*0.84,
+      y: h*0.1 + Math.random()*h*0.8,
+      size: 1.5 + Math.random()*2, activation: 0, phase: Math.random()*Math.PI*2
+    });
+  }
+
+  function spawnSeeker() {
+    const starts = nodes.filter(n => n.x < w*0.2);
+    if (!starts.length) return;
+    const s = starts[Math.floor(Math.random()*starts.length)];
+    seekers.push({
+      x: s.x, y: s.y, visited: new Set(), trail: [{x:s.x,y:s.y}],
+      vx: 2.5*dpr, vy: 0, branched: false
+    });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.font = `${9*dpr}px Inter`; ctx.fillStyle = '#ddd'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w*0.05, h*0.06); ctx.fillText('OUTPUT', w*0.95, h*0.06);
+
+    if (Math.random() < 0.025) spawnSeeker();
+
+    // Update seekers
+    for (let i = seekers.length-1; i >= 0; i--) {
+      const sk = seekers[i];
+      let nearest = null, nearD = Infinity;
+      for (let ni = 0; ni < nodes.length; ni++) {
+        if (sk.visited.has(ni)) continue;
+        const n = nodes[ni];
+        if (n.x < sk.x - 10*dpr) continue;
+        const dx = n.x-sk.x, dy = n.y-sk.y;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        if (d < nearD && d < 120*dpr) { nearest = { n, idx: ni, d, dx, dy }; nearD = d; }
+      }
+
+      if (nearest) {
+        sk.vx += (nearest.dx/nearest.d) * 1.2*dpr;
+        sk.vy += (nearest.dy/nearest.d) * 1.2*dpr;
+        if (nearest.d < 12*dpr) {
+          nearest.n.activation = Math.min(1, nearest.n.activation + 0.6);
+          sk.visited.add(nearest.idx);
+          // Chance to branch
+          if (!sk.branched && Math.random() < 0.25) {
+            sk.branched = true;
+            seekers.push({
+              x: sk.x, y: sk.y, visited: new Set(sk.visited),
+              trail: [{x:sk.x,y:sk.y}],
+              vx: 2*dpr, vy: (Math.random()-0.5)*3*dpr, branched: true
+            });
+          }
+        }
+      } else {
+        sk.vx = 3*dpr;
+      }
+
+      const spd = Math.sqrt(sk.vx*sk.vx+sk.vy*sk.vy);
+      if (spd > 4.5*dpr) { sk.vx *= 4.5*dpr/spd; sk.vy *= 4.5*dpr/spd; }
+
+      sk.x += sk.vx; sk.y += sk.vy;
+      sk.trail.push({x:sk.x, y:sk.y});
+      if (sk.trail.length > 40) sk.trail.shift();
+      if (sk.x > w*0.95) seekers.splice(i, 1);
+    }
+
+    // Active edges
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].activation < 0.08) continue;
+      for (let j = i+1; j < nodes.length; j++) {
+        if (nodes[j].activation < 0.08) continue;
+        const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        if (d < 90*dpr) {
+          const act = Math.min(nodes[i].activation, nodes[j].activation);
+          ctx.strokeStyle = `rgba(250,160,30,${act*0.2})`;
+          ctx.lineWidth = (0.3+act*0.8)*dpr;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+
+    // Trails
+    for (const sk of seekers) {
+      if (sk.trail.length < 2) continue;
+      for (let k = 1; k < sk.trail.length; k++) {
+        const alpha = k / sk.trail.length;
+        ctx.strokeStyle = `rgba(250,160,30,${alpha * 0.5})`;
+        ctx.lineWidth = (0.5 + alpha * 2) * dpr;
+        ctx.beginPath(); ctx.moveTo(sk.trail[k-1].x, sk.trail[k-1].y); ctx.lineTo(sk.trail[k].x, sk.trail[k].y); ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(250,140,20,0.9)';
+      ctx.beginPath(); ctx.arc(sk.x, sk.y, 3*dpr, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Nodes
+    for (const n of nodes) {
+      n.activation *= 0.975;
+      const breathe = 1+Math.sin(t*0.8+n.phase)*0.08;
+      const s = n.size*dpr*breathe*(1+n.activation*1.5);
+      if (n.activation > 0.2) {
+        const gr = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,s*4);
+        gr.addColorStop(0, `rgba(250,160,30,${n.activation*0.15})`);
+        gr.addColorStop(1, 'rgba(250,160,30,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(n.x,n.y,s*4,0,Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = n.activation > 0.1 ? `rgba(180,110,15,${0.3+n.activation*0.7})` : 'rgba(0,0,0,0.1)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI*2); ctx.fill();
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// ===== H: Highway Lanes =====
+(function() {
+  const { ctx, w, h } = setup('c4');
+  const LANES = 7, STOPS = 10;
+  const nodes = [];
+  const signals = [];
+
+  for (let lane = 0; lane < LANES; lane++) {
+    const y = h*0.12 + (h*0.76) * lane / (LANES-1);
+    for (let stop = 0; stop < STOPS; stop++) {
+      const x = w*0.08 + (w*0.84) * stop / (STOPS-1);
+      nodes.push({ x, y, lane, stop, activation: 0 });
+    }
+  }
+
+  function spawnSignal() {
+    const lane = Math.floor(Math.random() * LANES);
+    signals.push({ x: w*0.03, y: nodes[lane*STOPS].y, lane, vx: 3.5*dpr, switching: false, switchTarget: 0 });
+  }
+
+  let t = 0;
+  function render() {
+    t += 0.016;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.font = `${9*dpr}px Inter`; ctx.fillStyle = '#ddd'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT', w*0.04, h*0.06); ctx.fillText('OUTPUT', w*0.96, h*0.06);
+
+    if (Math.random() < 0.03) spawnSignal();
+
+    // Draw lanes (horizontal lines)
+    for (let lane = 0; lane < LANES; lane++) {
+      const y = h*0.12 + (h*0.76) * lane / (LANES-1);
+      ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+      ctx.lineWidth = 0.8*dpr;
+      ctx.beginPath(); ctx.moveTo(w*0.06, y); ctx.lineTo(w*0.94, y); ctx.stroke();
+    }
+
+    // Vertical crossings
+    for (let stop = 0; stop < STOPS; stop++) {
+      const x = w*0.08 + (w*0.84) * stop / (STOPS-1);
+      ctx.strokeStyle = 'rgba(0,0,0,0.025)';
+      ctx.lineWidth = 0.5*dpr;
+      ctx.beginPath();
+      ctx.moveTo(x, h*0.1);
+      ctx.lineTo(x, h*0.9);
+      ctx.stroke();
+    }
+
+    // Update signals
+    for (let i = signals.length-1; i >= 0; i--) {
+      const sig = signals[i];
+      sig.x += sig.vx;
+
+      // Randomly switch lanes at crossings
+      if (!sig.switching && Math.random() < 0.01) {
+        const newLane = Math.max(0, Math.min(LANES-1, sig.lane + (Math.random() < 0.5 ? 1 : -1)));
+        if (newLane !== sig.lane) {
+          sig.switching = true;
+          sig.switchTarget = h*0.12 + (h*0.76) * newLane / (LANES-1);
+          sig.lane = newLane;
+        }
+      }
+
+      if (sig.switching) {
+        sig.y += (sig.switchTarget - sig.y) * 0.1;
+        if (Math.abs(sig.y - sig.switchTarget) < 1) sig.switching = false;
+      }
+
+      // Activate nearby nodes
+      for (const n of nodes) {
+        const dx = sig.x-n.x, dy = sig.y-n.y;
+        if (Math.sqrt(dx*dx+dy*dy) < 20*dpr) n.activation = Math.min(1, n.activation + 0.15);
+      }
+
+      if (sig.x > w*0.97) signals.splice(i, 1);
+    }
+
+    // Nodes
+    for (const n of nodes) {
+      n.activation *= 0.955;
+      const s = (2+n.activation*3)*dpr;
+      if (n.activation > 0.15) {
+        // Glow along lane
+        ctx.strokeStyle = `rgba(250,160,30,${n.activation*0.15})`;
+        ctx.lineWidth = 4*dpr;
+        ctx.beginPath();
+        ctx.moveTo(n.x - 15*dpr, n.y); ctx.lineTo(n.x + 15*dpr, n.y);
+        ctx.stroke();
+      }
+      ctx.fillStyle = n.activation > 0.15 ? `rgba(250,150,20,${0.3+n.activation*0.7})` : 'rgba(0,0,0,0.08)';
+      ctx.beginPath(); ctx.arc(n.x, n.y, s, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Signals
+    for (const sig of signals) {
+      ctx.fillStyle = 'rgba(250,140,20,0.85)';
+      ctx.beginPath(); ctx.arc(sig.x, sig.y, 3*dpr, 0, Math.PI*2); ctx.fill();
+      // Small trail
+      ctx.strokeStyle = 'rgba(250,160,30,0.3)';
+      ctx.lineWidth = 2*dpr;
+      ctx.beginPath(); ctx.moveTo(sig.x, sig.y); ctx.lineTo(sig.x - 20*dpr, sig.y); ctx.stroke();
+    }
+
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+</script>
+
+</body>
+</html>

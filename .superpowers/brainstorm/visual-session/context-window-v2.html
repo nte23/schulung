@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2.5rem; left: 3rem; z-index: 100; max-width: 320px; }
+  .label .ol { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.6rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub { font-size: 0.85rem; color: #999; margin-top: 0.3rem; line-height: 1.5; }
+
+  .hint { position: fixed; bottom: 1.2rem; right: 2rem; font-size: 0.65rem; color: #ccc; z-index: 100; }
+
+  /* Chat */
+  .chat-frame {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 520px; height: 560px;
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 16px;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .chat-header {
+    padding: 0.7rem 1.2rem; border-bottom: 1px solid #eee;
+    font-size: 0.7rem; font-weight: 600; color: #999;
+    display: flex; align-items: center; gap: 0.5rem; background: white;
+    flex-shrink: 0;
+  }
+  .chat-header .dot { width: 7px; height: 7px; border-radius: 50%; background: #16a34a; }
+
+  /* The visible message area — messages are absolutely positioned and animated */
+  .chat-body { flex: 1; position: relative; overflow: hidden; }
+
+  /* Fade mask at top to show messages disappearing */
+  .chat-body::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 60px;
+    background: linear-gradient(to bottom, #fafafa 0%, transparent 100%);
+    z-index: 5; pointer-events: none;
+  }
+
+  .msg {
+    position: absolute; left: 1rem; right: 1rem;
+    padding: 0.55rem 0.85rem; border-radius: 12px;
+    font-size: 0.7rem; line-height: 1.5;
+    max-width: 85%;
+    transition: none; /* GSAP handles it */
+  }
+  .msg.user {
+    left: auto; right: 1rem;
+    background: #1a1a1a; color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai {
+    left: 1rem; right: auto;
+    background: white; color: #333;
+    border: 1px solid #eee; border-bottom-left-radius: 4px;
+  }
+  .msg.system {
+    left: 50%; transform: translateX(-50%);
+    background: rgba(124,92,191,0.08); color: #7c5cbf;
+    font-size: 0.6rem; font-weight: 500;
+    border-radius: 20px; padding: 0.3rem 0.8rem;
+    border: 1px solid rgba(124,92,191,0.15);
+    max-width: 90%; text-align: center;
+  }
+  .msg.user.angry { background: #dc2626; }
+
+  /* Context meter — LEFT side, vertical */
+  .meter {
+    position: fixed; top: 50%; left: 3rem; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    z-index: 50; height: 400px;
+    margin-top: 60px;
+  }
+  .meter-title { font-size: 0.55rem; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.08em; }
+  .meter-bar {
+    width: 8px; flex: 1; background: #f0f0f0; border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
+  .meter-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #16a34a; border-radius: 4px;
+    transition: height 1s ease, background 1s ease;
+  }
+  .meter-pct { font-size: 0.65rem; font-weight: 600; color: #bbb; transition: color 0.5s; }
+
+  /* Alert inline in chat */
+  .alert-inline {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    background: #fef2f2; border: 1px solid rgba(220,38,38,0.2);
+    border-radius: 10px; padding: 0.4rem 0.8rem;
+    font-size: 0.6rem; color: #991b1b; z-index: 10;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.08);
+    display: flex; align-items: center; gap: 0.4rem;
+    white-space: nowrap; opacity: 0;
+  }
+
+  /* Insight */
+  .insight-box {
+    position: fixed; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    max-width: 500px; width: 90%;
+    padding: 1rem 1.3rem; background: #fffbeb;
+    border-left: 4px solid #fabb43; border-radius: 0 10px 10px 0;
+    font-size: 0.85rem; color: #92400e; line-height: 1.5;
+    opacity: 0; z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Kontext-Fenster</div>
+  <h2>KI hat ein <span class="hl">Kurzzeitgedächtnis</span></h2>
+  <div class="sub">Je länger das Gespräch, desto mehr vergisst sie vom Anfang.</div>
+</div>
+<div class="hint">Klick zum Weiter</div>
+
+<div class="meter">
+  <div class="meter-title">Kontext</div>
+  <div class="meter-bar"><div class="meter-fill" id="mFill" style="height:0%;"></div></div>
+  <div class="meter-pct" id="mPct">0%</div>
+</div>
+
+<div class="chat-frame">
+  <div class="chat-header"><div class="dot"></div> ChatGPT / Claude</div>
+  <div class="chat-body" id="chatBody">
+    <!-- Alerts appear here -->
+    <div class="alert-inline" id="a1" style="top:8px;">⚠️ "Du bist Patentanwalt" aus dem Kontext gefallen!</div>
+    <div class="alert-inline" id="a2" style="top:8px;">⚠️ Patentanspruch-Text nicht mehr im Kontext!</div>
+    <div class="alert-inline" id="a3" style="top:8px;">⚠️ KI hat vergessen, was du am Anfang wolltest</div>
+  </div>
+</div>
+
+<div class="insight-box" id="insightBox">
+  ⚡ <strong>Manchmal ist "Neuer Chat" die beste Lösung.</strong> Statt sich im Kreis zu drehen — lieber neu starten mit einem klaren, vollständigen Prompt.
+</div>
+
+<script>
+const chatBody = document.getElementById('chatBody');
+const mFill = document.getElementById('mFill');
+const mPct = document.getElementById('mPct');
+
+let step = -1;
+let busy = false;
+let allMsgs = []; // track all message elements
+const MSG_HEIGHT = 65; // approx height per message in px
+const VISIBLE_SLOTS = 7; // how many messages visible at once
+const BODY_H = chatBody.offsetHeight || 490;
+
+// All conversation messages
+const conversation = [
+  // Step 0: Good start
+  { msgs: [
+    { type: 'system', text: 'System: Du bist ein erfahrener Patentanwalt.' },
+    { type: 'user', text: 'Hier ist mein Patentanspruch: "Vorrichtung zum drahtlosen Laden, umfassend eine Sendespule, eine Empfangsspule..."' },
+    { type: 'ai', text: 'Verstanden. Soll ich eine Merkmalsgliederung erstellen oder die Neuheit prüfen?' },
+  ], meter: 12 },
+  // Step 1
+  { msgs: [
+    { type: 'user', text: 'Merkmalsgliederung bitte. Prüfe gegen DE 10 2020 456 789.' },
+    { type: 'ai', text: 'M1: Vorrichtung zum drahtlosen Laden\nM1.1: Sendespule\nM1.2: Empfangsspule\nM1.3: Steuereinheit\n\nM1.1 und M1.2 offenbart, M1.3 unterscheidet sich.' },
+  ], meter: 28 },
+  // Step 2
+  { msgs: [
+    { type: 'user', text: 'Formuliere den Anspruch um — Regelungslogik stärker betonen.' },
+    { type: 'ai', text: '"...wobei die Steuereinheit eine adaptive Frequenzregelung basierend auf Kopplungseffizienz durchführt..."' },
+    { type: 'user', text: 'Das "wobei" ist zu schwach. Eigenes Merkmal daraus machen.' },
+  ], meter: 48 },
+  // Step 3: Quality drops, alert 1
+  { msgs: [
+    { type: 'ai', text: '"...c) eine Steuereinheit, die eine adaptive Frequenzregelung durchführt..."' },
+    { type: 'user', text: 'Nein. Der abhängige Anspruch soll die Regelungslogik definieren.' },
+    { type: 'ai', text: 'Welches Prioritätsdokument meinen Sie? Können Sie die Details nochmal nennen?' },
+  ], meter: 68, alert: 'a1' },
+  // Step 4: Contradictions, alert 2
+  { msgs: [
+    { type: 'user', text: 'Das hab ich dir am Anfang gesagt!! DE 10 2020 456 789!' },
+    { type: 'ai', text: 'Richtig. Aktualisierte Analyse: M1.1 scheint doch neuheitsschädlich...\n[widerspricht der vorherigen Analyse]' },
+    { type: 'user', text: 'Du widersprichst dir selbst! Vorhin war M1.1 offenbart?!' },
+  ], meter: 85, alert: 'a2' },
+  // Step 5: Angry loop, alert 3
+  { msgs: [
+    { type: 'user', text: 'Du machst es SCHON WIEDER falsch!', angry: true },
+    { type: 'ai', text: 'Entschuldigung. Lassen Sie mich nochmal von vorn...\n[wiederholt die gleiche falsche Analyse]' },
+    { type: 'user', text: 'NEIN! Es geht um die REGELUNGSLOGIK nicht die Spulen!!', angry: true },
+  ], meter: 97, alert: 'a3' },
+];
+
+function addStep(stepData) {
+  const newMsgs = stepData.msgs;
+  const startY = BODY_H; // new messages start at the bottom
+
+  // First: slide ALL existing messages up to make room
+  const newBatchHeight = newMsgs.length * MSG_HEIGHT;
+
+  allMsgs.forEach(m => {
+    const curY = parseFloat(m.el.style.top) || m.y;
+    const newY = curY - newBatchHeight;
+    m.y = newY;
+    gsap.to(m.el, { top: newY, duration: 0.6, ease: 'power2.out' });
+
+    // Fade out if pushed above visible area
+    if (newY < 30) {
+      gsap.to(m.el, { opacity: 0.08, duration: 0.8 });
+    } else if (newY < 80) {
+      gsap.to(m.el, { opacity: 0.25, duration: 0.6 });
+    }
+  });
+
+  // Add new messages
+  newMsgs.forEach((m, i) => {
+    const el = document.createElement('div');
+    el.className = 'msg ' + m.type + (m.angry ? ' angry' : '');
+
+    // Handle multiline
+    if (m.text.includes('\n')) {
+      el.style.whiteSpace = 'pre-line';
+    }
+    el.textContent = m.text;
+
+    // Position: stagger from bottom
+    const y = BODY_H - (newMsgs.length - i) * MSG_HEIGHT;
+    el.style.top = (y + 30) + 'px'; // start slightly below
+    el.style.opacity = '0';
+    chatBody.appendChild(el);
+
+    gsap.to(el, { top: y, opacity: 1, duration: 0.5, delay: i * 0.25, ease: 'power2.out' });
+
+    allMsgs.push({ el, y, type: m.type });
+  });
+
+  // Meter
+  gsap.to(mFill, { height: stepData.meter + '%', duration: 1, ease: 'power2.out' });
+  mPct.textContent = stepData.meter + '%';
+  if (stepData.meter > 60) {
+    mFill.style.background = stepData.meter > 85 ? '#dc2626' : '#fabb43';
+    mPct.style.color = stepData.meter > 85 ? '#dc2626' : '#e5a530';
+  }
+
+  // Alert
+  if (stepData.alert) {
+    const alertEl = document.getElementById(stepData.alert);
+    gsap.fromTo(alertEl, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.5, delay: newMsgs.length * 0.25 + 0.3 });
+    gsap.to(alertEl, { opacity: 0, delay: newMsgs.length * 0.25 + 3.5, duration: 0.5 });
+  }
+}
+
+function advance() {
+  if (busy) return;
+  step++;
+
+  if (step >= conversation.length) {
+    gsap.to('#insightBox', { opacity: 1, duration: 0.7 });
+    return;
+  }
+
+  busy = true;
+  addStep(conversation[step]);
+  setTimeout(() => busy = false, conversation[step].msgs.length * 300 + 600);
+}
+
+document.addEventListener('click', advance);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+gsap.fromTo('.label .ol, .label h2, .label .sub', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, delay: 0.2 });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Workshop Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif; background: #fafafa;
+    color: #1a1a1a; padding: 2rem; line-height: 1.5;
+    overflow-y: auto; overflow-x: hidden;
+  }
+
+  .page-header { max-width: 1100px; margin: 0 auto 2rem; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 600; }
+  .page-header p { font-size: 0.85rem; color: #888; margin-top: 0.3rem; }
+
+  .parts { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.5rem; }
+
+  .part {
+    background: white; border-radius: 16px; border: 1px solid #eee;
+    overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .part-header {
+    padding: 1.2rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+    border-bottom: 1px solid #f0f0f0; cursor: pointer;
+  }
+  .part-header:hover { background: #fefefe; }
+  .part-num {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: white; padding: 0.3rem 0.7rem;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .part-num.t1 { background: #4a90d9; }
+  .part-num.t2 { background: #dc2626; }
+  .part-num.t3 { background: #fabb43; }
+  .part-num.t4 { background: #16a34a; }
+  .part-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
+  .part-time { font-size: 0.7rem; color: #aaa; font-weight: 500; }
+  .part-status {
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.25rem 0.6rem; border-radius: 20px;
+  }
+  .part-status.done { background: rgba(22,163,74,0.08); color: #16a34a; }
+  .part-status.wip { background: rgba(250,187,67,0.1); color: #e5a530; }
+  .part-status.todo { background: #f5f5f5; color: #bbb; }
+
+  .part-body { padding: 0; }
+
+  .slide-row {
+    display: flex; align-items: stretch; border-bottom: 1px solid #f8f8f8;
+    transition: background 0.15s;
+  }
+  .slide-row:last-child { border-bottom: none; }
+  .slide-row:hover { background: #fafafa; }
+
+  .slide-num-col {
+    width: 60px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: #ccc;
+    border-right: 1px solid #f5f5f5;
+  }
+
+  .slide-content-col { flex: 1; padding: 0.8rem 1.2rem; }
+  .slide-title-row { display: flex; align-items: center; gap: 0.5rem; }
+  .slide-name { font-size: 0.85rem; font-weight: 600; }
+  .slide-star { font-size: 0.7rem; color: #fabb43; }
+  .slide-desc { font-size: 0.72rem; color: #888; margin-top: 0.2rem; line-height: 1.45; }
+
+  .slide-anim-col {
+    width: 200px; padding: 0.8rem 1rem; display: flex; align-items: center;
+    border-left: 1px solid #f5f5f5;
+  }
+  .slide-anim-tag {
+    font-size: 0.6rem; color: #fabb43; font-weight: 500;
+    font-style: italic; line-height: 1.4;
+  }
+
+  .section-break {
+    padding: 0.5rem 1.5rem; background: #f8f8f8;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #ccc;
+    border-bottom: 1px solid #f0f0f0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Workshop: Grundlagen der generativen KI</h1>
+  <p>~2 Stunden · 4 Teile · 27 Slides · Für deutsche Patentanwälte</p>
+</div>
+
+<div class="parts">
+
+  <!-- ===== INTRO ===== -->
+  <div class="part">
+    <div class="part-header">
+      <span class="part-num" style="background:#555;">Intro</span>
+      <span class="part-title">Einstieg</span>
+      <span class="part-time">~5 min</span>
+      <span class="part-status done">Prototyp ✓</span>
+    </div>
+    <div class="part-body">
+      <div class="slide-row">
+        <div class="slide-num-col">1</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Titelfolie</span></div>
+          <div class="slide-desc">Grundlagen der generativen KI — Workshop-Opener</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Stagger fade-in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">2</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Selbst prompten können</span></div>
+          <div class="slide-desc">✗ Prompt-Sammlung · ✓ Technisch verstehen · ✓ Eigene Prompts</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Checklist stagger</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">3</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Fahrplan</span></div>
+          <div class="slide-desc">4 Teile: Technik → Grenzen → Prompting → Praxis</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Cards slide in</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEIL 1 ===== -->
+  <div class="part">
+    <div class="part-header">
+      <span class="part-num t1">Teil 1</span>
+      <span class="part-title">Wie KI funktioniert</span>
+      <span class="part-time">~30 min</span>
+      <span class="part-status done">Prototyp ✓</span>
+    </div>
+    <div class="part-body">
+      <div class="section-break">Continuous Morph Flow</div>
+      <div class="slide-row">
+        <div class="slide-num-col">4</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Was passiert, wenn du Enter drückst?</span></div>
+          <div class="slide-desc">Section-Opener. Frage erscheint groß und zentral.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Fade in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">5</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Tokenisierung</span>
+            <span class="slide-star">⭐ Morph</span>
+          </div>
+          <div class="slide-desc">Typewriter tippt Satz → Text splittet in farbige Tokens → "Patentanspruch" wird zu "Patent" + "anspruch" (1 Wort → 2 Tokens) → IDs erscheinen</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Typewriter → Token split mit Bracket</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">6</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Embeddings</span>
+            <span class="slide-star">⭐ Morph</span>
+          </div>
+          <div class="slide-desc">Dieselben Tokens schweben zu semantischen Positionen. "Patent" + "Anspruch" clustern zusammen. Cluster-Halos + Labels.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Tokens float zu Clustern</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">7</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Attention</span>
+            <span class="slide-star">⭐ Morph</span>
+          </div>
+          <div class="slide-desc">Tokens reihen sich horizontal auf. Kurvierte Bögen zeichnen sich zwischen verwandten Wörtern. Patent↔anspruch stark, betrifft↔Vorrichtung stark.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Bögen zeichnen sich selbst</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">8</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Das Neuronale Netz</span>
+            <span class="slide-star">⭐ Hero</span>
+          </div>
+          <div class="slide-desc">Tokens schrumpfen zu Punkten, fließen ins Netz. 3D-Canvas: Flat → Rotation zeigt Tiefe → Aktivierungswelle feuert durch Pfade.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">3D Canvas — Playground-Prototyp ✓</span></div>
+      </div>
+      <div class="section-break">Konzept-Slides</div>
+      <div class="slide-row">
+        <div class="slide-num-col">9</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Parameter — 70 Milliarden Regler</span></div>
+          <div class="slide-desc">Zoom ins Netzwerk: Zahlen auf Verbindungen. Zoom raus: überwältigende Skala. Analogie: Mischpult.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Zoom in/out</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">10</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Next-Token-Prediction</span>
+            <span class="slide-star">⭐ Key Insight</span>
+          </div>
+          <div class="slide-desc">"Der Patent___" → Wahrscheinlichkeitsbalken → Wort wird gewählt → Satz baut sich auf. "Das Modell WEISS die Antwort nicht."</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Balken animieren, Wort snappt ein</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">11</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Training — Woher kommt das "Wissen"?</span></div>
+          <div class="slide-desc">Datenquellen → Training → Modell. Nicht Datenbank, sondern komprimierte Muster. Student-Analogie.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Pipeline fade-in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">12</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Zwischenfazit</span></div>
+          <div class="slide-desc">5 Kernpunkte: Tokens → Embeddings → Attention → Netz → Nächstes Wort. Brücke zu Teil 2.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Checkmarks stagger</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEIL 2 ===== -->
+  <div class="part">
+    <div class="part-header">
+      <span class="part-num t2">Teil 2</span>
+      <span class="part-title">Grenzen & Halluzinationen</span>
+      <span class="part-time">~15 min</span>
+      <span class="part-status wip">Nächster Schritt</span>
+    </div>
+    <div class="part-body">
+      <div class="slide-row">
+        <div class="slide-num-col">13</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Section Opener — Was KI nicht kann</span></div>
+          <div class="slide-desc">"...und warum das unvermeidlich ist"</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Fade in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">14</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Halluzinationen</span>
+            <span class="slide-star">⭐ Glitch</span>
+          </div>
+          <div class="slide-desc">Fake BGH-Zitat erscheint überzeugend → Glitch-Effekt → Rote Markierungen zeigen: alles erfunden. "Klingt absolut überzeugend ✓"</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Glitch reveal + rote Marks</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">15</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Was wir wissen / nicht wissen</span></div>
+          <div class="slide-desc">Zwei-Spalten: ✓ Architektur, Training... vs. ? Warum Fähigkeiten entstehen, was Neuronen tun...</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Spalten stagger</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">16</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Risiken für Patentanwälte</span></div>
+          <div class="slide-desc">Erfundene Rechtsprechung, falsche technische Beschreibungen, subtile Anspruchsfehler. → Regel #1: IMMER verifizieren.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Warning items stagger</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEIL 3 ===== -->
+  <div class="part">
+    <div class="part-header">
+      <span class="part-num t3">Teil 3</span>
+      <span class="part-title">Prompting-Techniken</span>
+      <span class="part-time">~30 min</span>
+      <span class="part-status todo">Offen</span>
+    </div>
+    <div class="part-body">
+      <div class="slide-row">
+        <div class="slide-num-col">17</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Section Opener — Die Kunst des Promptings</span></div>
+          <div class="slide-desc">"Warum Formulierung alles verändert"</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Fade in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">18</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">"Handle als..." — Warum es funktioniert</span>
+            <span class="slide-star">⭐ Side-by-side NN</span>
+          </div>
+          <div class="slide-desc">Zwei Netzwerk-Visualisierungen nebeneinander: "Erzähl mir eine Geschichte" (scattered) vs. "Du bist ein Patentanwalt..." (focused activation)</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Dual Canvas activation</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">19</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Zero-Shot Prompting</span></div>
+          <div class="slide-desc">Einfach fragen. Wann sinnvoll, Grenzen. Patent-Beispiel.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Prompt-Box fade-in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">20</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Few-Shot Prompting</span></div>
+          <div class="slide-desc">Beispiele geben → Muster vorgeben. Patent-Anspruch-Beispiele.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Beispiel-Blöcke stagger</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">21</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Chain-of-Thought</span></div>
+          <div class="slide-desc">"Denke Schritt für Schritt" — sequenzielles Reasoning. Stand-der-Technik-Analyse.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Step-Boxen sequenziell</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">22</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row">
+            <span class="slide-name">Der Prompt-Baukasten</span>
+            <span class="slide-star">⭐ Takeaway</span>
+          </div>
+          <div class="slide-desc">Rolle + Kontext + Aufgabe + Format = guter Prompt. Stacking-Animation. Patent-Beispiel.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Blöcke stacken sich</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">23</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Weitere Techniken</span></div>
+          <div class="slide-desc">Structured Output, Prompt Chaining, Self-Consistency — Schnellüberblick.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Cards flip</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEIL 4 ===== -->
+  <div class="part">
+    <div class="part-header">
+      <span class="part-num t4">Teil 4</span>
+      <span class="part-title">Praxis</span>
+      <span class="part-time">~30 min</span>
+      <span class="part-status todo">Offen</span>
+    </div>
+    <div class="part-body">
+      <div class="slide-row">
+        <div class="slide-num-col">24</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Section Opener — Jetzt bist du dran</span></div>
+          <div class="slide-desc">Übergang in den Praxis-Teil</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Fade in</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">25</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Übung 1 — Prompt verbessern</span></div>
+          <div class="slide-desc">Schlechter Prompt → Prompt-Baukasten anwenden → Vergleich. Gruppenarbeit 5 min.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Vorher/Nachher</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">26</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Übung 2 — Halluzination erkennen</span></div>
+          <div class="slide-desc">3 KI-generierte Absätze. Einer enthält Halluzination. Finde sie.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Text reveal</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">27</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Übung 3 — Patent-Prompts bauen</span></div>
+          <div class="slide-desc">4 Aufgaben zur Wahl: Recherche, Anspruchsformulierung, Stand der Technik, Einspruch. 10 min Gruppenarbeit.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Aufgaben-Cards</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">28</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Zusammenfassung</span></div>
+          <div class="slide-desc">4 Takeaways: Next-Token, Halluzinationen, Rolle+Kontext+Aufgabe+Format, Few-Shot & CoT</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">Checkmarks</span></div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-num-col">29</div>
+        <div class="slide-content-col">
+          <div class="slide-title-row"><span class="slide-name">Fragen?</span></div>
+          <div class="slide-desc">Neural Network im Hintergrund, sanft pulsierend.</div>
+        </div>
+        <div class="slide-anim-col"><span class="slide-anim-tag">NN Canvas idle</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
