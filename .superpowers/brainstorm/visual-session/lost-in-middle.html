@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost in the Middle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2.5rem; left: 3.5rem; z-index: 100; max-width: 400px; }
+  .label .ol { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+  .label .sub { font-size: 0.8rem; color: #999; margin-top: 0.3rem; line-height: 1.5; }
+
+  /* The attention curve visualization */
+  .viz-area {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 80vw; max-width: 900px; z-index: 10;
+  }
+
+  /* Context bar — horizontal bar representing the full context */
+  .context-bar {
+    width: 100%; height: 60px; position: relative;
+    border-radius: 8px; overflow: hidden;
+    background: #f5f5f5; border: 1px solid #eee;
+    display: flex; opacity: 0;
+  }
+  .ctx-segment {
+    height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: white;
+    position: relative; overflow: hidden;
+    transition: opacity 0.5s;
+  }
+  .ctx-segment.start { background: #16a34a; flex: 0 0 15%; }
+  .ctx-segment.middle { background: #e0e0e0; flex: 1; color: #999; }
+  .ctx-segment.end { background: #4a90d9; flex: 0 0 15%; }
+
+  .ctx-labels {
+    display: flex; justify-content: space-between; margin-top: 0.4rem;
+    font-size: 0.6rem; color: #999; opacity: 0;
+  }
+
+  /* Attention strength curve — SVG */
+  .curve-area {
+    width: 100%; height: 160px; margin-top: 1.5rem; position: relative; opacity: 0;
+  }
+  .curve-area svg { width: 100%; height: 100%; }
+  .curve-label-y {
+    position: absolute; left: -1.5rem; top: 50%; transform: translateY(-50%) rotate(-90deg);
+    font-size: 0.55rem; font-weight: 600; color: #bbb; text-transform: uppercase;
+    letter-spacing: 0.08em; white-space: nowrap;
+  }
+  .curve-label-x {
+    text-align: center; font-size: 0.55rem; color: #bbb; margin-top: 0.3rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  /* The "lost" zone highlight */
+  .lost-zone {
+    position: absolute; top: 0; bottom: 0;
+    left: 15%; right: 15%;
+    background: rgba(220, 38, 38, 0.04);
+    border-left: 1px dashed rgba(220,38,38,0.15);
+    border-right: 1px dashed rgba(220,38,38,0.15);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 0.5rem;
+    opacity: 0;
+  }
+  .lost-label {
+    font-size: 0.65rem; font-weight: 600; color: #dc2626;
+    background: rgba(220,38,38,0.06); padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+  }
+
+  /* Insight */
+  .insight-row {
+    display: flex; gap: 1.5rem; margin-top: 2rem; opacity: 0;
+  }
+  .insight-card {
+    flex: 1; padding: 1rem 1.2rem; border-radius: 12px;
+    font-size: 0.78rem; line-height: 1.5;
+  }
+  .insight-card.warn {
+    background: #fef2f2; border-left: 3px solid #dc2626; color: #991b1b;
+  }
+  .insight-card.tip {
+    background: #fffbeb; border-left: 3px solid #fabb43; color: #92400e;
+  }
+  .insight-card strong { display: block; margin-bottom: 0.2rem; }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Das Problem</div>
+  <h2 id="lH">Aufmerksamkeit ist <span class="hl">nicht gleich verteilt</span></h2>
+  <div class="sub" id="lSub"></div>
+</div>
+
+<div class="viz-area">
+  <!-- Context bar -->
+  <div class="context-bar" id="ctxBar">
+    <div class="ctx-segment start">Anfang</div>
+    <div class="ctx-segment middle">Mitte</div>
+    <div class="ctx-segment end">Ende</div>
+  </div>
+  <div class="ctx-labels" id="ctxLabels">
+    <span>System-Prompt, erste Anweisungen</span>
+    <span>Ältere Nachrichten, früherer Kontext</span>
+    <span>Letzte Nachrichten, aktuelle Frage</span>
+  </div>
+
+  <!-- Attention curve -->
+  <div class="curve-area" id="curveArea">
+    <div class="curve-label-y">Aufmerksamkeit</div>
+    <div class="lost-zone" id="lostZone">
+      <div class="lost-label">Lost in the Middle</div>
+    </div>
+    <svg viewBox="0 0 900 160" preserveAspectRatio="none" id="curveSvg">
+      <!-- Filled area under curve -->
+      <path id="curveFill" fill="rgba(250,187,67,0.08)" d=""/>
+      <!-- The curve line -->
+      <path id="curveLine" fill="none" stroke="#fabb43" stroke-width="2.5" stroke-linecap="round" d=""/>
+    </svg>
+    <div class="curve-label-x">Position im Kontext →</div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insight-row" id="insights">
+    <div class="insight-card warn">
+      <strong>Das Problem</strong>
+      Je voller der Kontext, desto weniger Aufmerksamkeit bekommt die Mitte. Deine wichtigen Anweisungen vom Anfang? Verschwinden im Rauschen.
+    </div>
+    <div class="insight-card tip">
+      <strong>Die Lösung</strong>
+      Wichtiges an den Anfang UND ans Ende. Bei langen Chats: lieber neuer Chat mit vollständigem Prompt als weiter anhängen.
+    </div>
+  </div>
+</div>
+
+<script>
+let step = -1, busy = false;
+
+// Draw the U-shaped attention curve
+function drawCurve() {
+  const w = 900, h = 160;
+  const points = [];
+
+  for (let x = 0; x <= w; x += 3) {
+    const t = x / w; // 0 to 1
+    // U-shape: high at start, drops in middle, rises at end
+    const startBump = Math.exp(-((t - 0) ** 2) / 0.02) * 0.8;
+    const endBump = Math.exp(-((t - 1) ** 2) / 0.02) * 0.7;
+    const baseline = 0.12;
+    const middleDip = 0.08 + 0.05 * Math.sin(t * Math.PI * 6) * (1 - Math.abs(t - 0.5) * 2);
+
+    const y = 1 - (startBump + endBump + baseline + middleDip);
+    points.push({ x, y: y * h });
+  }
+
+  const lineD = 'M ' + points.map(p => `${p.x} ${p.y}`).join(' L ');
+  const fillD = lineD + ` L ${w} ${h} L 0 ${h} Z`;
+
+  document.getElementById('curveLine').setAttribute('d', lineD);
+  document.getElementById('curveFill').setAttribute('d', fillD);
+
+  // Animate the line drawing
+  const line = document.getElementById('curveLine');
+  const length = line.getTotalLength();
+  line.style.strokeDasharray = length;
+  line.style.strokeDashoffset = length;
+  gsap.to(line.style, { strokeDashoffset: 0, duration: 1.5, ease: 'power2.out' });
+  gsap.fromTo('#curveFill', { opacity: 0 }, { opacity: 1, duration: 0.8, delay: 0.8 });
+}
+
+const steps_arr = [
+  // 0: Context bar appears
+  () => {
+    gsap.to('#ctxBar', { opacity: 1, duration: 0.6 });
+    gsap.to('#ctxLabels', { opacity: 1, duration: 0.5, delay: 0.3 });
+  },
+  // 1: Attention curve draws itself
+  () => {
+    gsap.to('#curveArea', { opacity: 1, duration: 0.3 });
+    drawCurve();
+    document.getElementById('lSub').textContent = 'Die KI achtet stark auf den Anfang und das Ende — aber die Mitte geht verloren.';
+    gsap.fromTo('#lSub', { opacity: 0 }, { opacity: 1, duration: 0.5 });
+  },
+  // 2: "Lost in the middle" zone highlights
+  () => {
+    gsap.to('#lostZone', { opacity: 1, duration: 0.6 });
+    // Dim the middle segment of the context bar
+    document.querySelector('.ctx-segment.middle').style.background = 'rgba(220,38,38,0.12)';
+    document.querySelector('.ctx-segment.middle').style.color = '#dc2626';
+  },
+  // 3: Insights
+  () => {
+    gsap.to('#insights', { opacity: 1, duration: 0.6 });
+  },
+];
+
+function advance() {
+  if (busy) return;
+  step++;
+  if (step >= steps_arr.length) return;
+  busy = true;
+  steps_arr[step]();
+  setTimeout(() => busy = false, step === 1 ? 1500 : 600);
+}
+
+document.addEventListener('click', advance);
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }});
+
+gsap.fromTo('.label .ol, .label h2', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.2 });
+advance();
+</script>
+
+</body>
+</html>

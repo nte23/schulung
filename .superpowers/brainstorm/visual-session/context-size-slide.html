@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Size Slide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; cursor: pointer; -webkit-user-select: none; user-select: none; }
+
+  .label { position: fixed; top: 2.5rem; left: 3.5rem; z-index: 100; }
+  .label .ol { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #fabb43; }
+  .label h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.25; margin-top: 0.3rem; }
+  .label h2 .hl { color: #fabb43; }
+
+  .hint { position: fixed; bottom: 1rem; right: 2rem; font-size: 0.6rem; color: #ccc; z-index: 100; }
+
+  /* The big number */
+  .big-number-area {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 10;
+  }
+  .model-name { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #bbb; margin-bottom: 0.5rem; opacity: 0; }
+  .token-count {
+    font-size: clamp(4rem, 10vw, 8rem); font-weight: 300;
+    letter-spacing: -0.03em; color: #1a1a1a; line-height: 1;
+    opacity: 0;
+  }
+  .token-count .unit { font-size: 0.35em; color: #ccc; font-weight: 400; margin-left: 0.2em; }
+  .word-equiv { font-size: 1rem; color: #999; margin-top: 0.5rem; opacity: 0; }
+
+  /* Comparisons */
+  .comparisons {
+    position: fixed; bottom: 6rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 2rem; z-index: 10;
+    max-width: 900px; width: 90%;
+  }
+  .comp-card {
+    flex: 1; background: #fafafa; border: 1px solid #eee;
+    border-radius: 14px; padding: 1.2rem; text-align: center;
+    opacity: 0;
+  }
+  .comp-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+  .comp-name { font-size: 0.75rem; font-weight: 600; color: #555; margin-bottom: 0.15rem; }
+  .comp-words { font-size: 0.65rem; color: #bbb; margin-bottom: 0.5rem; }
+  .comp-fits {
+    font-size: 1.4rem; font-weight: 700; color: #fabb43;
+  }
+  .comp-fits .x { font-size: 0.7rem; font-weight: 600; color: #999; }
+
+  /* The tiny text wall (background visual) */
+  .text-wall {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    overflow: hidden; z-index: 1; opacity: 0;
+    display: flex; flex-wrap: wrap; align-content: flex-start;
+    padding: 1rem; line-height: 1; gap: 0;
+    pointer-events: none;
+  }
+  .text-wall span {
+    font-size: 3.5px; color: rgba(0,0,0,0.06); letter-spacing: 0;
+    word-spacing: 1px; line-height: 4px;
+  }
+
+  /* Model switcher pills */
+  .model-pills {
+    position: fixed; top: 2.5rem; right: 3.5rem;
+    display: flex; gap: 0.4rem; z-index: 100;
+  }
+  .pill {
+    padding: 0.35rem 0.8rem; border-radius: 20px;
+    font-size: 0.6rem; font-weight: 600; border: 1px solid #e8e8e8;
+    background: white; color: #999; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .pill.active { background: #fabb43; border-color: #fabb43; color: white; }
+  .pill:hover:not(.active) { border-color: #fabb43; color: #fabb43; }
+</style>
+</head>
+<body>
+
+<div class="label">
+  <div class="ol">Kontext-Fenster</div>
+  <h2>Wie viel passt <span class="hl">rein</span>?</h2>
+</div>
+<div class="hint">Klick auf Modell-Name zum Wechseln</div>
+
+<div class="model-pills">
+  <div class="pill" data-model="sonnet">Sonnet 4.6</div>
+  <div class="pill" data-model="gpt4o">GPT-4o</div>
+  <div class="pill active" data-model="opus">Opus 4.6</div>
+</div>
+
+<div class="text-wall" id="textWall"></div>
+
+<div class="big-number-area" id="bigNum">
+  <div class="model-name" id="mName">Claude Opus 4.6</div>
+  <div class="token-count" id="tCount">1.000.000<span class="unit">Tokens</span></div>
+  <div class="word-equiv" id="wEquiv">≈ 750.000 Wörter</div>
+</div>
+
+<div class="comparisons" id="comps">
+  <div class="comp-card" id="cc1">
+    <div class="comp-icon">🎬</div>
+    <div class="comp-name">Titanic Drehbuch</div>
+    <div class="comp-words">~40.000 Wörter</div>
+    <div class="comp-fits"><span id="cf1">18</span><span class="x">× passt rein</span></div>
+  </div>
+  <div class="comp-card" id="cc2">
+    <div class="comp-icon">📖</div>
+    <div class="comp-name">Harry Potter (alle 7)</div>
+    <div class="comp-words">~1.084.000 Wörter</div>
+    <div class="comp-fits"><span id="cf2">0.7</span><span class="x">× passt rein</span></div>
+  </div>
+  <div class="comp-card" id="cc3">
+    <div class="comp-icon">📋</div>
+    <div class="comp-name">Patent-Anmeldung</div>
+    <div class="comp-words">~10.000 Wörter</div>
+    <div class="comp-fits"><span id="cf3">75</span><span class="x">× passt rein</span></div>
+  </div>
+  <div class="comp-card" id="cc4">
+    <div class="comp-icon">📕</div>
+    <div class="comp-name">Die Bibel</div>
+    <div class="comp-words">~783.000 Wörter</div>
+    <div class="comp-fits"><span id="cf4">~1</span><span class="x">× passt rein</span></div>
+  </div>
+</div>
+
+<script>
+// Fill text wall with tiny words to show scale
+const wall = document.getElementById('textWall');
+const sampleWords = 'Patent Anspruch Vorrichtung Verfahren Merkmal Schutzbereich Neuheit Erfindung Offenbarung Druckschrift Stand Technik Prüfung Einspruch Erteilung Anmelder Erfinder Beschreibung Zeichnung Oberbegriff kennzeichnend Aufgabe Lösung Wirkung Ausführung Beispiel ';
+let wallText = '';
+for (let i = 0; i < 800; i++) wallText += sampleWords;
+const wallSpan = document.createElement('span');
+wallSpan.textContent = wallText;
+wall.appendChild(wallSpan);
+
+// Model data
+const models = {
+  opus: { name: 'Claude Opus 4.6', tokens: '1.000.000', words: 750000, wordLabel: '≈ 750.000 Wörter' },
+  sonnet: { name: 'Claude Sonnet 4.6', tokens: '200.000', words: 150000, wordLabel: '≈ 150.000 Wörter' },
+  gpt4o: { name: 'GPT-4o', tokens: '128.000', words: 96000, wordLabel: '≈ 96.000 Wörter' },
+};
+
+const comparisons = [
+  { words: 40000 },   // Titanic
+  { words: 1084000 }, // HP
+  { words: 10000 },   // Patent
+  { words: 783000 },  // Bible
+];
+
+function switchModel(key) {
+  const m = models[key];
+
+  // Update pills
+  document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.model === key));
+
+  // Animate number change
+  gsap.to('#mName', { opacity: 0, y: -10, duration: 0.2, onComplete: () => {
+    document.getElementById('mName').textContent = m.name;
+    gsap.to('#mName', { opacity: 1, y: 0, duration: 0.3 });
+  }});
+
+  gsap.to('#tCount', { opacity: 0, scale: 0.95, duration: 0.2, onComplete: () => {
+    document.getElementById('tCount').innerHTML = m.tokens + '<span class="unit">Tokens</span>';
+    gsap.to('#tCount', { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' });
+  }});
+
+  gsap.to('#wEquiv', { opacity: 0, duration: 0.2, onComplete: () => {
+    document.getElementById('wEquiv').textContent = m.wordLabel;
+    gsap.to('#wEquiv', { opacity: 1, duration: 0.3 });
+  }});
+
+  // Update comparisons
+  comparisons.forEach((c, i) => {
+    const fits = m.words / c.words;
+    const display = fits >= 10 ? Math.round(fits) : fits >= 1 ? fits.toFixed(1) : fits.toFixed(1);
+    const el = document.getElementById('cf' + (i + 1));
+    gsap.to(el.parentElement, { opacity: 0, y: 5, duration: 0.2, onComplete: () => {
+      el.textContent = fits < 1 ? display : (fits >= 10 ? display : display);
+      gsap.to(el.parentElement, { opacity: 1, y: 0, duration: 0.3, delay: i * 0.05 });
+    }});
+  });
+}
+
+// Click on pills
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', (e) => {
+    e.stopPropagation();
+    switchModel(p.dataset.model);
+  });
+});
+
+// Initial animation
+let step = -1;
+function advance() {
+  step++;
+  if (step === 0) {
+    // Show text wall
+    gsap.to('#textWall', { opacity: 1, duration: 1.5 });
+    // Show big number
+    gsap.to('#mName', { opacity: 1, duration: 0.5, delay: 0.3 });
+    gsap.to('#tCount', { opacity: 1, duration: 0.7, delay: 0.5 });
+    gsap.to('#wEquiv', { opacity: 1, duration: 0.5, delay: 0.8 });
+  } else if (step === 1) {
+    // Show comparisons one by one
+    gsap.to('#cc1', { opacity: 1, y: 0, duration: 0.5 });
+    gsap.to('#cc2', { opacity: 1, y: 0, duration: 0.5, delay: 0.12 });
+    gsap.to('#cc3', { opacity: 1, y: 0, duration: 0.5, delay: 0.24 });
+    gsap.to('#cc4', { opacity: 1, y: 0, duration: 0.5, delay: 0.36 });
+  }
+}
+
+// Set initial states
+gsap.set('.comp-card', { y: 15 });
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.model-pills')) return;
+  advance();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+});
+
+gsap.fromTo('.label .ol, .label h2', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.2 });
+advance();
+</script>
+
+</body>
+</html>

@@ -79,11 +79,16 @@
   <div class="subtitle" id="p1_sub">Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie du sie effektiv einsetzt.</div>
 </div>
 
-<!-- PAGE 2: Ziel — starts as single big statement, items appear below -->
-<div class="page" id="pg2">
-  <div class="overline" id="p2_ol">Ziel dieses Workshops</div>
-  <div class="ziel-title" id="p2_title">Selbst <span class="hl">prompten</span> können</div>
-  <div class="items" id="p2_items">
+<!-- PAGE 2a: "Ziel des Workshops" — BIG, alone, centered -->
+<div class="page centered" id="pg2a">
+  <div class="hero" id="p2a_h">Ziel des <span class="hl">Workshops</span></div>
+</div>
+
+<!-- PAGE 2b: Ziel shrunk as overline, big answer + items -->
+<div class="page" id="pg2b">
+  <div class="overline" id="p2b_ol">Ziel des Workshops</div>
+  <div class="ziel-title" id="p2b_title">Selbst <span class="hl">prompten</span> können</div>
+  <div class="items" id="p2b_items">
     <div class="item pos" id="item1"><span class="item-icon">✓</span><span class="item-text">Technisch verstehen, wie es funktioniert</span></div>
     <div class="item pos" id="item2"><span class="item-icon">✓</span><span class="item-text">Eigene Prompts entwickeln können</span></div>
     <div class="item neg" id="item3"><span class="item-icon">✗</span><span class="item-text">Prompt-Sammlung zum Kopieren</span></div>
@@ -142,41 +147,47 @@ const steps = [
     fadeInEl(document.getElementById('p1_sub'), 0.28);
   },
 
-  // 1: Fade title → Show "Ziel" page with just the big title (no items yet)
+  // 1: Fade title → "Ziel des Workshops" BIG and centered, alone
   () => {
     fadeOutEl(document.getElementById('p1_ol'));
     fadeOutEl(document.getElementById('p1_h'), 0.05);
     fadeOutEl(document.getElementById('p1_sub'), 0.1);
 
-    switchPage('pg1', 'pg2', 500);
+    switchPage('pg1', 'pg2a', 500);
     setTimeout(() => {
-      fadeInEl(document.getElementById('p2_ol'));
-      fadeInEl(document.getElementById('p2_title'), 0.12);
+      fadeInEl(document.getElementById('p2a_h'));
     }, 550);
   },
 
-  // 2: Title shrinks up, first item appears
+  // 2: "Ziel" shrinks to overline → "Selbst prompten können" appears BIG
   () => {
-    document.getElementById('p2_title').classList.add('shrunk');
-    gsap.to('#p2_items', { opacity: 1, duration: 0.01 }); // make container visible
-    setTimeout(() => fadeInEl(document.getElementById('item1')), 300);
+    fadeOutEl(document.getElementById('p2a_h'));
+
+    switchPage('pg2a', 'pg2b', 450);
+    setTimeout(() => {
+      fadeInEl(document.getElementById('p2b_ol'));
+      fadeInEl(document.getElementById('p2b_title'), 0.12);
+    }, 500);
   },
 
-  // 3: Second item
+  // 3: First item
+  () => { fadeInEl(document.getElementById('item1')); },
+
+  // 4: Second item
   () => { fadeInEl(document.getElementById('item2')); },
 
-  // 4: Third item (strikethrough)
+  // 5: Third item (strikethrough)
   () => { fadeInEl(document.getElementById('item3')); },
 
-  // 5: Fade ziel → Fahrplan
+  // 6: Fade ziel → Fahrplan
   () => {
-    fadeOutEl(document.getElementById('p2_ol'));
-    fadeOutEl(document.getElementById('p2_title'), 0.03);
+    fadeOutEl(document.getElementById('p2b_ol'));
+    fadeOutEl(document.getElementById('p2b_title'), 0.03);
     fadeOutEl(document.getElementById('item1'), 0.06);
     fadeOutEl(document.getElementById('item2'), 0.09);
     fadeOutEl(document.getElementById('item3'), 0.12);
 
-    switchPage('pg2', 'pg3', 500);
+    switchPage('pg2b', 'pg3', 500);
     setTimeout(() => {
       fadeInEl(document.getElementById('p3_ol'));
       fadeInEl(document.getElementById('p3_h'), 0.1);
@@ -209,7 +220,7 @@ function advance() {
   document.getElementById('progress').style.width = ((step + 1) / TOTAL * 100) + '%';
   document.getElementById('stepInfo').textContent = (step + 1) + '/' + TOTAL;
   // Longer busy for page transitions, shorter for item reveals
-  const waitTime = (step === 1 || step === 5 || step === 6) ? 900 : 500;
+  const waitTime = (step === 1 || step === 2 || step === 6 || step === 7) ? 900 : 500;
   setTimeout(() => busy = false, waitTime);
 }
 
