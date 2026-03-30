@@ -1,3 +1,124 @@
+// Ambient neural background — subtle pulsing network inside the dark view
+class NNAmbient {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.nodes = [];
+        this.frame = null;
+        this.running = false;
+    }
+
+    start() {
+        if (this.running) return;
+        this.running = true;
+
+        const c = this.canvas;
+        const dpr = window.devicePixelRatio || 1;
+        c.width = c.clientWidth * dpr;
+        c.height = c.clientHeight * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.W = c.clientWidth;
+        this.H = c.clientHeight;
+
+        // Place nodes in edge/corner clusters — the "walls" of the NN we zoomed into
+        this.nodes = [];
+        const W = this.W, H = this.H;
+
+        // 4 corner clusters + 4 edge strips
+        const clusters = [
+            { cx: 0,   cy: 0,   count: 18 },  // top-left
+            { cx: W,   cy: 0,   count: 18 },  // top-right
+            { cx: 0,   cy: H,   count: 18 },  // bottom-left
+            { cx: W,   cy: H,   count: 18 },  // bottom-right
+            { cx: W/2, cy: 0,   count: 10 },  // top-center
+            { cx: W/2, cy: H,   count: 10 },  // bottom-center
+            { cx: 0,   cy: H/2, count: 8 },   // left-center
+            { cx: W,   cy: H/2, count: 8 },   // right-center
+        ];
+
+        clusters.forEach(cl => {
+            for (let i = 0; i < cl.count; i++) {
+                const spread = 180 + Math.random() * 120;
+                this.nodes.push({
+                    x: cl.cx + (Math.random() - 0.5) * spread,
+                    y: cl.cy + (Math.random() - 0.5) * spread,
+                    vx: (Math.random() - 0.5) * 0.08,
+                    vy: (Math.random() - 0.5) * 0.08,
+                    r: 1.5 + Math.random() * 1.5,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        });
+
+        const self = this;
+        function tick(ts) {
+            if (!self.running) return;
+
+            const ctx = self.ctx;
+            ctx.clearRect(0, 0, W, H);
+            const t = ts * 0.001;
+
+            // Drift nodes slowly
+            self.nodes.forEach(n => {
+                n.x += n.vx;
+                n.y += n.vy;
+                // Soft bounce off edges (keep them near the walls)
+                if (n.x < -60) n.vx = Math.abs(n.vx);
+                if (n.x > W + 60) n.vx = -Math.abs(n.vx);
+                if (n.y < -60) n.vy = Math.abs(n.vy);
+                if (n.y > H + 60) n.vy = -Math.abs(n.vy);
+            });
+
+            // Draw connections — thicker, more like NN structure lines
+            const maxDist = 120;
+            for (let i = 0; i < self.nodes.length; i++) {
+                for (let j = i + 1; j < self.nodes.length; j++) {
+                    const a = self.nodes[i];
+                    const b = self.nodes[j];
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < maxDist) {
+                        const base = (1 - dist / maxDist) * 0.09;
+                        const pulse = Math.sin(t * 1.2 + a.phase + b.phase) * 0.5 + 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.strokeStyle = `rgba(250, 187, 67, ${base + pulse * 0.04})`;
+                        ctx.lineWidth = 0.6 + pulse * 0.4;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw nodes
+            self.nodes.forEach(n => {
+                const pulse = Math.sin(t * 1.5 + n.phase) * 0.5 + 0.5;
+                const alpha = 0.1 + pulse * 0.15;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.r + pulse * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(250, 187, 67, ${alpha})`;
+                ctx.fill();
+            });
+
+            self.frame = requestAnimationFrame(tick);
+        }
+
+        this.frame = requestAnimationFrame(tick);
+    }
+
+    stop() {
+        this.running = false;
+        if (this.frame) {
+            cancelAnimationFrame(this.frame);
+            this.frame = null;
+        }
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, this.W || 0, this.H || 0);
+        }
+    }
+}
+
 // Neural Network Visualization — DOM+SVG, layered with single-shot activation
 
 class NeuralNetViz {

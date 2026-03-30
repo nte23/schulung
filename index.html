@@ -135,6 +135,165 @@
         <div class="nn-stream-input" id="nnStreamInput"></div>
         <div class="nn-stream-output" id="nnStreamOutput"></div>
 
+        <!-- Ambient neural background (visible in dark mode) -->
+        <canvas id="nnAmbient" class="nn-ambient"></canvas>
+
+        <!-- Zoom-in layers: fly-past slides inside the NN -->
+        <div class="zoom-layer" id="zoomPosEnc">
+            <div class="zoom-label">Positional Encoding — <span class="hl">Wo steht jedes Wort?</span></div>
+            <div class="zoom-sublabel">Das Modell braucht die Reihenfolge — sonst wäre "Hund beißt Mann" = "Mann beißt Hund"</div>
+            <div class="posenc-tokens">
+                <div class="posenc-token"><span class="posenc-word">Der</span><span class="posenc-pos">0</span></div>
+                <div class="posenc-token"><span class="posenc-word">Patent</span><span class="posenc-pos">1</span></div>
+                <div class="posenc-token"><span class="posenc-word">anspruch</span><span class="posenc-pos">2</span></div>
+                <div class="posenc-token"><span class="posenc-word">betrifft</span><span class="posenc-pos">3</span></div>
+                <div class="posenc-token"><span class="posenc-word">eine</span><span class="posenc-pos">4</span></div>
+                <div class="posenc-token"><span class="posenc-word">Vorrichtung</span><span class="posenc-pos">5</span></div>
+            </div>
+        </div>
+
+        <div class="zoom-layer" id="zoomEmbed">
+            <div class="zoom-label">Embeddings — <span class="hl">Wörter im Raum</span></div>
+            <div class="zoom-sublabel">Jedes Token wird zu einem Punkt im hochdimensionalen Raum</div>
+            <div class="embed-dots">
+                <div class="embed-halo" style="left:15%;top:20%;width:180px;height:150px;background:radial-gradient(circle,rgba(74,144,217,0.3),transparent);"></div>
+                <div class="embed-halo" style="left:55%;top:25%;width:140px;height:120px;background:radial-gradient(circle,rgba(232,133,61,0.3),transparent);"></div>
+                <div class="embed-dot" style="left:22%;top:35%;background:#4a90d9;"></div>
+                <div class="embed-dot" style="left:18%;top:48%;background:#7c5cbf;"></div>
+                <div class="embed-dot" style="left:25%;top:55%;background:#7c5cbf;"></div>
+                <div class="embed-dot" style="left:58%;top:38%;background:#e8853d;"></div>
+                <div class="embed-dot" style="left:40%;top:62%;background:#3daa8f;"></div>
+                <div class="embed-dot" style="left:48%;top:70%;background:#d94a6e;"></div>
+                <div class="embed-dot" style="left:63%;top:50%;background:#4a90d9;"></div>
+                <div class="embed-cluster-label" style="left:14%;top:15%;color:#4a90d9;">Recht / Patent</div>
+                <div class="embed-cluster-label" style="left:56%;top:20%;color:#e8853d;">Technik</div>
+            </div>
+        </div>
+
+        <div class="zoom-layer" id="zoomAttention">
+            <div class="zoom-label-small" id="attLabel">Schritt 3: Attention</div>
+            <div class="zoom-heading" id="attHeadingZoom">Attention — <span class="hl">Wörter beobachten einander</span></div>
+            <div class="zoom-sublabel" id="attSubZoom">Das Modell lernt, welche Wörter zusammengehören</div>
+            <div class="att-area" id="attArea">
+                <!-- Arcs are positioned by JS to match actual token centers -->
+                <svg viewBox="0 0 1000 150" fill="none" class="att-svg" id="attArcSvg">
+                </svg>
+                <div class="att-tokens">
+                    <span class="att-token at-blue">Der</span>
+                    <span class="att-token at-purple">Patent</span>
+                    <span class="att-token at-orange">anspruch</span>
+                    <span class="att-token at-teal">betrifft</span>
+                    <span class="att-token at-pink">eine</span>
+                    <span class="att-token at-blue">Vorrichtung</span>
+                </div>
+            </div>
+            <!-- Stacked layers get appended here dynamically -->
+        </div>
+
+        <!-- NTP: Next-Token-Prediction (white slide, after zoom-out) -->
+        <div class="ntp-container" id="ntpContainer">
+            <div class="ntp-label" id="ntpLabel">Das Kernprinzip</div>
+            <div class="ntp-heading" id="ntpHeading">Das <span class="hl">wahrscheinlichste</span> nächste Wort</div>
+            <div class="ntp-sentence" id="ntpSentence">Der Patent<span class="ntp-cursor"></span></div>
+            <div class="ntp-bars" id="ntpBars">
+                <div class="ntp-row"><div class="ntp-word">anspruch</div><div class="ntp-track"><div class="ntp-fill ntp-top" id="ntp-f0"></div></div><div class="ntp-pct" id="ntp-p0"></div></div>
+                <div class="ntp-row"><div class="ntp-word">inhaber</div><div class="ntp-track"><div class="ntp-fill ntp-mid" id="ntp-f1"></div></div><div class="ntp-pct" id="ntp-p1"></div></div>
+                <div class="ntp-row"><div class="ntp-word">schutz</div><div class="ntp-track"><div class="ntp-fill ntp-mid" id="ntp-f2"></div></div><div class="ntp-pct" id="ntp-p2"></div></div>
+                <div class="ntp-row"><div class="ntp-word">anwalt</div><div class="ntp-track"><div class="ntp-fill ntp-low" id="ntp-f3"></div></div><div class="ntp-pct" id="ntp-p3"></div></div>
+                <div class="ntp-row"><div class="ntp-word">amt</div><div class="ntp-track"><div class="ntp-fill ntp-low" id="ntp-f4"></div></div><div class="ntp-pct" id="ntp-p4"></div></div>
+            </div>
+            <div class="ntp-insight" id="ntpInsight">
+                Das Modell wählt <strong>nicht immer</strong> das wahrscheinlichste Wort — es würfelt. Deshalb klingt jede Antwort etwas anders.
+            </div>
+        </div>
+
+        <!-- Temperature panel: slides in from right -->
+        <div class="temp-panel" id="tempPanel">
+            <div class="temp-panel-label">Für Agenten-Bauer</div>
+            <div class="temp-panel-heading">Temperature</div>
+            <div class="temp-value-display" id="tempValue">0.7</div>
+            <div class="temp-desc" id="tempDesc">Standard — balanciert</div>
+            <input type="range" class="temp-slider" id="tempSlider" min="0" max="3" value="1" step="1">
+            <div class="temp-scale">
+                <span>0</span><span>0.7</span><span>1.5</span><span>2.0</span>
+            </div>
+        </div>
+
+        <!-- Parameter panel: slides in from right -->
+        <div class="param-panel" id="paramPanel">
+            <div class="param-panel-label">Parameter</div>
+            <div class="param-grid" id="paramGrid"></div>
+        </div>
+
+    </div>
+
+    <!-- Page: Zwischenfazit Teil 1 -->
+    <div class="page" id="pg-fazit1">
+        <div class="overline" data-anim>Zwischenfazit</div>
+        <div class="hero small" data-anim>Was wir jetzt <span class="hl">wissen</span></div>
+        <div class="fazit-list">
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon">&#10003;</span>
+                <span class="fazit-text">Text wird in <strong>Tokens</strong> zerlegt — nummerierte Bausteine</span>
+            </div>
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon">&#10003;</span>
+                <span class="fazit-text">Das Neuronale Netz verarbeitet alles in <strong>~96 Schichten</strong> — Attention, Parameter</span>
+            </div>
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon">&#10003;</span>
+                <span class="fazit-text">Am Ende: <strong>Wahrscheinlichkeit</strong> für das nächste Wort</span>
+            </div>
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon">&#10003;</span>
+                <span class="fazit-text"><strong>Temperature</strong> bestimmt, wie streng die Auswahl ist</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page: Teil 2 Opener -->
+    <div class="page centered" id="pg-teil2-opener">
+        <div class="hero" data-anim>Was KI <span class="hl-red">nicht</span> kann</div>
+        <div class="subtitle" data-anim>...und warum das unvermeidlich ist.</div>
+    </div>
+
+    <!-- Page: Hallucination Mechanism -->
+    <div class="page" id="pg-halluc">
+        <div class="halluc-title" id="hallucLabel" data-anim>Der Mechanismus</div>
+        <div class="halluc-subtitle" id="hallucSublabel" data-anim>Wie eine <span class="hl-red">Halluzination</span> entsteht</div>
+
+        <div class="halluc-area" id="hallucArea" data-anim>
+            <div class="halluc-sentence" id="hallucSentence"><span class="halluc-cursor"></span></div>
+            <div class="halluc-bars" id="hallucBars">
+                <div class="halluc-bar-row"><div class="halluc-bar-word" id="hbw0"></div><div class="halluc-bar-track"><div class="halluc-bar-fill" id="hbf0"></div></div><div class="halluc-bar-pct" id="hbp0"></div></div>
+                <div class="halluc-bar-row"><div class="halluc-bar-word" id="hbw1"></div><div class="halluc-bar-track"><div class="halluc-bar-fill" id="hbf1"></div></div><div class="halluc-bar-pct" id="hbp1"></div></div>
+                <div class="halluc-bar-row"><div class="halluc-bar-word" id="hbw2"></div><div class="halluc-bar-track"><div class="halluc-bar-fill" id="hbf2"></div></div><div class="halluc-bar-pct" id="hbp2"></div></div>
+                <div class="halluc-bar-row"><div class="halluc-bar-word" id="hbw3"></div><div class="halluc-bar-track"><div class="halluc-bar-fill" id="hbf3"></div></div><div class="halluc-bar-pct" id="hbp3"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page: Teil 2 Summary -->
+    <div class="page" id="pg-teil2-summary">
+        <div class="overline" data-anim style="color: var(--negative);">Merke</div>
+        <div class="hero small" data-anim>Kein Wissen — nur <span class="hl-red">Muster</span></div>
+        <div class="fazit-list">
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon" style="color: var(--negative); background: rgba(220,38,38,0.06);">!</span>
+                <span class="fazit-text">Niemand weiß, wo das "Wissen" im Netz gespeichert ist</span>
+            </div>
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon" style="color: var(--negative); background: rgba(220,38,38,0.06);">!</span>
+                <span class="fazit-text">Jedes Wort basiert auf allen vorherigen — <strong style="color: var(--negative);">auch den falschen</strong></span>
+            </div>
+            <div class="fazit-item" data-anim>
+                <span class="fazit-icon" style="color: var(--negative); background: rgba(220,38,38,0.06);">!</span>
+                <span class="fazit-text">Das Modell merkt nicht, wenn es falsch liegt</span>
+            </div>
+        </div>
+        <div class="halluc-rule" data-anim>
+            <strong>Regel #1:</strong> KI-Output ist ein Entwurf, niemals ein Ergebnis. IMMER verifizieren.
+        </div>
     </div>
 
     <script src="nn.js"></script>

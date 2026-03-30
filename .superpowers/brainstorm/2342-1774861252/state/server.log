@@ -1,1 +1,2 @@
 {"type":"server-started","port":60135,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:60135","screen_dir":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/2342-1774861252/content","state_dir":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/2342-1774861252/state"}
+{"type":"server-stopped","reason":"idle timeout"}

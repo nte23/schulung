@@ -77,6 +77,15 @@ class Engine {
             this.activeTl = null;
         }
 
+        // Reset dark mode + ambient + param loop
+        document.body.classList.remove('nn-dark');
+        if (typeof nnAmbientViz !== 'undefined' && nnAmbientViz) {
+            nnAmbientViz.stop();
+        }
+        if (typeof _stopParamLoop === 'function') {
+            _stopParamLoop();
+        }
+
         document.querySelectorAll('.page').forEach(p => {
             p.className = this.pageDefaults[p.id];
             gsap.killTweensOf(p.querySelectorAll('*'));
@@ -96,7 +105,7 @@ class Engine {
             // Reset neural net + stream
             const nnBox = p.querySelector('#nnBox');
             if (nnBox) {
-                gsap.set(nnBox, { opacity: 0 });
+                gsap.set(nnBox, { opacity: 0, scale: 1, filter: 'none' });
                 if (typeof nnViz !== 'undefined' && nnViz) {
                     nnViz.destroy();
                     nnViz = null;
@@ -106,6 +115,61 @@ class Engine {
             if (streamIn) streamIn.innerHTML = '';
             const streamOut = p.querySelector('#nnStreamOutput');
             if (streamOut) streamOut.innerHTML = '';
+            // Reset zoom layers
+            p.querySelectorAll('.zoom-layer').forEach(zl => {
+                gsap.set(zl, { clearProps: 'all' });
+                zl.style.opacity = '0';
+            });
+            // Clear dynamic stacked layers + param grid
+            p.querySelectorAll('.stack-card, .stack-dots').forEach(el => el.remove());
+            const paramG = p.querySelector('#paramGrid');
+            if (paramG) paramG.innerHTML = '';
+            const paramP = p.querySelector('#paramPanel');
+            if (paramP) gsap.set(paramP, { x: '100%' });
+            const tempP = p.querySelector('#tempPanel');
+            if (tempP) {
+                gsap.set(tempP, { x: '100%' });
+                const slider = tempP.querySelector('#tempSlider');
+                if (slider) { slider.value = 1; slider.oninput = null; }
+            }
+            // Reset NTP
+            const ntpC = p.querySelector('#ntpContainer');
+            if (ntpC) {
+                gsap.set(ntpC, { opacity: 0, scale: 1, clearProps: 'transformOrigin' });
+                const ntpLbl = ntpC.querySelector('#ntpLabel');
+                if (ntpLbl) gsap.set(ntpLbl, { x: 0, y: 0, opacity: 1, scale: 1 });
+                const ntpHd = ntpC.querySelector('#ntpHeading');
+                if (ntpHd) gsap.set(ntpHd, { x: 0, y: 0, opacity: 1, scale: 1 });
+                ntpC.querySelectorAll('.ntp-fill').forEach(f => { f.style.width = '0%'; });
+                ntpC.querySelectorAll('.ntp-pct').forEach(p => { p.textContent = ''; });
+                const ntpI = ntpC.querySelector('.ntp-insight');
+                if (ntpI) gsap.set(ntpI, { opacity: 0 });
+            }
+            // Reset attention heading/area transforms
+            const attH = p.querySelector('#attHeadingZoom');
+            if (attH) {
+                attH.innerHTML = 'Attention — <span class="hl">Wörter beobachten einander</span>';
+                attH.style.fontSize = '';
+                attH.style.marginBottom = '';
+            }
+            const attS = p.querySelector('#attSubZoom');
+            if (attS) {
+                attS.textContent = 'Das Modell lernt, welche Wörter zusammengehören';
+                gsap.set(attS, { opacity: 1 });
+            }
+            const attA = p.querySelector('#attArea');
+            if (attA) gsap.set(attA, { clearProps: 'all' });
+            // Reset zoom layout overrides
+            const zoomAtt = p.querySelector('#zoomAttention');
+            if (zoomAtt) {
+                zoomAtt.style.justifyContent = '';
+                zoomAtt.style.paddingTop = '';
+                zoomAtt.style.paddingRight = '';
+            }
+            p.querySelectorAll('.att-token').forEach(tok => gsap.set(tok, { opacity: 0 }));
+            // Clear dynamically drawn arcs
+            const attSvg = p.querySelector('#attArcSvg');
+            if (attSvg) attSvg.innerHTML = '';
             // Reset compound-word transforms
             const cw = p.querySelector('.compound-word');
             if (cw) gsap.set(cw, { clearProps: 'all' });

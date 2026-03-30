@@ -8,7 +8,10 @@
       "Bash(find /mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm -type f -name *.html -o -name *.js -o -name *.json)",
       "Bash(/home/rselius/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh --project-dir /mnt/c/users/nerselius/python/schulung)",
       "Bash(find /mnt/c/users/nerselius/python/schulung -name README* -o -name PLAN* -o -name BRAINSTORM*)",
-      "Bash(/home/rselius/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.6/skills/brainstorming/scripts/start-server.sh --project-dir /mnt/c/users/nerselius/python/schulung)"
+      "Bash(/home/rselius/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.6/skills/brainstorming/scripts/start-server.sh --project-dir /mnt/c/users/nerselius/python/schulung)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(grep -E \"\\\\.html$\")"
     ]
   }
 }
