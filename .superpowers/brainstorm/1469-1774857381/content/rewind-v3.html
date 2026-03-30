@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rewind v3 — Motion Blur</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #ffffff;
+    --text: #1a1a1a;
+    --accent: #fabb43;
+    --font: 'Inter', -apple-system, sans-serif;
+  }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text);
+    overflow: hidden; height: 100vh; cursor: pointer; user-select: none;
+  }
+
+  .slide {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    padding: 0 10vw;
+    opacity: 0; visibility: hidden;
+  }
+  .slide.active { opacity: 1; visibility: visible; }
+
+  .s-label {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: #999; margin-bottom: 0.5rem; font-weight: 600;
+  }
+  .s-heading {
+    font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 700;
+    line-height: 1.15; margin-bottom: 0.3rem;
+  }
+  .s-sub { font-size: 1rem; color: #888; }
+  .hl { color: var(--accent); }
+
+  /* Ghost slides */
+  .ghost-slide {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    padding: 0 10vw;
+    opacity: 0; visibility: hidden;
+    z-index: 10;
+    will-change: transform, opacity, filter;
+  }
+  .ghost-slide .s-heading { font-size: clamp(1.5rem, 3.5vw, 2.5rem); }
+
+  /* Rewind icon */
+  .rewind-icon-container {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; pointer-events: none; opacity: 0;
+  }
+  .rewind-arrows {
+    font-size: 5rem; font-weight: 800;
+    color: var(--text); letter-spacing: -14px; opacity: 0.5;
+  }
+
+  /* Attention */
+  .attention-area {
+    position: relative; width: 80vw; height: 30vh; margin-top: 1rem;
+  }
+  .attention-area svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+  .token-row {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; padding: 0 2%;
+  }
+  .token {
+    padding: 0.4rem 1rem; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; color: #fff; opacity: 0;
+  }
+  .t-blue { background: #4a90d9; }
+  .t-purple { background: #7c5cbf; }
+  .t-orange { background: #e8853d; }
+  .t-teal { background: #3daa8f; }
+  .t-pink { background: #d94a6e; }
+
+  /* Overlay */
+  .overlay-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg,
+      rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 60%, rgba(255,255,255,0) 100%
+    );
+    padding: 3rem 10vw 3rem; z-index: 50;
+    transform: translateY(100%);
+  }
+  .overlay-label {
+    font-size: 0.8rem; font-weight: 700; color: #c45200;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;
+  }
+  .insight-box {
+    background: #fffbeb; border-left: 4px solid var(--accent);
+    padding: 0.8rem 1.2rem; border-radius: 0 8px 8px 0;
+    font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; opacity: 0;
+  }
+  .insight-box strong { color: var(--text); }
+  .lost-bar-container { opacity: 0; }
+  .lost-bar {
+    display: flex; height: 28px; border-radius: 6px; overflow: hidden;
+    max-width: 500px; margin-top: 0.5rem;
+  }
+  .lost-segment {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: #fff;
+  }
+  .lost-strong { background: var(--accent); flex: 2; }
+  .lost-weak { background: #e0e0e0; color: #999; flex: 3; }
+  .lost-medium { background: #f0c674; flex: 2; }
+  .lost-tip { font-size: 0.8rem; color: #666; margin-top: 0.5rem; opacity: 0; }
+
+  .nn-mini { position: relative; width: 60vw; height: 25vh; margin-top: 1rem; }
+  .nn-mini-dot {
+    position: absolute; width: 6px; height: 6px;
+    border-radius: 50%; background: #ccc;
+  }
+
+  .hint {
+    position: fixed; bottom: 1.5rem; right: 2rem;
+    font-size: 0.75rem; color: #bbb; z-index: 200;
+  }
+  .hint span { color: #999; font-weight: 600; }
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--accent); z-index: 200; width: 0%;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Starting slide -->
+<div class="slide active" id="slide-start">
+  <div class="s-label">Teil 3 — Prompting</div>
+  <div class="s-heading">Warum ist die <span class="hl">Position</span> wichtig?</div>
+  <div class="s-sub">Erinnert ihr euch an Attention?</div>
+</div>
+
+<!-- Ghost slides -->
+<div class="ghost-slide" id="ghost-6">
+  <div class="s-label">Zwischenfazit</div>
+  <div class="s-heading">Was wir jetzt <span class="hl">wissen</span></div>
+  <div style="margin-top:1rem;">
+    <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+      <span style="color:#16a34a;font-weight:700;">&#10003;</span>
+      <span style="font-size:0.95rem;">Text → Tokens → Vektoren</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+      <span style="color:#16a34a;font-weight:700;">&#10003;</span>
+      <span style="font-size:0.95rem;">Neuronales Netz verarbeitet alles</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <span style="color:#16a34a;font-weight:700;">&#10003;</span>
+      <span style="font-size:0.95rem;">Nächstes Wort vorhersagen</span>
+    </div>
+  </div>
+</div>
+
+<div class="ghost-slide" id="ghost-5">
+  <div class="s-label">Training</div>
+  <div class="s-heading">Woher kommt das <span class="hl">"Wissen"</span>?</div>
+  <div style="margin-top:1rem; display:flex; gap:2rem; align-items:center;">
+    <div style="padding:0.8rem 1.2rem; background:#f5f5f5; border-radius:8px; font-size:0.85rem;">Bücher, Web, Papers</div>
+    <div style="font-size:1.2rem; color:#ccc;">→</div>
+    <div style="padding:0.8rem 1.2rem; background:#f5f5f5; border-radius:8px; font-size:0.85rem;">Training</div>
+    <div style="font-size:1.2rem; color:#ccc;">→</div>
+    <div style="padding:0.8rem 1.2rem; background:#fef3c7; border-radius:8px; font-size:0.85rem; font-weight:600;">Modell</div>
+  </div>
+</div>
+
+<div class="ghost-slide" id="ghost-4">
+  <div class="s-label">Das Kernprinzip</div>
+  <div class="s-heading">Das <span class="hl">wahrscheinlichste</span> nächste Wort</div>
+  <div style="margin-top:1.2rem; font-size:1.4rem; font-weight:500;">
+    Der Patent<span style="display:inline-block;width:2px;height:1.2em;background:var(--accent);vertical-align:middle;margin:0 2px;"></span>
+  </div>
+  <div style="margin-top:0.8rem; display:flex; flex-direction:column; gap:0.3rem; max-width:400px;">
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <span style="font-size:0.8rem;width:80px;text-align:right;color:#666;">anspruch</span>
+      <div style="height:20px;width:68%;background:linear-gradient(90deg,#fabb43,#f59e0b);border-radius:4px;"></div>
+      <span style="font-size:0.75rem;color:#999;">34%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <span style="font-size:0.8rem;width:80px;text-align:right;color:#666;">inhaber</span>
+      <div style="height:20px;width:44%;background:linear-gradient(90deg,#fabb43,#f59e0b);border-radius:4px;"></div>
+      <span style="font-size:0.75rem;color:#999;">22%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <span style="font-size:0.8rem;width:80px;text-align:right;color:#666;">schutz</span>
+      <div style="height:20px;width:36%;background:#fcd481;border-radius:4px;"></div>
+      <span style="font-size:0.75rem;color:#999;">18%</span>
+    </div>
+  </div>
+</div>
+
+<div class="ghost-slide" id="ghost-3">
+  <div class="s-label">Parameter</div>
+  <div class="s-heading"><span class="hl">70 Milliarden</span> Regler</div>
+  <div style="margin-top:0.8rem; font-size:2.5rem; font-weight:300; color:#ccc; letter-spacing:0.05em;">
+    70.000.000.000
+  </div>
+</div>
+
+<div class="ghost-slide" id="ghost-2">
+  <div class="s-label">Schritt 4</div>
+  <div class="s-heading">Das <span class="hl">Neuronale Netz</span></div>
+  <div class="s-sub">Dein Prompt fließt durch das Netz</div>
+  <div class="nn-mini" id="nnMini"></div>
+</div>
+
+<div class="ghost-slide" id="ghost-1">
+  <div class="s-label">Schritt 2</div>
+  <div class="s-heading"><span class="hl">Tokenisierung</span></div>
+  <div style="margin-top:1rem; display:flex; gap:0.6rem;">
+    <span class="token t-blue" style="opacity:1">Der</span>
+    <span class="token t-purple" style="opacity:1">Patent</span>
+    <span class="token t-orange" style="opacity:1">anspruch</span>
+    <span class="token t-teal" style="opacity:1">betrifft</span>
+    <span class="token t-pink" style="opacity:1">eine</span>
+    <span class="token t-blue" style="opacity:1">Vorrichtung</span>
+  </div>
+</div>
+
+<!-- Target: Attention -->
+<div class="slide" id="slide-attention">
+  <div class="s-label">Schritt 3</div>
+  <div class="s-heading">Attention — <span class="hl">Wörter beobachten einander</span></div>
+  <div class="s-sub" id="attSub">Das Modell lernt, welche Wörter zusammengehören</div>
+  <div class="attention-area" id="attArea">
+    <svg viewBox="0 0 800 200" fill="none">
+      <path d="M 195,170 Q 245,30 295,170" stroke="#e8853d" stroke-width="4" fill="none" opacity="0" class="arc"/>
+      <path d="M 75,170 Q 135,90 195,170" stroke="#fabb43" stroke-width="2" fill="none" opacity="0" class="arc"/>
+      <path d="M 430,170 Q 545,40 665,170" stroke="#fabb43" stroke-width="3.5" fill="none" opacity="0" class="arc"/>
+      <path d="M 545,170 Q 605,80 665,170" stroke="#fabb43" stroke-width="1.8" fill="none" opacity="0" class="arc"/>
+      <path d="M 295,170 Q 360,100 430,170" stroke="#fabb43" stroke-width="1.5" fill="none" opacity="0" class="arc"/>
+    </svg>
+    <div class="token-row">
+      <span class="token t-blue">Der</span>
+      <span class="token t-purple">Patent</span>
+      <span class="token t-orange">anspruch</span>
+      <span class="token t-teal">betrifft</span>
+      <span class="token t-pink">eine</span>
+      <span class="token t-blue">Vorrichtung</span>
+    </div>
+  </div>
+</div>
+
+<!-- Rewind icon -->
+<div class="rewind-icon-container" id="rewindIconContainer">
+  <div class="rewind-arrows" id="rewindIcon">◀◀</div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay-panel" id="overlayPanel">
+  <div class="overlay-label">Was bedeutet das fürs Prompting?</div>
+  <div class="insight-box" id="insight1">
+    <strong>Lost in the Middle:</strong> Attention ist am stärksten am <strong>Anfang</strong> und <strong>Ende</strong> des Prompts.
+    Informationen in der Mitte gehen leichter verloren.
+  </div>
+  <div class="lost-bar-container" id="lostBarContainer">
+    <div style="font-size:0.75rem; color:#888; margin-bottom:0.3rem;">Attention-Stärke über die Prompt-Länge:</div>
+    <div class="lost-bar">
+      <div class="lost-segment lost-strong">Anfang</div>
+      <div class="lost-segment lost-weak">Mitte</div>
+      <div class="lost-segment lost-medium">Ende</div>
+    </div>
+  </div>
+  <div class="lost-tip" id="lostTip">→ Aufgabe zuerst, Kontext zuletzt — oder umgekehrt. Nie beides in der Mitte.</div>
+</div>
+
+<div class="hint">Click or press <span>→</span> to advance</div>
+
+<script>
+// Build NN dots
+(function() {
+  const box = document.getElementById('nnMini');
+  const W = box.clientWidth || 600;
+  const H = box.clientHeight || 200;
+  for (let l = 0; l < 8; l++) {
+    const count = Math.round(4 + 8 * (1 - Math.abs(2 * l / 7 - 1)));
+    const x = W * 0.08 + (W * 0.84) * l / 7;
+    for (let n = 0; n < count; n++) {
+      const y = H * 0.1 + (H * 0.8) * (n + 1) / (count + 1);
+      const dot = document.createElement('div');
+      dot.className = 'nn-mini-dot';
+      dot.style.left = x + 'px';
+      dot.style.top = y + 'px';
+      box.appendChild(dot);
+    }
+  }
+})();
+
+const GHOSTS = ['ghost-6', 'ghost-5', 'ghost-4', 'ghost-3', 'ghost-2', 'ghost-1'];
+let step = 0, busy = false;
+
+function advance() {
+  if (busy) return;
+  step++;
+  run(step);
+}
+document.addEventListener('click', advance);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); }
+});
+
+function setProgress(p) { document.getElementById('progressBar').style.width = p + '%'; }
+
+function run(s) {
+  if (s === 1) doRewind();
+  else if (s === 2) showArcs();
+  else if (s === 3) showOverlay();
+  else if (s === 4) showLostBar();
+  else if (s === 5) showTip();
+}
+
+function doRewind() {
+  busy = true;
+  const slideStart = document.getElementById('slide-start');
+  const slideAtt = document.getElementById('slide-attention');
+  const iconContainer = document.getElementById('rewindIconContainer');
+  const icon = document.getElementById('rewindIcon');
+  const tokens = document.querySelectorAll('#slide-attention .token');
+
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+
+  // 1. Show rewind icon
+  tl.to(iconContainer, { opacity: 1, duration: 0.25 }, 0);
+  tl.from(icon, { scale: 0.5, duration: 0.3, ease: 'back.out(1.5)' }, 0);
+
+  // 2. Fade out current slide
+  tl.to(slideStart, { opacity: 0, duration: 0.3 }, 0.15);
+  tl.call(() => { slideStart.classList.remove('active'); slideStart.style.visibility = 'hidden'; }, null, 0.45);
+
+  // 3. Flash ghost slides — motion blur + horizontal sweep
+  // Each ghost: enters slightly right + blurred, peaks briefly at partial clarity, exits left + blurred
+  // Gets faster as we go (accelerating rewind)
+  const baseFlash = 0.38;
+  const baseGap = 0.30;
+  let t = 0.5;
+
+  GHOSTS.forEach((id, i) => {
+    const ghost = document.getElementById(id);
+    // Accelerate: each successive slide is faster
+    const speed = 1 - (i * 0.1); // 1.0, 0.9, 0.8, 0.7, 0.6, 0.5
+    const flash = baseFlash * speed;
+    const gap = baseGap * speed;
+
+    // Peak blur decreases as we get closer to target (sharpening toward landing)
+    const peakBlur = Math.max(1, 8 - i * 1.5); // 8, 6.5, 5, 3.5, 2, 1
+    const peakOpacity = Math.min(0.9, 0.45 + i * 0.09); // gets slightly more visible
+
+    const enterDur = flash * 0.35;
+    const holdDur = flash * 0.3;
+    const exitDur = flash * 0.35;
+
+    // Enter: from right, very blurred
+    tl.call(() => { ghost.style.visibility = 'visible'; }, null, t);
+    tl.fromTo(ghost,
+      { x: 60, opacity: 0, filter: `blur(${peakBlur + 6}px)` },
+      { x: 15, opacity: peakOpacity * 0.7, filter: `blur(${peakBlur + 2}px)`, duration: enterDur, ease: 'power1.out' },
+      t
+    );
+
+    // Hold: brief moment of partial clarity
+    tl.to(ghost,
+      { x: 0, opacity: peakOpacity, filter: `blur(${peakBlur}px)`, duration: holdDur, ease: 'none' },
+      t + enterDur
+    );
+
+    // Exit: to left, blurring out
+    tl.to(ghost,
+      { x: -50, opacity: 0, filter: `blur(${peakBlur + 6}px)`, duration: exitDur, ease: 'power1.in' },
+      t + enterDur + holdDur
+    );
+    tl.call(() => { ghost.style.visibility = 'hidden'; }, null, t + flash + 0.01);
+
+    t += gap;
+  });
+
+  // 4. Land on attention — arrives from slight blur, sharpens
+  const landTime = t + 0.05;
+  tl.call(() => {
+    slideAtt.classList.add('active');
+    gsap.set(slideAtt, { opacity: 0, filter: 'blur(4px)', x: 20 });
+  }, null, landTime);
+
+  // Decelerate into landing — ease out, blur clears
+  tl.to(slideAtt, {
+    opacity: 1, filter: 'blur(0px)', x: 0,
+    duration: 0.55, ease: 'power3.out'
+  }, landTime);
+
+  // Tokens stagger in after landing
+  tokens.forEach((tok, i) => {
+    tl.to(tok, { opacity: 1, duration: 0.3 }, landTime + 0.3 + i * 0.06);
+  });
+
+  // 5. Fade out rewind icon (starts fading during landing)
+  tl.to(iconContainer, { opacity: 0, duration: 0.4, ease: 'power2.in' }, landTime);
+  tl.to(icon, { scale: 0.7, duration: 0.4, ease: 'power2.in' }, landTime);
+
+  setProgress(30);
+}
+
+function showArcs() {
+  busy = true;
+  const arcs = document.querySelectorAll('.arc');
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+  arcs.forEach((arc, i) => {
+    const len = arc.getTotalLength();
+    arc.style.strokeDasharray = len;
+    arc.style.strokeDashoffset = len;
+    tl.to(arc, { opacity: 0.8, strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, i * 0.18);
+  });
+  setProgress(50);
+}
+
+function showOverlay() {
+  busy = true;
+  const panel = document.getElementById('overlayPanel');
+  const attArea = document.getElementById('attArea');
+  const attSub = document.getElementById('attSub');
+  const insight = document.getElementById('insight1');
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+  tl.to(attArea, { opacity: 0.3, duration: 0.5 }, 0);
+  tl.to(attSub, { opacity: 0.3, duration: 0.4 }, 0);
+  tl.to(panel, { y: 0, duration: 0.65, ease: 'power3.out' }, 0.1);
+  tl.to(insight, { opacity: 1, duration: 0.5 }, 0.45);
+  setProgress(70);
+}
+
+function showLostBar() {
+  busy = true;
+  const container = document.getElementById('lostBarContainer');
+  const segments = container.querySelectorAll('.lost-segment');
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+  tl.to(container, { opacity: 1, duration: 0.4 });
+  segments.forEach((seg, i) => {
+    gsap.set(seg, { scaleX: 0, transformOrigin: 'left center' });
+    tl.to(seg, { scaleX: 1, duration: 0.4, ease: 'power2.out' }, 0.15 + i * 0.12);
+  });
+  setProgress(85);
+}
+
+function showTip() {
+  busy = true;
+  gsap.to(document.getElementById('lostTip'), {
+    opacity: 1, duration: 0.5, onComplete: () => { busy = false; }
+  });
+  setProgress(100);
+}
+</script>
+</body>
+</html>

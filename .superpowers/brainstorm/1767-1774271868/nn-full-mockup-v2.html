@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Net — Full Mockup v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh; }
+
+  .morph-label {
+    position: absolute; top: 6vh; left: 10vw;
+    font-size: 1.1rem; font-weight: 600; text-align: left; z-index: 100;
+  }
+  .morph-sublabel {
+    position: absolute; top: calc(6vh + 1.8rem); left: 10vw;
+    font-size: 0.85rem; color: #888; text-align: left; z-index: 100;
+  }
+  .hl { color: #fabb43; }
+
+  #nnBox {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 1.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  #nnBox.isometric {
+    transform: perspective(900px) rotateY(45deg) rotateX(12deg);
+  }
+
+  .nn-node {
+    position: absolute;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #b0b0b0; transform: translate(-50%, -50%);
+    transition: background 0.35s, box-shadow 0.35s, transform 0.35s;
+  }
+
+  .stream-item {
+    position: absolute;
+    font-size: 0.7rem; font-weight: 600; font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: nowrap; pointer-events: none;
+  }
+  .stream-in { color: #4a90d9; }
+  .stream-out { color: #1a1a1a; font-family: 'Inter', sans-serif; font-weight: 500; }
+
+  .nn-depth-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; transform-style: preserve-3d;
+  }
+  .nn-ghost {
+    position: absolute; width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(0,0,0,0.12); transform: translate(-50%, -50%);
+  }
+
+  .controls {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    z-index: 200; display: flex; gap: 0.8rem;
+  }
+  .ctrl-btn {
+    padding: 0.6rem 1.2rem; border: 1px solid #ddd; border-radius: 10px;
+    background: white; cursor: pointer; font-family: inherit; font-size: 0.75rem;
+    font-weight: 600; transition: all 0.2s;
+  }
+  .ctrl-btn:hover { border-color: #fabb43; background: rgba(250,187,67,0.05); }
+  .ctrl-btn.active { background: #fabb43; color: white; border-color: #fabb43; }
+  .hint { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #ccc; z-index: 200; }
+</style>
+</head>
+<body>
+
+<div class="morph-label" id="label">Schritt 2: <span class="hl">Neuronales Netz</span></div>
+<div class="morph-sublabel" id="sublabel">Tokens fließen durch das Netz</div>
+
+<div id="nnBox"></div>
+
+<div class="controls">
+  <div class="ctrl-btn active" id="btnStep1">Step 10: Network</div>
+  <div class="ctrl-btn" id="btnStep2">Step 11: Stream + Bolt</div>
+  <div class="ctrl-btn" id="btnStep3">Step 12: Explode</div>
+</div>
+<div class="hint">Click buttons to preview each step</div>
+
+<script>
+const box = document.getElementById('nnBox');
+const W = window.innerWidth, H = window.innerHeight;
+
+const LAYERS = 10, BASE_N = 16;
+const EDGE_COLOR = 'rgba(0,0,0,0.12)';
+const EDGE_WIDTH = '1';
+const nodes = [], edges = [], layerGroups = [];
+
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+box.appendChild(svg);
+
+for (let l = 0; l < LAYERS; l++) {
+    const t = 1 - Math.abs(2 * l / (LAYERS - 1) - 1);
+    const count = Math.round(5 + t * (BASE_N - 5));
+    const x = W * 0.2 + (W * 0.6) * l / (LAYERS - 1);
+    const group = [];
+    for (let n = 0; n < count; n++) {
+        const spacing = H * 0.55 / (count + 1);
+        const y = H * 0.22 + (n + 1) * spacing;
+        const dot = document.createElement('div');
+        dot.className = 'nn-node';
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+        box.appendChild(dot);
+        const idx = nodes.length;
+        nodes.push({ el: dot, x, y, l });
+        group.push(idx);
+    }
+    layerGroups.push(group);
+}
+
+for (let l = 0; l < LAYERS - 1; l++) {
+    for (const i of layerGroups[l]) {
+        for (const j of layerGroups[l + 1]) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', nodes[i].x);
+            line.setAttribute('y1', nodes[i].y);
+            line.setAttribute('x2', nodes[j].x);
+            line.setAttribute('y2', nodes[j].y);
+            line.setAttribute('stroke', EDGE_COLOR);
+            line.setAttribute('stroke-width', EDGE_WIDTH);
+            line.style.transition = 'stroke 0.35s, stroke-width 0.35s';
+            svg.appendChild(line);
+            edges.push({ el: line, i, j });
+        }
+    }
+}
+
+// BOLT
+let boltAnim = null;
+const litItems = [];
+
+function buildBoltPath() {
+    const path = [];
+    let lastY = H * 0.35 + Math.random() * H * 0.3;
+    for (let l = 0; l < LAYERS; l++) {
+        const layer = layerGroups[l];
+        const count = 1 + Math.floor(Math.random() * 2);
+        const sorted = [...layer].sort((a, b) => Math.abs(nodes[a].y - lastY) - Math.abs(nodes[b].y - lastY));
+        path.push(sorted.slice(0, count));
+        lastY = nodes[layer[Math.floor(Math.random() * layer.length)]].y;
+    }
+    return path;
+}
+
+function lightNode(idx, ts) {
+    const n = nodes[idx];
+    n.el.style.background = '#fabb43';
+    n.el.style.boxShadow = '0 0 10px rgba(250,187,67,0.5)';
+    n.el.style.transform = 'translate(-50%,-50%) scale(1.4)';
+    litItems.push({ idx, time: ts });
+}
+
+function fadeNode(idx) {
+    nodes[idx].el.style.background = '';
+    nodes[idx].el.style.boxShadow = '';
+    nodes[idx].el.style.transform = '';
+    edges.forEach(e => {
+        if (e.i === idx || e.j === idx) {
+            e.el.setAttribute('stroke', EDGE_COLOR);
+            e.el.setAttribute('stroke-width', EDGE_WIDTH);
+        }
+    });
+}
+
+function resetNodes() {
+    nodes.forEach(n => { n.el.style.background=''; n.el.style.boxShadow=''; n.el.style.transform=''; });
+    edges.forEach(e => { e.el.setAttribute('stroke', EDGE_COLOR); e.el.setAttribute('stroke-width', EDGE_WIDTH); });
+    litItems.length = 0;
+}
+
+function runBolt() {
+    stopBolt();
+    let bp = buildBoltPath(), bh = -1, bt = 0, lt = null, pausing = false, pt = 0;
+    const STEP = 130, FADE = 400, PAUSE = 400;
+
+    function tick(ts) {
+        if (!lt) lt = ts;
+        const dt = ts - lt; lt = ts;
+        if (pausing) {
+            pt += dt;
+            for (let i = litItems.length-1; i >= 0; i--) if (ts - litItems[i].time > FADE) { fadeNode(litItems[i].idx); litItems.splice(i,1); }
+            if (pt > PAUSE && litItems.length === 0) { pausing = false; pt = 0; resetNodes(); bp = buildBoltPath(); bh = -1; bt = 0; }
+            boltAnim = requestAnimationFrame(tick); return;
+        }
+        bt += dt;
+        while (bt > STEP && bh < LAYERS-1) {
+            bt -= STEP; bh++;
+            const ni = bp[bh], pi = bh > 0 ? bp[bh-1] : [];
+            ni.forEach(idx => {
+                lightNode(idx, ts);
+                pi.forEach(p => {
+                    edges.forEach(e => {
+                        if ((e.i===p && e.j===idx)||(e.i===idx && e.j===p)) {
+                            e.el.setAttribute('stroke', 'rgba(250,187,67,0.5)');
+                            e.el.setAttribute('stroke-width', '2.5');
+                        }
+                    });
+                });
+            });
+        }
+        for (let i = litItems.length-1; i >= 0; i--) if (ts - litItems[i].time > FADE) { fadeNode(litItems[i].idx); litItems.splice(i,1); }
+        if (bh >= LAYERS-1 && bt > STEP) { pausing = true; pt = 0; }
+        boltAnim = requestAnimationFrame(tick);
+    }
+    boltAnim = requestAnimationFrame(tick);
+}
+
+function stopBolt() { if (boltAnim) { cancelAnimationFrame(boltAnim); boltAnim = null; } }
+
+// STREAM
+const TOKEN_IDS = ['3587', '46271', '8834', '19823', '2089', '55102'];
+const WORDS_OUT = ['Der', 'Patent-', 'anspruch', 'betrifft', 'eine', 'Vorrichtung'];
+let streamInterval = null, streamIdx = 0;
+
+function startStream() {
+    stopStream();
+    streamIdx = 0;
+    streamInterval = setInterval(() => {
+        const numEl = document.createElement('div');
+        numEl.className = 'stream-item stream-in';
+        numEl.textContent = TOKEN_IDS[streamIdx % TOKEN_IDS.length];
+        numEl.style.left = '2vw';
+        numEl.style.top = (H * 0.35 + Math.random() * H * 0.3) + 'px';
+        numEl.style.opacity = '0';
+        box.appendChild(numEl);
+        gsap.to(numEl, { left: W * 0.18, opacity: 0.8, duration: 1.5, ease: 'none' });
+        gsap.to(numEl, { opacity: 0, duration: 0.5, delay: 1.2, onComplete: () => numEl.remove() });
+
+        const wordEl = document.createElement('div');
+        wordEl.className = 'stream-item stream-out';
+        wordEl.textContent = WORDS_OUT[streamIdx % WORDS_OUT.length];
+        wordEl.style.left = (W * 0.82) + 'px';
+        wordEl.style.top = (H * 0.35 + Math.random() * H * 0.3) + 'px';
+        wordEl.style.opacity = '0';
+        box.appendChild(wordEl);
+        gsap.to(wordEl, { left: W * 0.95, opacity: 0.8, duration: 1.5, ease: 'none' });
+        gsap.to(wordEl, { opacity: 0, duration: 0.5, delay: 1.2, onComplete: () => wordEl.remove() });
+
+        streamIdx++;
+    }, 600);
+}
+
+function stopStream() {
+    if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
+    box.querySelectorAll('.stream-item').forEach(el => el.remove());
+}
+
+// DEPTH EXPLOSION
+let depthLayers = [];
+
+function explodeDepth() {
+    cleanDepth();
+    box.classList.add('isometric');
+
+    const NUM = 14;
+    for (let d = 0; d < NUM; d++) {
+        const layer = document.createElement('div');
+        layer.className = 'nn-depth-layer';
+
+        const isBehind = d % 2 === 0;
+        const depth = Math.floor(d / 2) + 1;
+        const zOffset = (isBehind ? -1 : 1) * depth * 55;
+        const opacity = Math.max(0.05, 0.3 - depth * 0.03);
+
+        layer.style.transform = `translateZ(${zOffset}px)`;
+        layer.style.opacity = '0';
+
+        nodes.forEach(n => {
+            const dot = document.createElement('div');
+            dot.className = 'nn-ghost';
+            dot.style.left = n.x + 'px';
+            dot.style.top = n.y + 'px';
+            dot.style.opacity = opacity;
+            layer.appendChild(dot);
+        });
+
+        const ghostSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        ghostSvg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+        ghostSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        edges.forEach((e, i) => {
+            if (i % 4 !== 0) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', nodes[e.i].x);
+            line.setAttribute('y1', nodes[e.i].y);
+            line.setAttribute('x2', nodes[e.j].x);
+            line.setAttribute('y2', nodes[e.j].y);
+            line.setAttribute('stroke', `rgba(0,0,0,${opacity * 0.5})`);
+            line.setAttribute('stroke-width', '0.5');
+            ghostSvg.appendChild(line);
+        });
+        layer.appendChild(ghostSvg);
+
+        box.appendChild(layer);
+        depthLayers.push(layer);
+        gsap.to(layer, { opacity: 1, duration: 0.5, delay: d * 0.06, ease: 'power2.out' });
+    }
+}
+
+function cleanDepth() {
+    depthLayers.forEach(l => l.remove());
+    depthLayers = [];
+    box.classList.remove('isometric');
+}
+
+// STEPS
+function setStep(s) {
+    document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btnStep' + s).classList.add('active');
+    stopBolt(); stopStream(); resetNodes(); cleanDepth();
+
+    const label = document.getElementById('label');
+    const sublabel = document.getElementById('sublabel');
+
+    if (s === 1) {
+        label.innerHTML = 'Schritt 2: <span class="hl">Neuronales Netz</span>';
+        sublabel.textContent = 'Tokens fließen durch das Netz';
+    } else if (s === 2) {
+        label.innerHTML = 'Schritt 2: <span class="hl">Neuronales Netz</span>';
+        sublabel.textContent = 'Tokens fließen durch das Netz';
+        runBolt(); startStream();
+    } else if (s === 3) {
+        label.innerHTML = 'In Wirklichkeit: <span class="hl">Milliarden</span> Parameter';
+        sublabel.textContent = '';
+        runBolt(); startStream();
+        setTimeout(() => explodeDepth(), 300);
+    }
+}
+
+document.getElementById('btnStep1').addEventListener('click', () => setStep(1));
+document.getElementById('btnStep2').addEventListener('click', () => setStep(2));
+document.getElementById('btnStep3').addEventListener('click', () => setStep(3));
+
+setStep(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{"type":"server-started","port":52295,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:52295","screen_dir":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/1767-1774271868"}
+{"type":"screen-added","file":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/1767-1774271868/nn-flow-concept.html"}
+{"type":"screen-added","file":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/1767-1774271868/nn-full-mockup.html"}
+{"type":"screen-added","file":"/mnt/c/users/nerselius/python/schulung/.superpowers/brainstorm/1767-1774271868/nn-full-mockup-v2.html"}
+{"type":"server-stopped","reason":"idle timeout"}

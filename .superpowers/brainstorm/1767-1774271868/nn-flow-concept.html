@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Net Slide — Flow Concept</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #fafafa; color: #1a1a1a; padding: 2rem; }
+
+  h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 2rem; }
+
+  .step-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .step-card {
+    flex: 1;
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 14px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .step-card:hover { border-color: #fabb43; box-shadow: 0 4px 16px rgba(250,187,67,0.15); }
+
+  .step-num {
+    position: absolute; top: -10px; left: 12px;
+    background: #fabb43; color: white; font-size: 0.6rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .step-title { font-size: 0.9rem; font-weight: 600; margin: 0.8rem 0 0.4rem; }
+  .step-desc { font-size: 0.75rem; color: #666; line-height: 1.5; }
+
+  /* Mini mockup areas */
+  .mockup-area {
+    background: #f8f8f8; border: 1px solid #eee; border-radius: 8px;
+    height: 180px; margin-top: 0.8rem; position: relative; overflow: hidden;
+  }
+
+  /* Step 10 mockup: tokens left, flat network right */
+  .s10-tokens {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .s10-tok {
+    background: rgba(74,144,217,0.8); color: white; font-size: 0.5rem;
+    padding: 2px 6px; border-radius: 4px; font-weight: 600;
+  }
+  .s10-tok.gray { background: rgba(170,170,170,0.7); }
+  .s10-tok.orange { background: rgba(232,133,61,0.85); }
+
+  .s10-net {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .s10-layer {
+    display: flex; flex-direction: column; gap: 3px; align-items: center;
+  }
+  .s10-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: #c0c0c0;
+  }
+
+  /* Step 11 mockup: numbers streaming in, words out */
+  .s11-stream {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; width: 100%;
+  }
+  .s11-nums {
+    position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .s11-num {
+    font-size: 0.45rem; color: #4a90d9; font-weight: 600; font-family: monospace;
+    opacity: 0.7;
+  }
+  .s11-words {
+    position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 3px; align-items: flex-end;
+  }
+  .s11-word {
+    font-size: 0.5rem; color: #e8853d; font-weight: 500;
+  }
+  .s11-bolt {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 0.55rem; color: #fabb43; font-weight: 700; letter-spacing: 1px;
+  }
+
+  /* Step 12 mockup: isometric layers */
+  .s12-iso {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) perspective(400px) rotateY(25deg) rotateX(10deg);
+    display: flex; gap: 2px;
+  }
+  .s12-sheet {
+    width: 60px; height: 100px; border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 3px; display: flex; flex-direction: column; gap: 2px;
+    align-items: center; justify-content: center; padding: 3px;
+  }
+  .s12-sheet.main { background: rgba(250,187,67,0.08); border-color: rgba(250,187,67,0.3); }
+  .s12-sheet.ghost { background: rgba(0,0,0,0.02); }
+  .s12-sdot { width: 3px; height: 3px; border-radius: 50%; background: #ccc; }
+  .s12-sdot.lit { background: #fabb43; }
+
+  .arrow-between {
+    display: flex; align-items: center; font-size: 1.5rem; color: #ddd; padding: 0 0.5rem;
+  }
+
+  .section-label { font-size: 0.7rem; font-weight: 600; color: #fabb43; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<h1>Neural Net Slide Sequence</h1>
+<p class="subtitle">3-step flow: appear + activate + explode depth. How should each step look?</p>
+
+<div class="step-row">
+  <!-- STEP 10 -->
+  <div class="step-card">
+    <div class="step-num">Step 10 — Click</div>
+    <div class="step-title">Tokens slide left + 2D network appears</div>
+    <div class="step-desc">
+      Colored token pills FLIP-animate to a vertical stack on the left.
+      Clean 2D network (DOM nodes + SVG edges) fades in. Static/idle — no bolt yet.
+      Label: "Schritt 2: Neuronales Netz"
+    </div>
+    <div class="mockup-area">
+      <div class="s10-tokens">
+        <div class="s10-tok gray">Der</div>
+        <div class="s10-tok">Patent</div>
+        <div class="s10-tok">anspruch</div>
+        <div class="s10-tok gray">betrifft</div>
+        <div class="s10-tok gray">eine</div>
+        <div class="s10-tok orange">Vorrichtung</div>
+      </div>
+      <div class="s10-net">
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-between">&rarr;</div>
+
+  <!-- STEP 11 -->
+  <div class="step-card">
+    <div class="step-num">Step 11 — Click</div>
+    <div class="step-title">Token numbers stream in, bolt fires, words stream out</div>
+    <div class="step-desc">
+      Token pills morph into their token IDs (numbers). Numbers drift right into the network.
+      Bolt fires through. Words emerge on the right side.
+      Loops continuously while you talk.
+    </div>
+    <div class="mockup-area">
+      <div class="s11-nums">
+        <div class="s11-num">3587</div>
+        <div class="s11-num">46271</div>
+        <div class="s11-num">8834</div>
+        <div class="s11-num">19823</div>
+        <div class="s11-num">2089</div>
+        <div class="s11-num">55102</div>
+      </div>
+      <div class="s10-net" style="left:50%;transform:translate(-50%,-50%);top:50%;right:auto;">
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot" style="background:#fabb43"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot" style="background:#fabb43"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot" style="background:#fabb43"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot" style="background:#ea580c;box-shadow:0 0 4px rgba(234,88,12,0.5)"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot" style="background:#fabb43"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot" style="background:#fabb43"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+        <div class="s10-layer"><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div><div class="s10-dot"></div></div>
+      </div>
+      <div class="s11-words">
+        <div class="s11-word">Der</div>
+        <div class="s11-word">Patent-</div>
+        <div class="s11-word">anspruch</div>
+        <div class="s11-word">betrifft</div>
+        <div class="s11-word">eine</div>
+        <div class="s11-word">Vorrichtung</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-between">&rarr;</div>
+
+  <!-- STEP 12 -->
+  <div class="step-card">
+    <div class="step-num">Step 12 — Click</div>
+    <div class="step-title">Perspective shift + depth explosion</div>
+    <div class="step-desc">
+      The 2D view tilts into isometric perspective. Depth layers spread out behind and in front of the main layer.
+      "In Wirklichkeit: Milliarden Parameter" — the flat |||||| becomes a thick book of layers.
+    </div>
+    <div class="mockup-area">
+      <div class="s12-iso">
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet main"><div class="s12-sdot lit"></div><div class="s12-sdot lit"></div><div class="s12-sdot lit"></div><div class="s12-sdot lit"></div><div class="s12-sdot lit"></div><div class="s12-sdot lit"></div></div>
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost"><div class="s12-sdot"></div><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost" style="opacity:0.4"><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost" style="opacity:0.25"><div class="s12-sdot"></div><div class="s12-sdot"></div></div>
+        <div class="s12-sheet ghost" style="opacity:0.15"><div class="s12-sdot"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="background:white;border:2px solid #eee;border-radius:14px;padding:1.2rem;margin-top:1rem;">
+  <div class="section-label">Key Questions</div>
+  <ol style="font-size:0.8rem;color:#555;line-height:1.8;padding-left:1.2rem;">
+    <li><strong>Step 10 → 11 transition:</strong> Should tokens morph into numbers in-place, or should the pills fly in and numbers stream separately?</li>
+    <li><strong>Streaming loop:</strong> Numbers drift in from left, words drift out from right — at what speed? One-at-a-time or continuous conveyor?</li>
+    <li><strong>Step 12 perspective:</strong> How much tilt? The mockup shows ~25deg Y rotation + slight X. More dramatic or subtle?</li>
+    <li><strong>Depth layer count:</strong> How many ghost layers? 6-8 (subtle) or 15-20 (dramatic wall of layers)?</li>
+  </ol>
+</div>
+
+</body>
+</html>

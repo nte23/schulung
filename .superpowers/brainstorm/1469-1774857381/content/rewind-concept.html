@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rewind Concept — Attention Callback</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #f8f8f8; color: #1a1a1a; overflow-x: hidden; }
+
+  .concept-title {
+    text-align: center; padding: 2rem 2rem 1rem;
+    font-size: 1.4rem; font-weight: 600;
+  }
+  .concept-subtitle {
+    text-align: center; color: #666; font-size: 0.95rem; margin-bottom: 2rem;
+    padding: 0 2rem;
+  }
+
+  /* Timeline strip */
+  .timeline-container {
+    position: relative;
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto 3rem;
+  }
+  .timeline-label {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #999; margin-bottom: 0.5rem; font-weight: 600;
+  }
+
+  /* Storyboard frames */
+  .storyboard {
+    display: flex; flex-direction: column; gap: 2.5rem;
+    width: 90%; max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;
+  }
+  .frame {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+  }
+  .frame-number {
+    flex-shrink: 0; width: 36px; height: 36px;
+    background: #1a1a1a; color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; margin-top: 0.3rem;
+  }
+  .frame-number.rewind { background: #e55c00; }
+  .frame-number.overlay { background: #fabb43; color: #1a1a1a; }
+  .frame-body { flex: 1; }
+  .frame-desc {
+    font-size: 0.85rem; color: #555; margin-bottom: 0.75rem; line-height: 1.5;
+  }
+  .frame-desc strong { color: #1a1a1a; }
+
+  /* Mini slide mockups */
+  .slide-mock {
+    position: relative;
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    max-width: 700px;
+  }
+  .slide-mock.dark { background: #0a0a0a; color: #fff; }
+  .slide-inner {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    padding: 8% 10%;
+  }
+
+  /* Rewind strip overlay */
+  .rewind-strip {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 48px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.0) 100%);
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0 1rem;
+    z-index: 10;
+  }
+  .rewind-icon {
+    font-size: 1.1rem; color: #e55c00;
+  }
+  .rewind-text {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em;
+    color: #e55c00; font-weight: 700;
+  }
+  .rewind-progress {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.15);
+    border-radius: 2px; position: relative; margin-left: 0.5rem;
+  }
+  .rewind-progress-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background: #e55c00; border-radius: 2px;
+  }
+  .rewind-step-label {
+    font-size: 0.6rem; color: rgba(255,255,255,0.5); white-space: nowrap;
+  }
+
+  /* Slide content elements */
+  .s-label {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: #999; margin-bottom: 0.3rem; font-weight: 600;
+  }
+  .s-heading {
+    font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem;
+    line-height: 1.2;
+  }
+  .s-sub {
+    font-size: 0.7rem; color: #888; margin-bottom: 1rem;
+  }
+  .hl { color: #fabb43; }
+
+  /* Token pills */
+  .tokens {
+    display: flex; gap: 0.5rem; margin-top: 0.5rem;
+  }
+  .token {
+    padding: 0.25rem 0.6rem; border-radius: 6px;
+    font-size: 0.7rem; font-weight: 600; color: #fff;
+  }
+  .t-blue { background: #4a90d9; }
+  .t-purple { background: #7c5cbf; }
+  .t-orange { background: #e8853d; }
+  .t-teal { background: #3daa8f; }
+  .t-pink { background: #d94a6e; }
+
+  /* Attention arcs (simplified SVG) */
+  .arcs-container {
+    position: absolute;
+    top: 20%; left: 10%; right: 10%; bottom: 35%;
+  }
+  .arcs-container svg { width: 100%; height: 100%; }
+
+  /* Overlay panel (Teil 3 additions) */
+  .overlay-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 70%, rgba(255,255,255,0) 100%);
+    padding: 2rem 10% 8%;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .overlay-panel.dark-overlay {
+    background: linear-gradient(0deg, rgba(10,10,10,0.97) 0%, rgba(10,10,10,0.92) 70%, rgba(10,10,10,0) 100%);
+  }
+  .insight-box {
+    background: #fffbeb; border-left: 3px solid #fabb43;
+    padding: 0.5rem 0.8rem; border-radius: 0 6px 6px 0;
+    font-size: 0.65rem; line-height: 1.5;
+  }
+  .insight-box strong { color: #1a1a1a; }
+
+  /* VHS scan lines effect */
+  .scanlines {
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    z-index: 5;
+    opacity: 0;
+  }
+  .slide-mock.rewinding .scanlines { opacity: 1; }
+
+  /* Glitch / blur during rewind */
+  .slide-mock.rewinding .slide-inner {
+    filter: blur(1.5px);
+  }
+  .slide-mock.rewinding {
+    border: 2px solid #e55c00;
+  }
+
+  /* Progress dots for rewind bar */
+  .rewind-dots {
+    display: flex; gap: 3px; margin-left: auto;
+  }
+  .rdot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+  }
+  .rdot.passed { background: #e55c00; }
+  .rdot.current { background: #fabb43; box-shadow: 0 0 6px rgba(250,187,67,0.5); }
+
+  .separator {
+    width: 90%; max-width: 1100px; margin: 0 auto 2rem;
+    border: none; border-top: 2px dashed #ddd;
+  }
+  .phase-label {
+    width: 90%; max-width: 1100px; margin: 0 auto 1.5rem;
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #e55c00;
+  }
+
+  /* Lost in middle visual */
+  .lost-bar {
+    display: flex; height: 18px; border-radius: 4px; overflow: hidden;
+    max-width: 400px; margin-top: 0.3rem;
+  }
+  .lost-segment {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 700; color: #fff;
+  }
+  .lost-strong { background: #fabb43; flex: 2; }
+  .lost-weak { background: #ddd; color: #999; flex: 3; }
+  .lost-medium { background: #f0c674; flex: 2; }
+</style>
+</head>
+<body>
+
+<div class="concept-title">Rewind-to-Attention Concept</div>
+<div class="concept-subtitle">
+  Teil 1 shows attention arcs briefly. In Teil 3, a tape-rewind animation scrubs backward through steps,<br>
+  lands on the attention slide, then overlays new prompting-relevant content on top.
+</div>
+
+<div class="storyboard">
+
+  <!-- PHASE 1: Teil 1 -->
+  <div class="phase-label" style="color: #1a1a1a;">Teil 1 — Quick Attention Visual (30s)</div>
+
+  <div class="frame">
+    <div class="frame-number">1</div>
+    <div class="frame-body">
+      <div class="frame-desc">
+        <strong>Attention arcs appear</strong> — after tokenization, the tokens spread horizontally and curved arcs draw between related words. Brief: "Das Modell schaut, welche Wörter zusammengehören." No deep dive — just the visual impression.
+      </div>
+      <div class="slide-mock">
+        <div class="slide-inner">
+          <div class="s-label">Schritt 3</div>
+          <div class="s-heading">Attention — <span class="hl">Wörter beobachten einander</span></div>
+          <div class="s-sub">Das Modell lernt, welche Wörter zusammengehören</div>
+          <div class="arcs-container">
+            <svg viewBox="0 0 500 120" fill="none">
+              <!-- Patent → anspruch (strongest) -->
+              <path d="M 120,95 Q 155,20 190,95" stroke="#e8853d" stroke-width="3" fill="none" opacity="0.8"/>
+              <!-- Der → Patent -->
+              <path d="M 55,95 Q 90,55 120,95" stroke="#fabb43" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <!-- betrifft → Vorrichtung -->
+              <path d="M 270,95 Q 345,30 420,95" stroke="#fabb43" stroke-width="2.5" fill="none" opacity="0.7"/>
+              <!-- eine → Vorrichtung -->
+              <path d="M 345,95 Q 380,55 420,95" stroke="#fabb43" stroke-width="1.2" fill="none" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="tokens" style="position:absolute; bottom:22%; left:10%; right:10%; justify-content: space-between;">
+            <span class="token t-blue">Der</span>
+            <span class="token t-purple">Patent</span>
+            <span class="token t-orange">anspruch</span>
+            <span class="token t-teal">betrifft</span>
+            <span class="token t-pink">eine</span>
+            <span class="token t-blue">Vorrichtung</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Separator -->
+  <hr class="separator">
+  <div class="phase-label">Teil 3 — "Erinnert ihr euch an Attention?"</div>
+
+  <!-- PHASE 2: The Rewind -->
+  <div class="frame">
+    <div class="frame-number rewind">2</div>
+    <div class="frame-body">
+      <div class="frame-desc">
+        <strong>Presenter says "Erinnert ihr euch?"</strong> — A rewind strip appears at the top of the screen. VHS-style scanlines + slight blur. The presentation visually scrubs backward through previous steps (NN explosion → NN → tokens → ...) like rewinding a tape. Fast, ~2-3 seconds.
+      </div>
+      <div class="slide-mock rewinding">
+        <div class="scanlines"></div>
+        <div class="rewind-strip">
+          <div class="rewind-icon">◀◀</div>
+          <div class="rewind-text">Rewind</div>
+          <div class="rewind-progress">
+            <div class="rewind-progress-fill" style="width: 55%;"></div>
+          </div>
+          <div class="rewind-dots">
+            <div class="rdot passed"></div>
+            <div class="rdot passed"></div>
+            <div class="rdot passed"></div>
+            <div class="rdot current"></div>
+            <div class="rdot"></div>
+            <div class="rdot"></div>
+            <div class="rdot"></div>
+          </div>
+          <div class="rewind-step-label">← Attention</div>
+        </div>
+        <div class="slide-inner" style="opacity: 0.6;">
+          <!-- Blurred ghost of a mid-rewind state -->
+          <div class="s-heading" style="font-size:1rem; color:#aaa;">Neuronales Netz...</div>
+          <div style="position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(229,92,0,0.05), transparent); animation: none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-number rewind">3</div>
+    <div class="frame-body">
+      <div class="frame-desc">
+        <strong>Rewind lands on Attention slide.</strong> Scanlines fade, blur clears, the rewind strip settles and fades out. We're back at the attention arcs from Teil 1 — same visual, same tokens, same arcs. A brief moment of recognition.
+      </div>
+      <div class="slide-mock">
+        <div class="rewind-strip" style="opacity: 0.4;">
+          <div class="rewind-icon">◀◀</div>
+          <div class="rewind-text" style="opacity:0.5;">Rewind</div>
+          <div class="rewind-progress">
+            <div class="rewind-progress-fill" style="width: 35%; transition: width 0.5s;"></div>
+          </div>
+          <div class="rewind-dots">
+            <div class="rdot passed"></div>
+            <div class="rdot passed"></div>
+            <div class="rdot current"></div>
+            <div class="rdot"></div>
+            <div class="rdot"></div>
+            <div class="rdot"></div>
+            <div class="rdot"></div>
+          </div>
+        </div>
+        <div class="slide-inner">
+          <div class="s-label">Schritt 3</div>
+          <div class="s-heading">Attention — <span class="hl">Wörter beobachten einander</span></div>
+          <div class="arcs-container">
+            <svg viewBox="0 0 500 120" fill="none">
+              <path d="M 120,95 Q 155,20 190,95" stroke="#e8853d" stroke-width="3" fill="none" opacity="0.8"/>
+              <path d="M 55,95 Q 90,55 120,95" stroke="#fabb43" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <path d="M 270,95 Q 345,30 420,95" stroke="#fabb43" stroke-width="2.5" fill="none" opacity="0.7"/>
+              <path d="M 345,95 Q 380,55 420,95" stroke="#fabb43" stroke-width="1.2" fill="none" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="tokens" style="position:absolute; bottom:22%; left:10%; right:10%; justify-content: space-between;">
+            <span class="token t-blue">Der</span>
+            <span class="token t-purple">Patent</span>
+            <span class="token t-orange">anspruch</span>
+            <span class="token t-teal">betrifft</span>
+            <span class="token t-pink">eine</span>
+            <span class="token t-blue">Vorrichtung</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-number overlay">4</div>
+    <div class="frame-body">
+      <div class="frame-desc">
+        <strong>New content layers on top.</strong> The attention arcs stay visible but dim slightly. A bottom panel slides up with the prompting-relevant insights: "Lost in the Middle", why position matters, practical tips. The original visual becomes the foundation for the new lesson.
+      </div>
+      <div class="slide-mock">
+        <div class="slide-inner">
+          <div class="s-label">Schritt 3</div>
+          <div class="s-heading" style="font-size:1.1rem;">Attention — <span class="hl">Wörter beobachten einander</span></div>
+          <div class="arcs-container" style="opacity: 0.35;">
+            <svg viewBox="0 0 500 120" fill="none">
+              <path d="M 120,95 Q 155,20 190,95" stroke="#e8853d" stroke-width="3" fill="none" opacity="0.8"/>
+              <path d="M 55,95 Q 90,55 120,95" stroke="#fabb43" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <path d="M 270,95 Q 345,30 420,95" stroke="#fabb43" stroke-width="2.5" fill="none" opacity="0.7"/>
+              <path d="M 345,95 Q 380,55 420,95" stroke="#fabb43" stroke-width="1.2" fill="none" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="tokens" style="position:absolute; bottom:50%; left:10%; right:10%; justify-content: space-between; opacity:0.4;">
+            <span class="token t-blue">Der</span>
+            <span class="token t-purple">Patent</span>
+            <span class="token t-orange">anspruch</span>
+            <span class="token t-teal">betrifft</span>
+            <span class="token t-pink">eine</span>
+            <span class="token t-blue">Vorrichtung</span>
+          </div>
+          <div class="overlay-panel">
+            <div style="font-size:0.75rem; font-weight:700; color:#e55c00; text-transform:uppercase; letter-spacing:0.1em;">
+              Was bedeutet das fürs Prompting?
+            </div>
+            <div class="insight-box">
+              <strong>Lost in the Middle:</strong> Attention ist am stärksten am Anfang und Ende des Prompts.
+              Wichtige Infos gehören nicht in die Mitte.
+            </div>
+            <div class="lost-bar">
+              <div class="lost-segment lost-strong">stark</div>
+              <div class="lost-segment lost-weak">schwach</div>
+              <div class="lost-segment lost-medium">mittel</div>
+            </div>
+            <div style="font-size:0.6rem; color:#888; margin-top:0.2rem;">
+              → Aufgabe zuerst, Kontext zuletzt — oder umgekehrt. Nie beides in der Mitte.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

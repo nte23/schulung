@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN — Tilt Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  #nnWrapper {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), perspective 0.6s;
+  }
+
+  #nnBox {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform-style: preserve-3d;
+  }
+
+  .nn-node {
+    position: absolute;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #c0c0c0;
+    transform: translate(-50%, -50%);
+    transition: background 0.35s, box-shadow 0.35s, transform 0.35s;
+  }
+
+  .nn-ghost { transition: none; }
+
+  .nn-copy {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    transform-style: preserve-3d;
+  }
+
+  .morph-label {
+    position: fixed;
+    top: 6vh; left: 10vw;
+    font-size: 1.1rem; font-weight: 600;
+    z-index: 100;
+  }
+  .morph-sublabel {
+    position: fixed;
+    top: calc(6vh + 1.8rem); left: 10vw;
+    font-size: 0.85rem; color: #888;
+    z-index: 100;
+  }
+  .hl { color: #fabb43; }
+
+  .token-stack {
+    position: fixed;
+    left: 6vw; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 0.5rem;
+    z-index: 50;
+  }
+  .token-pill {
+    font-size: 1.4rem; font-weight: 500;
+    padding: 0.3rem 0.7rem; border-radius: 8px; color: white;
+  }
+  .token-pill.grey { background: rgba(170,170,170,0.7); }
+  .token-pill.blue { background: rgba(74,144,217,0.85); }
+  .token-pill.orange { background: rgba(232,133,61,0.85); }
+
+  /* Controls panel */
+  .panel {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    min-width: 420px;
+  }
+
+  .panel-row {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .panel-label {
+    font-size: 0.7rem; font-weight: 600; color: #888;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    min-width: 80px;
+  }
+
+  .panel-value {
+    font-size: 0.75rem; font-weight: 600; color: #fabb43;
+    min-width: 50px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: #e8e8e8;
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fabb43;
+    cursor: pointer;
+  }
+
+  .panel-buttons {
+    display: flex; gap: 0.5rem;
+  }
+
+  .ctrl-btn {
+    padding: 0.4rem 0.8rem; border-radius: 8px;
+    border: 1px solid #e0e0e0; background: white;
+    font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    color: #555; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  }
+  .ctrl-btn:hover { border-color: #fabb43; color: #fabb43; }
+  .ctrl-btn.active { background: #fabb43; color: white; border-color: #fabb43; }
+
+  .copy-btn {
+    margin-left: auto;
+    padding: 0.4rem 0.8rem; border-radius: 8px;
+    border: 1px solid #16a34a; background: white;
+    font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    color: #16a34a; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  }
+  .copy-btn:hover { background: #16a34a; color: white; }
+  .copy-btn.copied { background: #16a34a; color: white; }
+</style>
+</head>
+<body>
+
+<div class="morph-label" id="labelNN">Schritt 2: <span class="hl">Neuronales Netz</span></div>
+<div class="morph-sublabel" id="sublabelNN">Tokens fließen durch das Netz</div>
+
+<div class="token-stack" id="tokenStack">
+  <span class="token-pill grey">Der</span>
+  <span class="token-pill blue">Patent</span>
+  <span class="token-pill blue">anspruch</span>
+  <span class="token-pill grey">betrifft</span>
+  <span class="token-pill grey">eine</span>
+  <span class="token-pill orange">Vorrichtung</span>
+</div>
+
+<div id="nnWrapper">
+  <div id="nnBox"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-buttons">
+    <button class="ctrl-btn active" onclick="setMode('bolt')">Bolt</button>
+    <button class="ctrl-btn" onclick="setMode('explode')">Explode |||||</button>
+    <button class="copy-btn" id="copyBtn" onclick="copyValues()">Copy values</button>
+  </div>
+
+  <div class="panel-row">
+    <span class="panel-label">rotateX</span>
+    <input type="range" id="rx" min="-60" max="60" value="0" step="1" oninput="updateTilt()">
+    <span class="panel-value" id="rxVal">0°</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">rotateY</span>
+    <input type="range" id="ry" min="-60" max="60" value="0" step="1" oninput="updateTilt()">
+    <span class="panel-value" id="ryVal">0°</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">rotateZ</span>
+    <input type="range" id="rz" min="-30" max="30" value="0" step="1" oninput="updateTilt()">
+    <span class="panel-value" id="rzVal">0°</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">perspective</span>
+    <input type="range" id="persp" min="200" max="3000" value="1200" step="50" oninput="updateTilt()">
+    <span class="panel-value" id="perspVal">1200</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">spacing</span>
+    <input type="range" id="spacing" min="10" max="120" value="30" step="5" oninput="updateExplode()">
+    <span class="panel-value" id="spacingVal">30px</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">copies</span>
+    <input type="range" id="numCopies" min="3" max="12" value="5" step="1" oninput="updateExplode()">
+    <span class="panel-value" id="copiesVal">5</span>
+  </div>
+</div>
+
+<script>
+// ===== BUILD NETWORK (same as current nn.js) =====
+const LAYERS = 10;
+const BASE_NODES = 16;
+const wrapper = document.getElementById('nnWrapper');
+const box = document.getElementById('nnBox');
+const W = window.innerWidth;
+const H = window.innerHeight;
+
+const nodes = [];
+const edges = [];
+const layerGroups = [];
+
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+box.appendChild(svg);
+
+for (let l = 0; l < LAYERS; l++) {
+  const t = 1 - Math.abs(2 * l / (LAYERS - 1) - 1);
+  const count = Math.round(5 + t * (BASE_NODES - 5));
+  const x = W * 0.1 + (W * 0.8) * l / (LAYERS - 1);
+  const group = [];
+  for (let n = 0; n < count; n++) {
+    const spacing = H * 0.62 / (count + 1);
+    const y = H * 0.19 + (n + 1) * spacing;
+    const dot = document.createElement('div');
+    dot.className = 'nn-node';
+    dot.style.left = x + 'px';
+    dot.style.top = y + 'px';
+    box.appendChild(dot);
+    const idx = nodes.length;
+    nodes.push({ el: dot, x, y, l, n, count });
+    group.push(idx);
+  }
+  layerGroups.push(group);
+}
+
+for (let l = 0; l < LAYERS - 1; l++) {
+  for (const i of layerGroups[l]) {
+    for (const j of layerGroups[l + 1]) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', nodes[i].x);
+      line.setAttribute('y1', nodes[i].y);
+      line.setAttribute('x2', nodes[j].x);
+      line.setAttribute('y2', nodes[j].y);
+      line.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+      line.setAttribute('stroke-width', '0.5');
+      line.style.transition = 'stroke 0.35s, stroke-width 0.35s';
+      svg.appendChild(line);
+      edges.push({ el: line, i, j });
+    }
+  }
+}
+
+// ===== BOLT (same as current nn.js) =====
+let animFrame = null;
+let litItems = [];
+
+function buildBoltPath() {
+  const path = [];
+  let lastY = H * 0.3 + Math.random() * H * 0.4;
+  for (let l = 0; l < LAYERS; l++) {
+    const layer = layerGroups[l];
+    const count = 1 + Math.floor(Math.random() * 2.5);
+    const sorted = [...layer].sort((a, b) =>
+      Math.abs(nodes[a].y - lastY) - Math.abs(nodes[b].y - lastY)
+    );
+    const picked = sorted.slice(0, count);
+    lastY = nodes[layer[Math.floor(Math.random() * layer.length)]].y;
+    path.push(picked);
+  }
+  return path;
+}
+
+function lightNode(idx, ts) {
+  const n = nodes[idx];
+  n.el.style.background = '#fabb43';
+  n.el.style.boxShadow = '0 0 8px rgba(250,187,67,0.4)';
+  n.el.style.transform = 'translate(-50%,-50%) scale(1.3)';
+  litItems.push({ idx, time: ts });
+}
+
+function fadeNode(idx) {
+  const n = nodes[idx];
+  n.el.style.background = '';
+  n.el.style.boxShadow = '';
+  n.el.style.transform = '';
+  edges.forEach(e => {
+    if (e.i === idx || e.j === idx) {
+      e.el.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+      e.el.setAttribute('stroke-width', '0.5');
+    }
+  });
+}
+
+function resetAll() {
+  stopBolt();
+  nodes.forEach(n => { n.el.style.background = ''; n.el.style.boxShadow = ''; n.el.style.transform = ''; });
+  edges.forEach(e => { e.el.setAttribute('stroke', 'rgba(0,0,0,0.04)'); e.el.setAttribute('stroke-width', '0.5'); });
+}
+
+function fireBolt() {
+  stopBolt();
+  litItems = [];
+  let boltPath = buildBoltPath();
+  let boltHead = -1, boltTimer = 0, lastTime = null;
+  let pausing = false, pauseTimer = 0;
+  const STEP_MS = 140, FADE_MS = 450, PAUSE_MS = 500;
+
+  function tick(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = ts - lastTime; lastTime = ts;
+    if (pausing) {
+      pauseTimer += dt;
+      for (let i = litItems.length - 1; i >= 0; i--) {
+        if (ts - litItems[i].time > FADE_MS) { fadeNode(litItems[i].idx); litItems.splice(i, 1); }
+      }
+      if (pauseTimer > PAUSE_MS && litItems.length === 0) {
+        pausing = false; pauseTimer = 0; resetAll();
+        boltPath = buildBoltPath(); boltHead = -1; boltTimer = 0; litItems = [];
+      }
+      animFrame = requestAnimationFrame(tick); return;
+    }
+    boltTimer += dt;
+    while (boltTimer > STEP_MS && boltHead < LAYERS - 1) {
+      boltTimer -= STEP_MS; boltHead++;
+      const nodeIndices = boltPath[boltHead];
+      const prevIndices = boltHead > 0 ? boltPath[boltHead - 1] : [];
+      nodeIndices.forEach(idx => {
+        lightNode(idx, ts);
+        prevIndices.forEach(prevIdx => {
+          edges.forEach(e => {
+            if ((e.i === prevIdx && e.j === idx) || (e.i === idx && e.j === prevIdx)) {
+              e.el.setAttribute('stroke', 'rgba(250,187,67,0.25)');
+              e.el.setAttribute('stroke-width', '1.5');
+            }
+          });
+        });
+      });
+    }
+    for (let i = litItems.length - 1; i >= 0; i--) {
+      if (ts - litItems[i].time > FADE_MS) { fadeNode(litItems[i].idx); litItems.splice(i, 1); }
+    }
+    if (boltHead >= LAYERS - 1 && boltTimer > STEP_MS) { pausing = true; pauseTimer = 0; }
+    animFrame = requestAnimationFrame(tick);
+  }
+  animFrame = requestAnimationFrame(tick);
+}
+
+function stopBolt() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+}
+
+// ===== EXPLODE: N identical copies, each at a different translateZ =====
+const copies = [];
+let exploded = false;
+
+function buildCopies() {
+  clearCopies();
+  const num = parseInt(document.getElementById('numCopies').value);
+  const spacing = parseInt(document.getElementById('spacing').value);
+
+  for (let i = 0; i < num; i++) {
+    if (i === 0) continue; // index 0 = the original nnBox
+
+    const offset = i * spacing;
+    const copy = document.createElement('div');
+    copy.className = 'nn-copy';
+    copy.style.transform = `translateZ(${-offset}px)`;
+
+    // Clone SVG edges
+    const copySvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    copySvg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+    copySvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    for (const e of edges) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', nodes[e.i].x);
+      line.setAttribute('y1', nodes[e.i].y);
+      line.setAttribute('x2', nodes[e.j].x);
+      line.setAttribute('y2', nodes[e.j].y);
+      line.setAttribute('stroke', 'rgba(0,0,0,0.04)');
+      line.setAttribute('stroke-width', '0.5');
+      copySvg.appendChild(line);
+    }
+    copy.appendChild(copySvg);
+
+    // Clone nodes
+    nodes.forEach(n => {
+      const dot = document.createElement('div');
+      dot.className = 'nn-node nn-ghost';
+      dot.style.left = n.x + 'px';
+      dot.style.top = n.y + 'px';
+      copy.appendChild(dot);
+    });
+
+    wrapper.appendChild(copy);
+    copies.push(copy);
+
+    // Animate fan-out
+    gsap.fromTo(copy,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.4, delay: i * 0.08, ease: 'power2.out' }
+    );
+  }
+}
+
+function clearCopies() {
+  copies.forEach(c => c.remove());
+  copies.length = 0;
+}
+
+// ===== TILT CONTROLS =====
+function updateTilt() {
+  const rx = document.getElementById('rx').value;
+  const ry = document.getElementById('ry').value;
+  const rz = document.getElementById('rz').value;
+  const persp = document.getElementById('persp').value;
+
+  document.getElementById('rxVal').textContent = rx + '°';
+  document.getElementById('ryVal').textContent = ry + '°';
+  document.getElementById('rzVal').textContent = rz + '°';
+  document.getElementById('perspVal').textContent = persp;
+
+  wrapper.style.perspective = persp + 'px';
+  wrapper.style.perspectiveOrigin = '50% 50%';
+  wrapper.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+}
+
+function updateExplode() {
+  document.getElementById('spacingVal').textContent = document.getElementById('spacing').value + 'px';
+  document.getElementById('copiesVal').textContent = document.getElementById('numCopies').value;
+  if (exploded) buildCopies();
+}
+
+// ===== COPY VALUES =====
+function copyValues() {
+  const rx = document.getElementById('rx').value;
+  const ry = document.getElementById('ry').value;
+  const rz = document.getElementById('rz').value;
+  const persp = document.getElementById('persp').value;
+  const spacing = document.getElementById('spacing').value;
+  const num = document.getElementById('numCopies').value;
+
+  const text = `rotateX: ${rx}°, rotateY: ${ry}°, rotateZ: ${rz}°, perspective: ${persp}px, spacing: ${spacing}px, copies: ${num}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy values'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ===== MODE =====
+let currentMode = 'bolt';
+function setMode(mode) {
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  currentMode = mode;
+
+  if (mode === 'bolt') {
+    exploded = false;
+    clearCopies();
+    wrapper.style.transform = '';
+    wrapper.style.perspective = '';
+    resetAll();
+    fireBolt();
+  } else if (mode === 'explode') {
+    exploded = true;
+    stopBolt();
+    resetAll();
+    updateTilt();
+    buildCopies();
+  }
+}
+
+fireBolt();
+</script>
+</body>
+</html>

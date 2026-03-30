@@ -3,92 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KI Workshop</title>
+    <title>KI Workshop — Grundlagen der generativen KI</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
+
     <div class="progress-bar" id="progressBar"></div>
 
-    <nav class="slide-nav">
-        <span class="slide-counter"><span id="currentSlide">1</span>/<span id="totalSlides">2</span></span>
-        <div class="nav-controls">
-            <button id="prevBtn" class="nav-btn">←</button>
-            <button id="nextBtn" class="nav-btn">→</button>
-        </div>
+    <nav class="dev-nav" id="devNav">
+        <button class="dev-btn" id="btnBack">&larr;</button>
+        <span class="step-info" id="stepInfo"></span>
+        <button class="dev-btn" id="btnNext">&rarr;</button>
     </nav>
 
-    <!-- Speaker Notes Panel -->
-    <aside class="speaker-notes" id="speakerNotes">
-        <div class="notes-header">
-            <span>Speaker Notes</span>
-            <button class="notes-close" id="notesClose">×</button>
+    <!-- Page: Title -->
+    <div class="page" id="pg-intro-title">
+        <div class="overline" data-anim>Workshop</div>
+        <div class="hero" data-anim>Grundlagen der<br><span class="hl">generativen KI</span></div>
+        <div class="subtitle" data-anim>Wie Sprachmodelle funktionieren, wo ihre Grenzen liegen — und wie du sie effektiv einsetzt.</div>
+    </div>
+
+    <!-- Page: Ziel (teleprompter — items push in, older items shrink) -->
+    <div class="page" id="pg-ziel">
+        <div class="ziel-heading" id="zielHeading" data-anim>Ziel des <span class="hl">Workshops</span></div>
+        <div class="ziel-title" id="zielAnswer" data-anim>Selbst <span class="hl">prompten</span> können</div>
+        <div class="item pos" id="item1" data-anim>
+            <span class="item-icon">&#10003;</span>
+            <span class="item-text">Technisch verstehen, wie es funktioniert</span>
         </div>
-        <div class="notes-content" id="notesContent"></div>
-        <div class="notes-hint">Taste N zum Ein-/Ausblenden</div>
-    </aside>
+        <div class="item pos" id="item2" data-anim>
+            <span class="item-icon">&#10003;</span>
+            <span class="item-text">Eigene Prompts entwickeln können</span>
+        </div>
+        <div class="item neg" id="item3" data-anim>
+            <span class="item-icon">&#10007;</span>
+            <span class="item-text">Prompt-Sammlung zum Kopieren</span>
+        </div>
+    </div>
 
-    <main class="presentation">
-        <!-- Slide 1: Title -->
-        <section class="slide active" data-slide="1">
-            <div class="slide-content title-slide">
-                <span class="overline">Workshop</span>
-                <h1>Grundlagen der<br><span class="highlight">generativen KI</span></h1>
-                <p class="subtitle">Wie Sprachmodelle funktionieren und wo ihre Grenzen liegen.</p>
+    <!-- Page: Fahrplan -->
+    <div class="page" id="pg-fahrplan">
+        <div class="overline" data-anim>Fahrplan</div>
+        <div class="hero small" data-anim>Unser Weg <span class="hl">heute</span></div>
+        <div class="rm" data-anim>
+            <div class="rm-card">
+                <div class="rm-num">Teil 1</div>
+                <div class="rm-title">Wie KI funktioniert</div>
+                <div class="rm-desc">Tokens, Neuronales Netz, Next-Token-Prediction</div>
+                <div class="rm-time">~35 min</div>
             </div>
-            <div class="notes hidden">
-                Willkommen zum Workshop. Heute geht es nicht um Prompt-Sammlungen oder Tool-Empfehlungen.
-                Wir bauen ein echtes Verständnis auf — auch ein bisschen technisch, aber verständlich.
-                Ziel: Nach dem Workshop verstehen Sie, WARUM KI sich so verhält wie sie es tut.
+            <div class="rm-arrow">&rarr;</div>
+            <div class="rm-card">
+                <div class="rm-num">Teil 2</div>
+                <div class="rm-title">Grenzen & Halluzinationen</div>
+                <div class="rm-desc">Warum KI falsch liegt, Risiken</div>
+                <div class="rm-time">~15 min</div>
             </div>
-        </section>
+            <div class="rm-arrow">&rarr;</div>
+            <div class="rm-card">
+                <div class="rm-num">Teil 3</div>
+                <div class="rm-title">Prompting-Techniken</div>
+                <div class="rm-desc">Zero-Shot, Few-Shot, CoT, Baukasten</div>
+                <div class="rm-time">~30 min</div>
+            </div>
+            <div class="rm-arrow">&rarr;</div>
+            <div class="rm-card">
+                <div class="rm-num">Teil 4</div>
+                <div class="rm-title">Praxis</div>
+                <div class="rm-desc">Übungen, Patent-Prompts</div>
+                <div class="rm-time">~30 min</div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Slide 2: Ziel -->
-        <section class="slide" data-slide="2">
-            <div class="slide-content">
-                <span class="overline">Ziel dieses Workshops</span>
-                <h1>Selbst prompten können</h1>
+    <!-- Page: Teil 1 / Morph Flow -->
+    <div class="page" id="pg-morph">
+        <!-- Neural net container (behind everything, DOM+SVG) -->
+        <div id="nnBox"></div>
 
-                <div class="check-list">
-                    <div class="check-item negative" data-animate="1">
-                        <span class="check-icon">✗</span>
-                        <span class="check-text">Prompt-Sammlung zum Kopieren</span>
+        <!-- Opener (becomes the question, then morphs away) -->
+        <div class="overline" id="morphOverline" data-anim>Teil 1</div>
+        <div class="morph-question" id="morphQuestion" data-anim>Was passiert, wenn du<br><span class="hl">Enter</span> drückst?</div>
+
+        <!-- Section labels (top-left, appears during morph stages) -->
+        <div class="morph-label" id="morphLabel" data-anim>Schritt 1: <span class="hl">Tokenisierung</span></div>
+        <div class="morph-sublabel" id="morphSublabel" data-anim>Text wird in Bausteine zerlegt</div>
+
+        <div class="morph-label" id="morphLabelNN" data-anim>Schritt 2: <span class="hl">Neuronales Netz</span></div>
+        <div class="morph-sublabel" id="morphSublabelNN" data-anim>Tokens fließen durch das Netz</div>
+
+        <!-- Words — these ARE the typewriter AND the tokens. Same elements throughout. -->
+        <div class="morph-words sentence" id="morphWords">
+            <div class="morph-word" id="mw0" data-anim>
+                <span class="word-text">Der</span>
+                <span class="token-id">3587</span>
+            </div>
+            <div class="compound-word" id="compound-patent">
+                <div class="compound-top">
+                    <div class="morph-word" id="mw1" data-anim>
+                        <span class="word-text">Patent</span>
+                        <span class="token-id">46271</span>
                     </div>
-                    <div class="check-item positive" data-animate="2">
-                        <span class="check-icon">✓</span>
-                        <span class="check-text">Technisch verstehen, wie es funktioniert</span>
+                    <div class="morph-word" id="mw2" data-anim>
+                        <span class="word-text">anspruch</span>
+                        <span class="token-id">8834</span>
                     </div>
                 </div>
+                <div class="morph-bracket compound-bracket" id="morphBracketCompound" data-anim>
+                    1 Wort &rarr; 2 Tokens
+                </div>
             </div>
-            <div class="notes hidden">
-                <strong>Warum keine Prompt-Sammlung?</strong>
-                <ul>
-                    <li>Prompts veralten schnell (neue Modelle, neue Fähigkeiten)</li>
-                    <li>Copy-Paste funktioniert nicht für individuelle Anwendungsfälle</li>
-                    <li>Ohne Verständnis kann man Fehler nicht erkennen</li>
-                </ul>
-
-                <strong>Warum technisches Verständnis?</strong>
-                <ul>
-                    <li>Wer versteht WIE es funktioniert, kann SELBST gute Prompts schreiben</li>
-                    <li>Auch ein bisschen mathematisch — aber verständlich erklärt</li>
-                    <li>Warum Halluzinationen passieren (und warum sie unvermeidlich sind)</li>
-                    <li>Dieses Wissen gilt auch für GPT-5, GPT-6, Claude, etc.</li>
-                </ul>
-
-                <strong>Ergebnis:</strong>
-                <ul>
-                    <li>KI-Ausgaben realistisch einordnen können</li>
-                    <li>Risiken frühzeitig erkennen</li>
-                    <li>Eigene Prompts entwickeln statt kopieren</li>
-                </ul>
+            <div class="morph-word" id="mw3" data-anim>
+                <span class="word-text">betrifft</span>
+                <span class="token-id">19823</span>
             </div>
-        </section>
-    </main>
+            <div class="morph-word" id="mw4" data-anim>
+                <span class="word-text">eine</span>
+                <span class="token-id">2089</span>
+            </div>
+            <div class="morph-word" id="mw5" data-anim>
+                <span class="word-text">Vorrichtung</span>
+                <span class="token-id">55102</span>
+            </div>
+        </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="script.js"></script>
+    </div>
+
+    <script src="nn.js"></script>
+    <script src="engine.js"></script>
+    <script src="steps.js"></script>
 </body>
 </html>
