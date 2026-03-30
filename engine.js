@@ -93,7 +93,7 @@ class Engine {
                 mw.querySelectorAll('.word-text').forEach(el => { el.style.display = ''; });
                 mw.querySelectorAll('.typing').forEach(el => el.classList.remove('typing'));
             }
-            // Reset neural net
+            // Reset neural net + stream
             const nnBox = p.querySelector('#nnBox');
             if (nnBox) {
                 gsap.set(nnBox, { opacity: 0 });
@@ -102,6 +102,10 @@ class Engine {
                     nnViz = null;
                 }
             }
+            const streamIn = p.querySelector('#nnStreamInput');
+            if (streamIn) streamIn.innerHTML = '';
+            const streamOut = p.querySelector('#nnStreamOutput');
+            if (streamOut) streamOut.innerHTML = '';
             // Reset compound-word transforms
             const cw = p.querySelector('.compound-word');
             if (cw) gsap.set(cw, { clearProps: 'all' });

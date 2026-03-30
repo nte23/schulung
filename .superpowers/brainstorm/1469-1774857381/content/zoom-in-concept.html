@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoom Into NN — Parallax Fly-In</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --accent: #fabb43;
+    --font: 'Inter', -apple-system, sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: #ffffff;
+    color: #1a1a1a;
+    overflow: hidden;
+    height: 100vh;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* === Parallax container === */
+  .parallax-viewport {
+    position: fixed; inset: 0;
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    overflow: hidden;
+  }
+
+  /* Each parallax layer is a full-screen plane at a different Z depth */
+  .p-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  /* === Layer 0: NN overview (starting point) === */
+  .nn-overview {
+    z-index: 10;
+  }
+  .nn-overview svg { width: 60vw; height: 60vh; }
+  .nn-dot {
+    fill: #1a1a1a;
+  }
+  .nn-line {
+    stroke: rgba(0,0,0,0.10);
+    stroke-width: 0.5;
+  }
+  .nn-overview .label-top {
+    position: absolute;
+    top: 8vh; left: 10vw;
+    font-size: 1.1rem; font-weight: 600;
+  }
+  .nn-overview .label-sub {
+    position: absolute;
+    top: calc(8vh + 1.6rem); left: 10vw;
+    font-size: 0.85rem; color: #888;
+  }
+  .hl { color: var(--accent); }
+
+  /* === Layer 1: Embeddings (fly-past, mid-depth) === */
+  .embeddings-layer {
+    z-index: 20;
+    transform: translateZ(-800px) scale(1.8);
+    opacity: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .embed-label {
+    font-size: 1.4rem; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+  }
+  .embed-sublabel {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+  }
+  .embed-dots {
+    position: relative;
+    width: 50vw; height: 30vh;
+    margin-top: 1rem;
+  }
+  .embed-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    opacity: 0.7;
+  }
+  .embed-halo {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+  }
+  .embed-cluster-label {
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+  }
+
+  /* === Layer 2: Attention (landing, deepest) === */
+  .attention-layer {
+    z-index: 30;
+    transform: translateZ(-1600px) scale(2.5);
+    opacity: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 10vw;
+  }
+  .att-label {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(250,187,67,0.8);
+    font-weight: 600; margin-bottom: 0.5rem;
+  }
+  .att-heading {
+    font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 700;
+    color: #fff; line-height: 1.15; margin-bottom: 0.3rem;
+  }
+  .att-sub {
+    font-size: 1rem; color: rgba(255,255,255,0.5);
+    margin-bottom: 2rem;
+  }
+  .att-tokens {
+    display: flex; justify-content: space-between;
+    width: 70vw; margin-top: 1rem;
+  }
+  .att-token {
+    padding: 0.4rem 1rem; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; color: #fff;
+    opacity: 0;
+  }
+  .at-blue { background: rgba(74,144,217,0.85); }
+  .at-purple { background: rgba(124,92,191,0.85); }
+  .at-orange { background: rgba(232,133,61,0.85); }
+  .at-teal { background: rgba(61,170,143,0.85); }
+  .at-pink { background: rgba(217,74,110,0.85); }
+
+  .att-arcs { position: absolute; width: 70vw; height: 15vh; bottom: 28vh; left: 10vw; }
+  .att-arcs svg { width: 100%; height: 100%; }
+  .arc { opacity: 0; }
+
+  /* === Background transition overlay === */
+  .bg-darken {
+    position: fixed; inset: 0;
+    background: #0a0a0a;
+    opacity: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* === Hint === */
+  .hint {
+    position: fixed; bottom: 1.5rem; right: 2rem;
+    font-size: 0.75rem; color: #bbb; z-index: 200;
+    transition: color 0.5s;
+  }
+  .hint.dark { color: #555; }
+  .hint span { font-weight: 600; }
+
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--accent); z-index: 200; width: 0%;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="bg-darken" id="bgDarken"></div>
+
+<div class="parallax-viewport" id="viewport">
+
+  <!-- Layer 0: NN Overview -->
+  <div class="p-layer nn-overview" id="layerNN">
+    <div class="label-top">Schritt 2: <span class="hl">Neuronales Netz</span></div>
+    <div class="label-sub">Tokens fließen durch das Netz</div>
+    <svg id="nnSvg" viewBox="0 0 800 500"></svg>
+  </div>
+
+  <!-- Layer 1: Embeddings (fly-past) -->
+  <div class="p-layer embeddings-layer" id="layerEmbed">
+    <div class="embed-label">Embeddings — <span style="color:var(--accent);">Wörter im Raum</span></div>
+    <div class="embed-sublabel">Jedes Token wird zu einem Punkt im hochdimensionalen Raum</div>
+    <div class="embed-dots" id="embedDots">
+      <!-- Halos -->
+      <div class="embed-halo" style="left:15%;top:20%;width:180px;height:150px;background:radial-gradient(circle,rgba(74,144,217,0.3),transparent);"></div>
+      <div class="embed-halo" style="left:55%;top:25%;width:140px;height:120px;background:radial-gradient(circle,rgba(232,133,61,0.3),transparent);"></div>
+      <!-- Dots -->
+      <div class="embed-dot" style="left:22%;top:35%;background:#4a90d9;"></div>
+      <div class="embed-dot" style="left:18%;top:48%;background:#7c5cbf;"></div>
+      <div class="embed-dot" style="left:25%;top:55%;background:#7c5cbf;"></div>
+      <div class="embed-dot" style="left:58%;top:38%;background:#e8853d;"></div>
+      <div class="embed-dot" style="left:40%;top:62%;background:#3daa8f;"></div>
+      <div class="embed-dot" style="left:48%;top:70%;background:#d94a6e;"></div>
+      <div class="embed-dot" style="left:63%;top:50%;background:#4a90d9;"></div>
+      <!-- Labels -->
+      <div class="embed-cluster-label" style="left:14%;top:15%;color:#4a90d9;">Recht / Patent</div>
+      <div class="embed-cluster-label" style="left:56%;top:20%;color:#e8853d;">Technik</div>
+    </div>
+  </div>
+
+  <!-- Layer 2: Attention (landing) -->
+  <div class="p-layer attention-layer" id="layerAtt">
+    <div class="att-label">Schritt 3: Attention</div>
+    <div class="att-heading">Attention — <span style="color:var(--accent);">Wörter beobachten einander</span></div>
+    <div class="att-sub">Das Modell lernt, welche Wörter zusammengehören</div>
+    <div class="att-arcs" id="attArcs">
+      <svg viewBox="0 0 700 150" fill="none">
+        <path d="M 130,130 Q 170,20 210,130" stroke="#e8853d" stroke-width="3.5" fill="none" class="arc"/>
+        <path d="M 45,130 Q 90,70 130,130" stroke="var(--accent)" stroke-width="2" fill="none" class="arc"/>
+        <path d="M 340,130 Q 440,25 550,130" stroke="var(--accent)" stroke-width="3" fill="none" class="arc"/>
+        <path d="M 440,130 Q 495,65 550,130" stroke="var(--accent)" stroke-width="1.5" fill="none" class="arc"/>
+        <path d="M 210,130 Q 275,75 340,130" stroke="var(--accent)" stroke-width="1.2" fill="none" class="arc"/>
+      </svg>
+    </div>
+    <div class="att-tokens" id="attTokens">
+      <span class="att-token at-blue">Der</span>
+      <span class="att-token at-purple">Patent</span>
+      <span class="att-token at-orange">anspruch</span>
+      <span class="att-token at-teal">betrifft</span>
+      <span class="att-token at-pink">eine</span>
+      <span class="att-token at-blue">Vorrichtung</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint" id="hint">Click or press <span>→</span> to advance</div>
+
+<script>
+// Build simple NN for layer 0
+(function() {
+  const svg = document.getElementById('nnSvg');
+  const LAYERS = 8, BASE = 14;
+  const W = 800, H = 500;
+  const nodes = [];
+  const groups = [];
+
+  for (let l = 0; l < LAYERS; l++) {
+    const t = 1 - Math.abs(2 * l / (LAYERS - 1) - 1);
+    const count = Math.round(4 + t * (BASE - 4));
+    const x = W * 0.15 + (W * 0.7) * l / (LAYERS - 1);
+    const group = [];
+    for (let n = 0; n < count; n++) {
+      const spacing = H * 0.65 / (count + 1);
+      const y = H * 0.17 + (n + 1) * spacing;
+      nodes.push({ x, y });
+      group.push(nodes.length - 1);
+
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y);
+      c.setAttribute('r', '3.5'); c.setAttribute('class', 'nn-dot');
+      svg.appendChild(c);
+    }
+    groups.push(group);
+  }
+
+  // Edges
+  for (let l = 0; l < LAYERS - 1; l++) {
+    for (const i of groups[l]) {
+      for (const j of groups[l + 1]) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', nodes[i].x); line.setAttribute('y1', nodes[i].y);
+        line.setAttribute('x2', nodes[j].x); line.setAttribute('y2', nodes[j].y);
+        line.setAttribute('class', 'nn-line');
+        svg.insertBefore(line, svg.firstChild);
+      }
+    }
+  }
+})();
+
+let step = 0, busy = false;
+
+function advance() {
+  if (busy) return;
+  step++;
+  run(step);
+}
+document.addEventListener('click', advance);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); }
+});
+
+function setProgress(p) { document.getElementById('progressBar').style.width = p + '%'; }
+
+function run(s) {
+  if (s === 1) zoomIn();
+  else if (s === 2) showArcs();
+}
+
+function zoomIn() {
+  busy = true;
+  const bg = document.getElementById('bgDarken');
+  const layerNN = document.getElementById('layerNN');
+  const layerEmbed = document.getElementById('layerEmbed');
+  const layerAtt = document.getElementById('layerAtt');
+  const hint = document.getElementById('hint');
+  const tokens = document.querySelectorAll('.att-token');
+
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+
+  // 1. Background fades to black over the whole zoom
+  tl.to(bg, { opacity: 1, duration: 2.5, ease: 'power1.in' }, 0);
+  tl.call(() => { hint.classList.add('dark'); }, null, 1.5);
+
+  // 2. NN layer zooms toward camera + blurs + fades
+  tl.to(layerNN, {
+    z: 1200, scale: 3,
+    opacity: 0,
+    filter: 'blur(12px)',
+    duration: 1.8,
+    ease: 'power2.in'
+  }, 0);
+
+  // 3. Embeddings layer: starts far away, zooms toward us, briefly visible, then rushes past
+  //    Parallax: it moves slower at first (far away), then accelerates
+  tl.to(layerEmbed, {
+    opacity: 0.8,
+    z: 0, scale: 1,
+    duration: 1.2,
+    ease: 'power1.out'
+  }, 0.6);
+
+  // Embeddings rushes past (continues zooming toward camera)
+  tl.to(layerEmbed, {
+    z: 1500, scale: 2.5,
+    opacity: 0,
+    filter: 'blur(8px)',
+    duration: 1.0,
+    ease: 'power2.in'
+  }, 1.8);
+
+  // 4. Attention layer: deep in the background, slowly comes into focus
+  tl.to(layerAtt, {
+    opacity: 1,
+    z: 0, scale: 1,
+    duration: 1.5,
+    ease: 'power2.out'
+  }, 1.5);
+
+  // 5. Tokens fade in after landing
+  tokens.forEach((tok, i) => {
+    tl.to(tok, { opacity: 1, duration: 0.3 }, 2.6 + i * 0.06);
+  });
+
+  setProgress(50);
+}
+
+function showArcs() {
+  busy = true;
+  const arcs = document.querySelectorAll('.arc');
+  const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+
+  arcs.forEach((arc, i) => {
+    const len = arc.getTotalLength();
+    arc.style.strokeDasharray = len;
+    arc.style.strokeDashoffset = len;
+    tl.to(arc, {
+      opacity: 0.8, strokeDashoffset: 0,
+      duration: 0.8, ease: 'power2.out'
+    }, i * 0.18);
+  });
+
+  setProgress(100);
+}
+</script>
+
+</body>
+</html>

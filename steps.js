@@ -223,7 +223,16 @@ function ensureNN() {
     return nnViz;
 }
 
-// Step 10: Tokens morph to IDs on left → NN appears → tokens fly in → bolt fires
+// Output sentence for the NN stream (patent-related German)
+const NN_OUTPUT_WORDS = [
+    'Die', 'Vorrichtung', 'umfasst', 'einen', 'Sensor,', 'der',
+    'Signale', 'erfasst', 'und', 'über', 'eine', 'Steuereinheit',
+    'verarbeitet,', 'wobei', 'die', 'Auswertung', 'in', 'Echtzeit',
+    'erfolgt', 'und', 'das', 'Ergebnis', 'an', 'eine', 'nachgeschaltete',
+    'Einheit', 'übermittelt', 'wird.'
+];
+
+// Step 10: Tokens morph to IDs on left → NN appears → tokens fly in → endless stream
 function buildTokensToNN() {
     return {
         timeline: (tl) => {
@@ -293,33 +302,62 @@ function buildTokensToNN() {
             tl.set(sublabelNN, { opacity: 0, y: 15 });
             tl.to(sublabelNN, { opacity: 1, y: 0, duration: 0.5, ease: FADE_IN_EASE }, 1.55);
 
-            // 6. Tokens fly from left into the NN — turn yellow halfway — bolt fires on arrival
+            // 6. Initial tokens fly in one at a time — same rhythm as the stream loop
             const flyInStart = 2.0;
-            const flyDuration = 0.7;
+            const CYCLE_INTERVAL = 1.4; // matches stream interval
+            const flyDuration = 0.8;
+            const outputContainer = document.getElementById('nnStreamOutput');
+            const firstWords = NN_OUTPUT_WORDS.slice(0, flyEls.length);
+            const boltDelay = flyDuration * 0.5;
+            const boltPropTime = ensureNN().LAYERS * 0.1;
 
-            // Each token flies rightward, fades + shrinks, turns yellow at midpoint
             flyEls.forEach((el, i) => {
-                const delay = flyInStart + i * 0.1;
+                const cycleStart = flyInStart + i * CYCLE_INTERVAL;
 
-                // Turn yellow halfway through flight
+                // Token flies rightward, turns yellow halfway, fades out
                 tl.to(el.querySelector('.token-id') || el, {
-                    color: '#fabb43',
-                    duration: 0.05
-                }, delay + flyDuration * 0.45);
+                    color: '#fabb43', duration: 0.05
+                }, cycleStart + flyDuration * 0.45);
 
-                // Fly rightward + shrink + fade out
                 tl.to(el, {
                     x: '+=30vw', scale: 0.4, opacity: 0,
-                    duration: flyDuration,
-                    ease: 'power2.in'
-                }, delay);
+                    duration: flyDuration, ease: 'power2.in'
+                }, cycleStart);
+
+                // Bolt fires synced with token arriving at NN
+                tl.call(() => {
+                    ensureNN().fireBolt();
+                }, null, cycleStart + boltDelay);
+
+                // Output word flies out after bolt propagates
+                tl.call(() => {
+                    const outEl = document.createElement('div');
+                    outEl.className = 'nn-stream-token';
+                    outEl.textContent = firstWords[i];
+                    outputContainer.appendChild(outEl);
+
+                    gsap.set(outEl, { opacity: 0.3, color: '#fabb43', x: 0 });
+                    gsap.to(outEl, {
+                        x: '10vw', opacity: 1, color: '#1a1a1a',
+                        duration: 0.35, ease: 'power2.out'
+                    });
+                    gsap.to(outEl, {
+                        x: '22vw', opacity: 0,
+                        duration: 0.8, delay: 0.35,
+                        ease: 'power1.in',
+                        onComplete: () => outEl.remove()
+                    });
+                }, null, cycleStart + boltDelay + boltPropTime);
             });
 
-            // 7. Fire bolt when first token hits the NN (~halfway through fly-ins)
-            const boltTime = flyInStart + flyDuration * 0.6;
+            // 7. Start endless stream seamlessly after last initial token
+            const streamStart = flyInStart + flyEls.length * CYCLE_INTERVAL;
             tl.call(() => {
-                ensureNN().fireBolt();
-            }, null, boltTime);
+                const viz = ensureNN();
+                const inputEl = document.getElementById('nnStreamInput');
+                const outputEl = document.getElementById('nnStreamOutput');
+                viz.startStream(inputEl, outputEl, NN_OUTPUT_WORDS, flyEls.length);
+            }, null, streamStart);
         },
         replay: () => {
             gsap.set(document.getElementById('morphLabel'), { opacity: 0 });
@@ -344,7 +382,11 @@ function buildTokensToNN() {
             gsap.set(nnBox, { opacity: 1 });
             const viz = ensureNN();
             viz.build();
-            viz.fireBolt();
+
+            // Start stream immediately on replay
+            const inputEl = document.getElementById('nnStreamInput');
+            const outputEl = document.getElementById('nnStreamOutput');
+            viz.startStream(inputEl, outputEl, NN_OUTPUT_WORDS);
 
             gsap.set(document.getElementById('morphLabelNN'), { opacity: 1, y: 0 });
             gsap.set(document.getElementById('morphSublabelNN'), { opacity: 1, y: 0 });
