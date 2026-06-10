@@ -2360,4 +2360,10 @@ const STEPS = [
 // Boot
 document.addEventListener('DOMContentLoaded', () => {
     window.engine = new Engine(STEPS);
+    engine.onReset(() => {
+        _stopParamLoop();
+        _stopLoopForever();
+        if (nnViz) { nnViz.destroy(); nnViz = null; }
+        if (nnAmbientViz) { nnAmbientViz.stop(); nnAmbientViz = null; }
+    });
 });

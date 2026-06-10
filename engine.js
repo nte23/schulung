@@ -8,6 +8,38 @@ const FADE_IN_Y = 25;
 const FADE_OUT_Y = -20;
 const EXIT_STAGGER = 0.04;
 
+// Central registry for timers/rAFs started by steps and visualizations.
+// Everything registered here is killed on every goTo() — in-flight typewriters,
+// loops, and scheduled callbacks can never leak into another step.
+const FX = {
+    _timeouts: new Set(),
+    _intervals: new Set(),
+    _rafs: new Set(),
+    setTimeout(fn, ms) {
+        const id = window.setTimeout(() => { FX._timeouts.delete(id); fn(); }, ms);
+        FX._timeouts.add(id);
+        return id;
+    },
+    clearTimeout(id) { window.clearTimeout(id); FX._timeouts.delete(id); },
+    setInterval(fn, ms) {
+        const id = window.setInterval(fn, ms);
+        FX._intervals.add(id);
+        return id;
+    },
+    clearInterval(id) { window.clearInterval(id); FX._intervals.delete(id); },
+    raf(fn) {
+        const id = window.requestAnimationFrame((ts) => { FX._rafs.delete(id); fn(ts); });
+        FX._rafs.add(id);
+        return id;
+    },
+    killAll() {
+        FX._timeouts.forEach(id => window.clearTimeout(id));
+        FX._intervals.forEach(id => window.clearInterval(id));
+        FX._rafs.forEach(id => window.cancelAnimationFrame(id));
+        FX._timeouts.clear(); FX._intervals.clear(); FX._rafs.clear();
+    }
+};
+
 class Engine {
     constructor(steps) {
         this.steps = steps;
@@ -17,9 +49,12 @@ class Engine {
         this.busy = false;
 
         this.pageDefaults = {};
+        this.pageHTML = {};
         document.querySelectorAll('.page').forEach(p => {
             this.pageDefaults[p.id] = p.className;
+            this.pageHTML[p.id] = p.innerHTML;
         });
+        this.resetHooks = [];
 
         this.init();
     }
@@ -68,139 +103,39 @@ class Engine {
         this.goTo(this.currentStep - 1);
     }
 
+    // Steps register cleanup here (stop loops, null viz instances).
+    // Hooks run on every goTo() before the DOM is restored.
+    onReset(fn) {
+        this.resetHooks.push(fn);
+    }
+
     goTo(target) {
-        if (this.busy || target === this.currentStep) return;
+        if (target === this.currentStep && !this.busy) return;
         if (target < -1 || target >= this.steps.length) return;
 
         if (this.activeTl) {
             this.activeTl.kill();
             this.activeTl = null;
         }
+        this.busy = false;
 
-        // Reset dark mode + ambient + param loop + forever loop
-        document.body.classList.remove('nn-dark');
-        if (typeof nnAmbientViz !== 'undefined' && nnAmbientViz) {
-            nnAmbientViz.stop();
-        }
-        if (typeof _stopParamLoop === 'function') {
-            _stopParamLoop();
-        }
-        if (typeof _stopLoopForever === 'function') {
-            _stopLoopForever();
-        }
+        // Kill every running tween, delayedCall, and registered timer/rAF
+        gsap.globalTimeline.clear();
+        FX.killAll();
 
+        // Step-registered cleanup (stop loops, destroy viz instances)
+        this.resetHooks.forEach(fn => fn());
+
+        // Restore every page to its pristine boot-time DOM. This cannot
+        // miss anything — no per-feature reset enumeration needed.
         document.querySelectorAll('.page').forEach(p => {
             p.className = this.pageDefaults[p.id];
-            gsap.killTweensOf(p.querySelectorAll('*'));
-            p.querySelectorAll('[data-anim]').forEach(el => {
-                el.style.cssText = '';
-                el.classList.remove('tokenized');
-                gsap.set(el, { clearProps: 'all' });
-            });
-            // Reset morph-words container
-            const mw = p.querySelector('.morph-words');
-            if (mw) {
-                mw.classList.add('sentence'); mw.classList.remove('split', 'typing-mode', 'nn-input');
-                mw.querySelectorAll('.token-id').forEach(el => { el.style.display = ''; el.style.color = ''; });
-                mw.querySelectorAll('.word-text').forEach(el => { el.style.display = ''; });
-                mw.querySelectorAll('.typing').forEach(el => el.classList.remove('typing'));
-            }
-            // Reset neural net + stream
-            const nnBox = p.querySelector('#nnBox');
-            if (nnBox) {
-                gsap.set(nnBox, { opacity: 0, scale: 1, filter: 'none' });
-                if (typeof nnViz !== 'undefined' && nnViz) {
-                    nnViz.destroy();
-                    nnViz = null;
-                }
-            }
-            const streamIn = p.querySelector('#nnStreamInput');
-            if (streamIn) streamIn.innerHTML = '';
-            const streamOut = p.querySelector('#nnStreamOutput');
-            if (streamOut) streamOut.innerHTML = '';
-            // Reset autoregressive loop UI
-            const loopPage = p.querySelector('#loopPage');
-            if (loopPage) {
-                gsap.killTweensOf(loopPage);
-                gsap.set(loopPage, { opacity: 0, scale: 1, x: 0, y: 0, clearProps: 'transform' });
-            }
-            const loopPageContent = p.querySelector('#loopPageContent');
-            if (loopPageContent) { loopPageContent.innerHTML = ''; loopPageContent.style.transform = ''; }
-            const loopGenSlot = p.querySelector('#loopGenSlot');
-            if (loopGenSlot) gsap.set(loopGenSlot, { opacity: 0, clearProps: 'transform' });
-            const loopGenText = p.querySelector('#loopGenText');
-            if (loopGenText) { loopGenText.textContent = ''; gsap.set(loopGenText, { opacity: 1 }); }
-            const loopArrow = p.querySelector('#loopArrow');
-            if (loopArrow) gsap.set(loopArrow, { opacity: 0 });
-            // Remove any in-flight flyer ghosts + NN dim
-            document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
-            if (nnBox) nnBox.classList.remove('loop-dim');
-            // Reset zoom layers
-            p.querySelectorAll('.zoom-layer').forEach(zl => {
-                gsap.set(zl, { clearProps: 'all' });
-                zl.style.opacity = '0';
-            });
-            // Clear dynamic stacked layers + param grid
-            p.querySelectorAll('.stack-card, .stack-dots').forEach(el => el.remove());
-            const paramG = p.querySelector('#paramGrid');
-            if (paramG) paramG.innerHTML = '';
-            const paramP = p.querySelector('#paramPanel');
-            if (paramP) gsap.set(paramP, { x: '100%' });
-            const tempP = p.querySelector('#tempPanel');
-            if (tempP) {
-                gsap.set(tempP, { x: '100%' });
-                const slider = tempP.querySelector('#tempSlider');
-                if (slider) { slider.value = 1; slider.oninput = null; }
-            }
-            // Reset NTP
-            const ntpC = p.querySelector('#ntpContainer');
-            if (ntpC) {
-                gsap.set(ntpC, { opacity: 0, scale: 1, clearProps: 'transformOrigin' });
-                const ntpLbl = ntpC.querySelector('#ntpLabel');
-                if (ntpLbl) gsap.set(ntpLbl, { x: 0, y: 0, opacity: 1, scale: 1 });
-                const ntpHd = ntpC.querySelector('#ntpHeading');
-                if (ntpHd) gsap.set(ntpHd, { x: 0, y: 0, opacity: 1, scale: 1 });
-                ntpC.querySelectorAll('.ntp-fill').forEach(f => { f.style.width = '0%'; });
-                ntpC.querySelectorAll('.ntp-pct').forEach(p => { p.textContent = ''; });
-                const ntpI = ntpC.querySelector('.ntp-insight');
-                if (ntpI) gsap.set(ntpI, { opacity: 0 });
-            }
-            // Reset attention heading/area transforms
-            const attH = p.querySelector('#attHeadingZoom');
-            if (attH) {
-                attH.innerHTML = 'Attention — <span class="hl">Wörter beobachten einander</span>';
-                attH.style.fontSize = '';
-                attH.style.marginBottom = '';
-            }
-            const attS = p.querySelector('#attSubZoom');
-            if (attS) {
-                attS.textContent = 'Das Modell lernt, welche Wörter zusammengehören';
-                gsap.set(attS, { opacity: 1 });
-            }
-            const attA = p.querySelector('#attArea');
-            if (attA) gsap.set(attA, { clearProps: 'all' });
-            // Reset zoom layout overrides
-            const zoomAtt = p.querySelector('#zoomAttention');
-            if (zoomAtt) {
-                zoomAtt.style.justifyContent = '';
-                zoomAtt.style.paddingTop = '';
-                zoomAtt.style.paddingRight = '';
-            }
-            p.querySelectorAll('.att-token').forEach(tok => gsap.set(tok, { opacity: 0 }));
-            // Clear dynamically drawn arcs
-            const attSvg = p.querySelector('#attArcSvg');
-            if (attSvg) attSvg.innerHTML = '';
-            // Reset compound-word transforms
-            const cw = p.querySelector('.compound-word');
-            if (cw) gsap.set(cw, { clearProps: 'all' });
-            // Reset NN label text to original
-            const nnLabel = p.querySelector('#morphLabelNN');
-            if (nnLabel) nnLabel.innerHTML = 'Schritt 2: <span class="hl">Neuronales Netz</span>';
-            const nnSublabel = p.querySelector('#morphSublabelNN');
-            if (nnSublabel) nnSublabel.textContent = 'Tokens fließen durch das Netz';
+            p.innerHTML = this.pageHTML[p.id];
         });
-        this.currentPage = null;
+        document.body.classList.remove('nn-dark');
+        document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
 
+        this.currentPage = null;
         for (let i = 0; i <= target; i++) {
             this.replayInstant(i);
         }

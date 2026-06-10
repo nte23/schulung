@@ -1,0 +1,359 @@
+
+> schulung@1.0.0 test:backnav
+> node test/backnav.js
+
+forward 0/39 forward 1/39 forward 2/39 forward 3/39 forward 4/39 forward 5/39 forward 6/39 forward 7/39 forward 8/39 forward 9/39 forward 10/39 forward 11/39 forward 12/39 forward 13/39 forward 14/39 forward 15/39 forward 16/39 forward 17/39 forward 18/39 forward 19/39 forward 20/39 forward 21/39 forward 22/39 forward 23/39 forward 24/39 forward 25/39 forward 26/39 forward 27/39 forward 28/39 forward 29/39 forward 30/39 forward 31/39 forward 32/39 forward 33/39 forward 34/39 forward 35/39 forward 36/39 forward 37/39 forward 38/39 forward 39/39 
+STEP 0: PASS
+STEP 1: PASS
+STEP 2: PASS
+STEP 3: PASS
+STEP 4: PASS
+STEP 5: PASS
+STEP 6: PASS
+STEP 7: PASS
+STEP 8: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode|v:1|tf:none
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence>div#mw0.morph-word|v:1|tf:1,0,0,1,0,25
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode>div#mw0.morph-word|v:1|tf:1,0,0,1,0,0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence>div#mw0.morph-word>span.word-text|v:1|tf:none|t:Der
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode>div#mw0.morph-word>span.word-text|v:1|tf:none|t:Der
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode>div#mw0.morph-word>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence>div#compound-patent.compound-word|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode>div#compound-patent.compound-word|v:1|tf:none
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.sentence>div#compound-patent.compound-word>div.compound-top|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.sentence.typing-mode>div#compound-patent.compound-word>div.compound-top|v:1|tf:none
+STEP 9: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode|v:1|tf:none
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split>div#mw0.morph-word.tokenized|v:1|tf:1,0,0,1,0,25
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode>div#mw0.morph-word.tokenized|v:1|tf:1,0,0,1,0,0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split>div#mw0.morph-word.tokenized>span.word-text|v:1|tf:none|t:Der
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode>div#mw0.morph-word.tokenized>span.word-text|v:1|tf:none|t:Der
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split>div#mw0.morph-word.tokenized>span.token-id|v:1|tf:none|t:3587
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode>div#mw0.morph-word.tokenized>span.token-id|v:1|tf:none|t:3587
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split>div#compound-patent.compound-word|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode>div#compound-patent.compound-word|v:1|tf:none
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.split>div#compound-patent.compound-word>div.compound-top|v:1|tf:none
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.split.typing-mode>div#compound-patent.compound-word>div.compound-top|v:1|tf:none
+STEP 10: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 11: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 12: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 13: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 14: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 15: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 16: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 17: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 18: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 19: FAIL
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.token-id|v:0
+STEP 20: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 21: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 22: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 23: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 24: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 25: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 26: FAIL
+    fwd: >div#pg-morph.active.page>div#nnBox|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-morph.active.page>div#nnBox|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.word-text|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word>span.token-id|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#mw0.morph-word.tokenized>span.token-id|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized|v:0
+    fwd: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word>span.word-text|v:0
+    jmp: >div#pg-morph.active.page>div#morphWords.morph-words.nn-input>div#compound-patent.compound-word>div.compound-top>div#mw1.morph-word.tokenized>span.word-text|v:0
+STEP 27: PASS
+STEP 28: PASS
+STEP 29: PASS
+STEP 30: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucBars.halluc-bars|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucBars.halluc-bars|v:0
+STEP 31: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span#_hTyping.tok-new|v:1|tf:none|t:Gemäß
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-new|v:0
+STEP 32: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span#_hTyping.tok-new|v:1|tf:none|t:der
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-new|v:0
+STEP 33: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span#_hTyping.tok-new|v:1|tf:none|t:BGH-Entscheidung
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-new|v:0
+STEP 34: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span#_hTyping.tok-red|v:1|tf:none|t:X
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-red|v:0
+STEP 35: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-red|v:1|tf:none|t:X
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-red|v:0
+STEP 36: FAIL
+    fwd: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:1|tf:1,0,0,1,0,0|t:Der Mechanismus
+    jmp: >div#pg-halluc.active.page>div#hallucLabel.halluc-title|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:1|tf:none|t:Halluzination
+    jmp: >div#pg-halluc.active.page>div#hallucSublabel.halluc-subtitle>span.hl-red|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:1|tf:1,0,0,1,0,0
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:1|tf:none
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence|v:0
+    fwd: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-red|v:1|tf:none|t:X ZR
+    jmp: >div#pg-halluc.active.page>div#hallucArea.halluc-area>div#hallucSentence.halluc-sentence>span.tok-red|v:0
+STEP 37: PASS
+STEP 38: PASS
+STEP 39: PASS
+
+26 step(s) FAILED
