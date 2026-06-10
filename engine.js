@@ -93,13 +93,23 @@ class Engine {
     }
 
     advance() {
-        if (this.busy || this.currentStep >= this.steps.length - 1) return;
+        if (this.busy && this.activeTl) {
+            // Click during an animation: complete it instantly.
+            // progress(1, false) fires the remaining callbacks in order,
+            // which also fires onComplete → busy=false.
+            this.activeTl.progress(1, false);
+            return;
+        }
+        if (this.currentStep >= this.steps.length - 1) return;
         this.currentStep++;
         this.executeStep(this.currentStep);
     }
 
     goBack() {
-        if (this.busy || this.currentStep <= 0) return;
+        if (this.currentStep <= 0) return;
+        if (this.busy && this.activeTl) {
+            this.activeTl.progress(1, false);
+        }
         this.goTo(this.currentStep - 1);
     }
 
