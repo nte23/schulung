@@ -1079,6 +1079,7 @@ const NTP_DATA = [
 
 function _ntpReplayBase() {
     _stopParamLoop();
+    _stopLoopForever();
     if (nnAmbientViz) nnAmbientViz.stop();
     document.body.classList.remove('nn-dark');
 
@@ -1089,6 +1090,11 @@ function _ntpReplayBase() {
     gsap.set(document.getElementById('paramPanel'), { x: '100%' });
     gsap.set(document.getElementById('nnStreamInput'), { opacity: 0 });
     gsap.set(document.getElementById('nnStreamOutput'), { opacity: 0 });
+    gsap.set(document.getElementById('loopPage'), { opacity: 0 });
+    gsap.set(document.getElementById('loopGenSlot'), { opacity: 0 });
+    gsap.set(document.getElementById('loopArrow'), { opacity: 0 });
+    document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
+    document.getElementById('nnBox').classList.remove('loop-dim');
     gsap.set(document.getElementById('morphLabel'), { opacity: 0 });
     gsap.set(document.getElementById('morphSublabel'), { opacity: 0 });
     gsap.set(document.getElementById('morphLabelNN'), { opacity: 0 });
@@ -1209,6 +1215,486 @@ function buildZoomOutToNN() {
     };
 }
 
+// ============================================================
+// TEIL 1 — Autoregressive loop (between zoom-out and NTP)
+// ============================================================
+const LOOP_PROMPT = 'Schreibe einen Patentanspruch für eine Kaffeemaschine.';
+const LOOP_SENTENCES = [
+    // Structured cycles (slow, dramatic)
+    'Vorrichtung zur Zubereitung von Heißgetränken.',
+    'Die Vorrichtung umfasst eine Brüheinheit und einen Wassertank.',
+    'Wobei die Brüheinheit über eine Steuereinheit beheizbar ist.',
+    // Forever-loop rotation (faster)
+    'Die Steuereinheit ist mit einem Display und Eingabetasten ausgestattet.',
+    'Ein Sensor erfasst die Wassertemperatur und übermittelt sie an die Steuerung.',
+    'Mit einem austauschbaren Filterelement zur Reinigung des Brühwassers.',
+    'Wobei der Wassertank über eine Markierung zur Füllstandsanzeige verfügt.'
+];
+const LOOP_STRUCTURED = 3;       // first N sentences run as structured GSAP timeline
+// Per-cycle type durations (ms) for the structured run — accelerating
+const LOOP_TYPE_MS = [2200, 1400, 1100];
+const LOOP_OUT_FLY_MS = [1000, 750, 650];
+const LOOP_IN_FLY_MS = [700, 550, 500];
+
+// Forever-loop pacing (used after the structured cycles complete)
+const FOREVER_IN_MS = 450;
+const FOREVER_TYPE_MS = 900;
+const FOREVER_OUT_MS = 550;
+const FOREVER_GAP_MS = 150;
+
+function _loopTypeInto(tl, el, text, startAt, totalMs) {
+    const perChar = totalMs / Math.max(text.length, 1);
+    tl.call(() => { el.textContent = ''; }, null, startAt);
+    text.split('').forEach((ch, i) => {
+        tl.call(() => { el.textContent += ch; }, null, startAt + 0.001 + (i * perChar) / 1000);
+    });
+}
+
+// Auto-scroll the page so the latest appended sentence is visible
+// (when content exceeds the page's max-height, oldest text clips off the top).
+function _scrollLoopPage() {
+    const page = document.getElementById('loopPage');
+    const content = document.getElementById('loopPageContent');
+    if (!page || !content) return;
+    const styles = getComputedStyle(page);
+    const padTop = parseFloat(styles.paddingTop) || 0;
+    const padBot = parseFloat(styles.paddingBottom) || 0;
+    const available = page.clientHeight - padTop - padBot;
+    const overflow = content.scrollHeight - available;
+    content.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : '';
+    content.style.transition = 'transform 0.4s ease';
+}
+
+// === Loop cycle ====================================================
+// Per cycle: the actual left page element flies into the NN (not a copy),
+// the bolt fires, the right slot reveals the full text + new sentence in amber,
+// then the page returns to its position with the new sentence appended.
+// Cycles through LOOP_SENTENCES forever; resets page to prompt-only at the
+// start of each new pass.
+let _foreverState = null;
+
+// Phase durations (ms)
+const CYCLE_FLY_IN_MS   = 520;   // page → NN
+const CYCLE_BOLT_LEAD   = 220;   // bolt fires this far into the in-flight
+const CYCLE_EMERGE_MS   = 580;   // gen-slot emerges from NN — slow enough that the bolt finishes first
+const CYCLE_TYPE_MS     = 750;   // typewriter for the new amber sentence
+const CYCLE_HOLD_MS     = 280;   // hold full output visible before flying back
+const CYCLE_FLY_BACK_MS = 750;   // gen-slot follows the arrow back to the page
+const CYCLE_GAP_MS      = 300;   // breath between cycles (page has absorbed new content)
+
+function _stopLoopForever() {
+    if (!_foreverState) return;
+    _foreverState.active = false;
+    _foreverState.timeouts.forEach(t => clearTimeout(t));
+    _foreverState = null;
+    // Reset both boxes' transforms in case we interrupted mid-flight
+    const page = document.getElementById('loopPage');
+    const genSlot = document.getElementById('loopGenSlot');
+    if (page) {
+        gsap.killTweensOf(page);
+        gsap.set(page, { x: 0, y: 0, scale: 1, opacity: 1, clearProps: 'transform' });
+    }
+    if (genSlot) {
+        gsap.killTweensOf(genSlot);
+        gsap.set(genSlot, {
+            x: 0, y: 0, scale: 1, opacity: 1,
+            clearProps: 'transform,backgroundColor,borderColor,boxShadow'
+        });
+        const lbl = genSlot.querySelector('.loop-gen-label');
+        if (lbl) {
+            gsap.killTweensOf(lbl);
+            gsap.set(lbl, { clearProps: 'color' });
+        }
+    }
+}
+
+function _startLoopForever(startIdx) {
+    _stopLoopForever();
+    _foreverState = { idx: startIdx || 0, active: true, timeouts: [] };
+    _runForeverCycle();
+}
+
+function _runForeverCycle() {
+    if (!_foreverState || !_foreverState.active) return;
+    const state = _foreverState;
+
+    const passLen = LOOP_SENTENCES.length;
+    const sentenceIdx = state.idx % passLen;
+    const sentence = LOOP_SENTENCES[sentenceIdx];
+
+    const page = document.getElementById('loopPage');
+    const pageContent = document.getElementById('loopPageContent');
+    const genSlot = document.getElementById('loopGenSlot');
+    const genTextEl = document.getElementById('loopGenText');
+    const nnBox = document.getElementById('nnBox');
+    if (!page || !pageContent || !genSlot || !genTextEl || !nnBox) return;
+
+    // Start of a fresh pass: wipe page back to prompt-only
+    if (sentenceIdx === 0 && state.idx > 0) {
+        pageContent.innerHTML = '<span class="loop-prompt">' + LOOP_PROMPT + '</span>';
+        pageContent.style.transform = '';
+    }
+    state.idx++;
+
+    // Capture page content (becomes prefix on the right output)
+    const prefixHTML = pageContent.innerHTML;
+
+    // Measure positions
+    const pageRect = page.getBoundingClientRect();
+    const slotRect = genSlot.getBoundingClientRect();
+    const nnRect = nnBox.getBoundingClientRect();
+    const nnCx = nnRect.left + nnRect.width / 2;
+    const nnCy = nnRect.top + nnRect.height / 2;
+    const pageCx = pageRect.left + pageRect.width / 2;
+    const pageCy = pageRect.top + pageRect.height / 2;
+    const slotCx = slotRect.left + slotRect.width / 2;
+    const slotCy = slotRect.top + slotRect.height / 2;
+
+    // ── Phase A: page flies into NN ──────────────────────────────
+    gsap.killTweensOf(page);
+    gsap.to(page, {
+        x: nnCx - pageCx, y: nnCy - pageCy, scale: 0.2, opacity: 0,
+        duration: CYCLE_FLY_IN_MS / 1000, ease: 'power2.in'
+    });
+
+    // ── Phase B: bolt fires partway through ──────────────────────
+    state.timeouts.push(setTimeout(() => {
+        if (!state.active) return;
+        if (nnViz) nnViz.fireBolt();
+    }, CYCLE_BOLT_LEAD));
+
+    // ── Phase C: gen-slot emerges from NN to its natural position ─
+    const emergeStart = CYCLE_FLY_IN_MS;
+    state.timeouts.push(setTimeout(() => {
+        if (!state.active) return;
+        // Pre-populate full content (prefix + empty amber span)
+        genTextEl.innerHTML = prefixHTML + '<span class="loop-new" id="loopNewSpan"> </span>';
+        gsap.set(genTextEl, { opacity: 1 });
+        // Position gen-slot at NN center, scaled down + invisible
+        gsap.killTweensOf(genSlot);
+        gsap.set(genSlot, { x: nnCx - slotCx, y: nnCy - slotCy, scale: 0.25, opacity: 0 });
+        // Animate to natural (right-side) position
+        gsap.to(genSlot, {
+            x: 0, y: 0, scale: 1, opacity: 1,
+            duration: CYCLE_EMERGE_MS / 1000, ease: 'power2.out'
+        });
+    }, emergeStart));
+
+    // ── Phase D: typewriter into the amber span ──────────────────
+    const typeStart = emergeStart + CYCLE_EMERGE_MS;
+    state.timeouts.push(setTimeout(() => {
+        if (!state.active) return;
+        const newSpan = document.getElementById('loopNewSpan');
+        if (!newSpan) return;
+        const perChar = CYCLE_TYPE_MS / Math.max(sentence.length, 1);
+        let i = 0;
+        const tick = () => {
+            if (!_foreverState || !_foreverState.active) return;
+            if (i < sentence.length) {
+                newSpan.textContent += sentence[i++];
+                state.timeouts.push(setTimeout(tick, perChar));
+            }
+        };
+        tick();
+    }, typeStart));
+
+    // ── Phase E: gen-slot follows the arrow back to the page ─────
+    const flyBackStart = typeStart + CYCLE_TYPE_MS + CYCLE_HOLD_MS;
+    state.timeouts.push(setTimeout(() => {
+        if (!state.active) return;
+        const path = document.getElementById('loopArrowPath');
+        if (!path) return;
+        const totalLen = path.getTotalLength();
+        if (totalLen <= 0) return;
+
+        // Color morph: amber (output) → white (page/input), eased to peak at the dip.
+        // Box + label + the amber highlight inside all transition together so when
+        // the gen-slot lands on the page position, it visually IS the page.
+        const morphDur = CYCLE_FLY_BACK_MS / 1000;
+        gsap.to(genSlot, {
+            backgroundColor: '#ffffff',
+            borderColor: 'rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 6px 24px rgba(0, 0, 0, 0.08)',
+            duration: morphDur, ease: 'power1.inOut'
+        });
+        const genLabel = genSlot.querySelector('.loop-gen-label');
+        if (genLabel) {
+            gsap.to(genLabel, {
+                color: '#888888',
+                duration: morphDur, ease: 'power1.inOut'
+            });
+        }
+        const newSpan = document.getElementById('loopNewSpan');
+        if (newSpan) {
+            gsap.to(newSpan, {
+                color: '#888888',
+                backgroundColor: 'rgba(250, 187, 67, 0)',
+                duration: morphDur, ease: 'power1.inOut'
+            });
+        }
+
+        const follow = { p: 0 };
+        gsap.killTweensOf(follow);
+        gsap.to(follow, {
+            p: 1,
+            duration: CYCLE_FLY_BACK_MS / 1000,
+            ease: 'power1.inOut',
+            onUpdate: () => {
+                if (!_foreverState || !_foreverState.active) return;
+                const pt = _vbToPx(path.getPointAtLength(follow.p * totalLen));
+                gsap.set(genSlot, { x: pt.x - slotCx, y: pt.y - slotCy });
+            },
+            onComplete: () => {
+                if (!_foreverState || !_foreverState.active) return;
+                // The gen-slot is now at the page's screen position and visually
+                // IDENTICAL to the page (white bg, gray label, muted new text, no
+                // pill offset). Swap instantly — no crossfade, no jump.
+                pageContent.innerHTML = prefixHTML + '<span class="loop-added"> ' + sentence + '</span>';
+                _scrollLoopPage();
+                gsap.set(page, { x: 0, y: 0, scale: 1, opacity: 1 });
+                gsap.set(genSlot, { opacity: 0 });
+                // Reset gen-slot off-screen for next cycle
+                genTextEl.innerHTML = '';
+                gsap.set(genTextEl, { opacity: 1 });
+                gsap.set(genSlot, {
+                    x: 0, y: 0, scale: 1, opacity: 0,
+                    clearProps: 'backgroundColor,borderColor,boxShadow'
+                });
+                const lbl = genSlot.querySelector('.loop-gen-label');
+                if (lbl) gsap.set(lbl, { clearProps: 'color' });
+            }
+        });
+    }, flyBackStart));
+
+    // ── Phase F: schedule next cycle ─────────────────────────────
+    const cycleTotal = flyBackStart + CYCLE_FLY_BACK_MS + CYCLE_GAP_MS;
+    state.timeouts.push(setTimeout(() => _runForeverCycle(), cycleTotal));
+}
+
+// Rebuild the curved arrow path so it docks to the actual box edges
+// (avoids overlap with the NN). Returns the path element for sampling.
+function _buildLoopArrowPath() {
+    const genSlot = document.getElementById('loopGenSlot');
+    const page = document.getElementById('loopPage');
+    const path = document.getElementById('loopArrowPath');
+    if (!genSlot || !page || !path) return null;
+
+    const sRect = genSlot.getBoundingClientRect();
+    const pRect = page.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+
+    // viewBox is 1600x900 with preserveAspectRatio=none (stretched to viewport)
+    const toVbX = (px) => (px / vw) * 1600;
+    const toVbY = (py) => (py / vh) * 900;
+
+    // Path runs box-center to box-center; box backgrounds (z:6) cover the
+    // inner portions, so the visible part of the curve is the dip below.
+    const sx = toVbX(sRect.left + sRect.width / 2);
+    const sy = toVbY(sRect.top + sRect.height / 2);
+    const ex = toVbX(pRect.left + pRect.width / 2);
+    const ey = toVbY(pRect.top + pRect.height / 2);
+
+    // Dip well below the NN's bottom edge (NN spans ~19-81% of viewBox height).
+    // For a cubic bezier with equal control-point y values, the visual midpoint
+    // sits at (P0 + 3*CP + P3) / 4 — so to land below the NN we push CPs far down.
+    const dipY = Math.min(880, Math.max(sy, ey) + 420);
+    const cp1x = sx + (ex - sx) * 0.22;
+    const cp2x = sx + (ex - sx) * 0.78;
+
+    path.setAttribute('d', `M ${sx} ${sy} C ${cp1x} ${dipY}, ${cp2x} ${dipY}, ${ex} ${ey}`);
+    return path;
+}
+
+// Convert a viewBox point (1600x900, non-uniform stretch) → viewport pixels
+function _vbToPx(pt) {
+    const svg = document.getElementById('loopArrow');
+    const r = svg.getBoundingClientRect();
+    return {
+        x: (pt.x / 1600) * r.width + r.left,
+        y: (pt.y / 900) * r.height + r.top
+    };
+}
+
+// Smooth flyer: samples the SVG arrow path via getPointAtLength so the ghost
+// actually follows the curve (not just keyframe waypoints).
+function _spawnLoopFlyer(text, durSec, onLand) {
+    const path = _buildLoopArrowPath();
+    if (!path) return;
+    const totalLen = path.getTotalLength();
+
+    const ghost = document.createElement('div');
+    ghost.className = 'loop-flyer';
+    ghost.textContent = text;
+    document.body.appendChild(ghost);
+
+    const p0 = _vbToPx(path.getPointAtLength(0));
+    gsap.set(ghost, {
+        left: p0.x, top: p0.y,
+        xPercent: -50, yPercent: -50,
+        scale: 1, opacity: 1
+    });
+
+    const state = { p: 0 };
+    gsap.to(state, {
+        p: 1, duration: durSec, ease: 'power1.inOut',
+        onUpdate: () => {
+            const pt = _vbToPx(path.getPointAtLength(state.p * totalLen));
+            const sc = 1 - state.p * 0.55;
+            // Fade in last 15%
+            const op = state.p < 0.85 ? 1 : 1 - (state.p - 0.85) / 0.15;
+            gsap.set(ghost, { left: pt.x, top: pt.y, scale: sc, opacity: op });
+        },
+        onComplete: () => {
+            ghost.remove();
+            if (onLand) onLand();
+        }
+    });
+}
+
+// Input flyer: a "card" of the current page content flies into the NN center.
+// Conveys "the whole prompt + previous output is fed back in." Triggers onArrival
+// when the ghost reaches the NN — that's when the bolt should fire.
+function _spawnInputFlyer(durSec, onArrival, onLand) {
+    const page = document.getElementById('loopPage');
+    const pageContent = document.getElementById('loopPageContent');
+    const nnBox = document.getElementById('nnBox');
+    if (!page || !pageContent || !nnBox) return;
+
+    const pRect = page.getBoundingClientRect();
+    const nRect = nnBox.getBoundingClientRect();
+
+    const ghost = document.createElement('div');
+    ghost.className = 'loop-flyer loop-flyer-input';
+    // Snapshot current page content (preserves prompt + appended sentences styling)
+    ghost.innerHTML = pageContent.innerHTML;
+    document.body.appendChild(ghost);
+
+    const startX = pRect.right - 12;
+    const startY = pRect.top + pRect.height / 2;
+    const endX = nRect.left + nRect.width / 2;
+    const endY = nRect.top + nRect.height / 2;
+
+    gsap.set(ghost, {
+        left: startX, top: startY,
+        xPercent: -50, yPercent: -50,
+        scale: 0.85, opacity: 1,
+        width: pRect.width * 0.85
+    });
+
+    const state = { p: 0 };
+    let arrivalFired = false;
+    gsap.to(state, {
+        p: 1, duration: durSec, ease: 'power2.in',
+        onUpdate: () => {
+            const x = startX + (endX - startX) * state.p;
+            const y = startY + (endY - startY) * state.p;
+            const sc = 0.85 - state.p * 0.7;          // shrink toward NN
+            const op = state.p < 0.7 ? 1 : 1 - (state.p - 0.7) / 0.3;
+            gsap.set(ghost, { left: x, top: y, scale: sc, opacity: op });
+            if (!arrivalFired && state.p > 0.6) {
+                arrivalFired = true;
+                if (onArrival) onArrival();
+            }
+        },
+        onComplete: () => {
+            ghost.remove();
+            if (onLand) onLand();
+        }
+    });
+}
+
+function buildAutoregressiveLoop() {
+    return {
+        timeline: (tl) => {
+            const page = document.getElementById('loopPage');
+            const pageContent = document.getElementById('loopPageContent');
+            const genSlot = document.getElementById('loopGenSlot');
+            const genText = document.getElementById('loopGenText');
+            const arrow = document.getElementById('loopArrow');
+            const nnBox = document.getElementById('nnBox');
+            const streamIn = document.getElementById('nnStreamInput');
+            const streamOut = document.getElementById('nnStreamOutput');
+            const labelNN = document.getElementById('morphLabelNN');
+            const sublabelNN = document.getElementById('morphSublabelNN');
+
+            // Stop the idle stream + clear its content
+            tl.call(() => {
+                if (nnViz) nnViz.stopStream();
+                streamIn.innerHTML = '';
+                streamOut.innerHTML = '';
+                nnBox.classList.add('loop-dim');
+            }, null, 0);
+
+            tl.to([streamIn, streamOut], { opacity: 0, duration: 0.35 }, 0);
+
+            // Swap NN labels for this beat
+            tl.to([labelNN, sublabelNN], { opacity: 0, duration: 0.25 }, 0);
+            tl.call(() => {
+                labelNN.innerHTML = 'Schritt 3: <span class="hl">Autoregression</span>';
+                sublabelNN.textContent = 'Output wird Teil des nächsten Inputs';
+            }, null, 0.3);
+            tl.to([labelNN, sublabelNN], { opacity: 1, duration: 0.4 }, 0.4);
+
+            // Seed page with prompt, clear gen slot
+            tl.call(() => {
+                pageContent.innerHTML = '<span class="loop-prompt">' + LOOP_PROMPT + '</span>';
+                genText.textContent = '';
+                gsap.set(genText, { opacity: 1 });
+            }, null, 0.3);
+
+            // Fade in loop UI; gen-slot stays invisible (phase C of cycle 1 reveals it as it emerges from the NN)
+            tl.to(page, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.45);
+            tl.set(genSlot, { opacity: 0 }, 0.6);
+            tl.call(() => { _buildLoopArrowPath(); }, null, 0.95);
+            tl.to(arrow, { opacity: 0.7, duration: 0.5, ease: 'power2.out' }, 0.75);
+
+            // Once UI is in, start the forever loop from sentence 0.
+            tl.call(() => _startLoopForever(0), null, 1.3);
+        },
+        replay: () => {
+            _stopLoopForever();
+            if (nnViz) nnViz.stopStream();
+            const page = document.getElementById('loopPage');
+            const pageContent = document.getElementById('loopPageContent');
+            const genSlot = document.getElementById('loopGenSlot');
+            const genText = document.getElementById('loopGenText');
+            const arrow = document.getElementById('loopArrow');
+            const nnBox = document.getElementById('nnBox');
+            const streamIn = document.getElementById('nnStreamInput');
+            const streamOut = document.getElementById('nnStreamOutput');
+            const labelNN = document.getElementById('morphLabelNN');
+            const sublabelNN = document.getElementById('morphSublabelNN');
+
+            document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
+
+            nnBox.classList.add('loop-dim');
+            gsap.set([streamIn, streamOut], { opacity: 0 });
+            streamIn.innerHTML = '';
+            streamOut.innerHTML = '';
+
+            labelNN.innerHTML = 'Schritt 3: <span class="hl">Autoregression</span>';
+            sublabelNN.textContent = 'Output wird Teil des nächsten Inputs';
+            gsap.set([labelNN, sublabelNN], { opacity: 1, y: 0 });
+
+            // Page: prompt only; loop will fill it back up
+            pageContent.innerHTML = '<span class="loop-prompt">' + LOOP_PROMPT + '</span>';
+            pageContent.style.transform = '';
+            genText.innerHTML = '';
+            gsap.set(genText, { opacity: 1 });
+
+            gsap.set(page, { opacity: 1, scale: 1, x: 0, y: 0, clearProps: 'transform' });
+            gsap.set(genSlot, { opacity: 0, x: 0, y: 0, scale: 1 });
+            gsap.set(arrow, { opacity: 0.7 });
+
+            // Build arrow + restart forever loop on next frame (boxes need layout first)
+            requestAnimationFrame(() => {
+                _buildLoopArrowPath();
+                _startLoopForever(0);
+            });
+        }
+    };
+}
+
 function buildShowNTPFromNN() {
     return {
         timeline: (tl) => {
@@ -1219,11 +1705,20 @@ function buildShowNTPFromNN() {
             const streamOut = document.getElementById('nnStreamOutput');
             const ntpContainer = document.getElementById('ntpContainer');
 
-            // Stop stream
-            tl.call(() => { if (nnViz) nnViz.stopStream(); }, null, 0);
+            // Stop stream + forever loop, clean up any flyers, un-dim NN
+            tl.call(() => {
+                _stopLoopForever();
+                if (nnViz) nnViz.stopStream();
+                document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
+                nnBox.classList.remove('loop-dim');
+            }, null, 0);
 
-            // Fade labels + streams
-            tl.to([streamIn, streamOut, labelNN, sublabelNN], { opacity: 0, duration: 0.2 }, 0);
+            // Fade labels + streams + autoregressive loop UI
+            const loopPage = document.getElementById('loopPage');
+            const loopGenSlot = document.getElementById('loopGenSlot');
+            const loopArrow = document.getElementById('loopArrow');
+            tl.to([streamIn, streamOut, labelNN, sublabelNN, loopPage, loopGenSlot, loopArrow],
+                { opacity: 0, duration: 0.3 }, 0);
 
             // Dissolve NN: edges first, then dots — radiating outward from center
             tl.call(() => {
@@ -1683,8 +2178,12 @@ const STEPS = [
     // 18: Attention → Embed flies past → PosEnc flies past → NN dezooms + streaming
     buildZoomOutToNN(),
 
+    // --- TEIL 1: AUTOREGRESSIVE LOOP ---
+    // 19: Output wird Teil des Inputs — Buchanalogie ("für jedes neue Wort: ganzes Kapitel lesen")
+    buildAutoregressiveLoop(),
+
     // --- TEIL 1: NTP ---
-    // 19: NN dissolves → "Gib mir das wahrscheinlichste nächste Wort" appears centered
+    // 20: NN dissolves → "Gib mir das wahrscheinlichste nächste Wort" appears centered
     buildShowNTPFromNN(),
     // 20: Heading morphs to top-left, sentence + bars appear
     buildNTPRevealBars(),

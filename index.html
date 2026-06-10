@@ -135,6 +135,24 @@
         <div class="nn-stream-input" id="nnStreamInput"></div>
         <div class="nn-stream-output" id="nnStreamOutput"></div>
 
+        <!-- Autoregressive loop: page (left), generation slot (right), curved arrow back -->
+        <div class="loop-page" id="loopPage">
+            <div class="loop-page-label">Input</div>
+            <div class="loop-page-content" id="loopPageContent"></div>
+        </div>
+        <div class="loop-gen-slot" id="loopGenSlot">
+            <div class="loop-gen-label">Output</div>
+            <span class="loop-gen-text" id="loopGenText"></span><span class="loop-gen-cursor" id="loopGenCursor"></span>
+        </div>
+        <svg class="loop-arrow" id="loopArrow" viewBox="0 0 1600 900" fill="none" preserveAspectRatio="none">
+            <defs>
+                <marker id="loopArrowHead" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+                    <polygon points="0,0 12,6 0,12" fill="rgba(250,187,67,0.85)"/>
+                </marker>
+            </defs>
+            <path id="loopArrowPath" d="" stroke="rgba(250,187,67,0.6)" stroke-width="2.5" stroke-dasharray="8 8" fill="none" marker-end="url(#loopArrowHead)"/>
+        </svg>
+
         <!-- Ambient neural background (visible in dark mode) -->
         <canvas id="nnAmbient" class="nn-ambient"></canvas>
 

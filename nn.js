@@ -130,8 +130,8 @@ class NeuralNetViz {
         this.svg = null;
         this.built = false;
 
-        this.LAYERS = 8;
-        this.BASE_NODES = 14;
+        this.LAYERS = 7;
+        this.BASE_NODES = 13;
     }
 
     build() {
@@ -154,7 +154,7 @@ class NeuralNetViz {
         for (let l = 0; l < this.LAYERS; l++) {
             const t = 1 - Math.abs(2 * l / (this.LAYERS - 1) - 1);
             const count = Math.round(5 + t * (this.BASE_NODES - 5));
-            const x = W * 0.2 + (W * 0.6) * l / (this.LAYERS - 1);
+            const x = W * 0.27 + (W * 0.46) * l / (this.LAYERS - 1);
             const group = [];
 
             for (let n = 0; n < count; n++) {
@@ -195,12 +195,11 @@ class NeuralNetViz {
     // Single-shot bolt: fires once through the network, no loop
     // Returns total duration in ms so caller can sync
     fireBolt() {
-        const STEP_MS = 100;
-        const FADE_MS = 400;
+        const STEP_MS = 55;   // faster propagation between layers
+        const FADE_MS = 280;  // shorter dwell so the bolt feels like a pulse
         const path = this._buildBoltPath();
         const totalDuration = (this.LAYERS * STEP_MS) + FADE_MS;
 
-        // Light up layer by layer
         path.forEach((nodeIndices, layerIdx) => {
             const prevIndices = layerIdx > 0 ? path[layerIdx - 1] : [];
             const delay = layerIdx * STEP_MS;
@@ -209,22 +208,20 @@ class NeuralNetViz {
                 nodeIndices.forEach(idx => {
                     const n = this.nodes[idx];
                     n.el.style.background = '#fabb43';
-                    n.el.style.boxShadow = '0 0 10px rgba(250,187,67,0.5)';
-                    n.el.style.transform = 'translate(-50%,-50%) scale(1.4)';
+                    n.el.style.boxShadow = '0 0 22px rgba(250,187,67,0.95), 0 0 6px rgba(255,255,255,0.6)';
+                    n.el.style.transform = 'translate(-50%,-50%) scale(2.0)';
 
-                    // Light edges from previous layer
                     prevIndices.forEach(prevIdx => {
                         this.edges.forEach(e => {
                             if ((e.i === prevIdx && e.j === idx) || (e.i === idx && e.j === prevIdx)) {
-                                e.el.setAttribute('stroke', 'rgba(250,187,67,0.35)');
-                                e.el.setAttribute('stroke-width', '1.8');
+                                e.el.setAttribute('stroke', 'rgba(250,187,67,0.85)');
+                                e.el.setAttribute('stroke-width', '2.4');
                             }
                         });
                     });
                 });
             }, delay);
 
-            // Fade this layer's nodes after a beat
             setTimeout(() => {
                 nodeIndices.forEach(idx => {
                     const n = this.nodes[idx];

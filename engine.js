@@ -77,13 +77,16 @@ class Engine {
             this.activeTl = null;
         }
 
-        // Reset dark mode + ambient + param loop
+        // Reset dark mode + ambient + param loop + forever loop
         document.body.classList.remove('nn-dark');
         if (typeof nnAmbientViz !== 'undefined' && nnAmbientViz) {
             nnAmbientViz.stop();
         }
         if (typeof _stopParamLoop === 'function') {
             _stopParamLoop();
+        }
+        if (typeof _stopLoopForever === 'function') {
+            _stopLoopForever();
         }
 
         document.querySelectorAll('.page').forEach(p => {
@@ -115,6 +118,23 @@ class Engine {
             if (streamIn) streamIn.innerHTML = '';
             const streamOut = p.querySelector('#nnStreamOutput');
             if (streamOut) streamOut.innerHTML = '';
+            // Reset autoregressive loop UI
+            const loopPage = p.querySelector('#loopPage');
+            if (loopPage) {
+                gsap.killTweensOf(loopPage);
+                gsap.set(loopPage, { opacity: 0, scale: 1, x: 0, y: 0, clearProps: 'transform' });
+            }
+            const loopPageContent = p.querySelector('#loopPageContent');
+            if (loopPageContent) { loopPageContent.innerHTML = ''; loopPageContent.style.transform = ''; }
+            const loopGenSlot = p.querySelector('#loopGenSlot');
+            if (loopGenSlot) gsap.set(loopGenSlot, { opacity: 0, clearProps: 'transform' });
+            const loopGenText = p.querySelector('#loopGenText');
+            if (loopGenText) { loopGenText.textContent = ''; gsap.set(loopGenText, { opacity: 1 }); }
+            const loopArrow = p.querySelector('#loopArrow');
+            if (loopArrow) gsap.set(loopArrow, { opacity: 0 });
+            // Remove any in-flight flyer ghosts + NN dim
+            document.querySelectorAll('.loop-flyer').forEach(g => g.remove());
+            if (nnBox) nnBox.classList.remove('loop-dim');
             // Reset zoom layers
             p.querySelectorAll('.zoom-layer').forEach(zl => {
                 gsap.set(zl, { clearProps: 'all' });
