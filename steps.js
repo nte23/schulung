@@ -688,7 +688,7 @@ function _buildAndDrawStack(attLayer, numLayers) {
     attLayer.appendChild(dots);
 
     // Draw arcs after DOM layout (needs measured positions)
-    requestAnimationFrame(() => {
+    FX.raf(() => {
         cards.forEach((card, i) => {
             const svg = card.querySelector('.att-svg');
             const tokenRow = card.querySelector('.att-tokens');
@@ -785,7 +785,7 @@ function buildStackLayers() {
                     cards.forEach(c => gsap.set(c, { opacity: 0, y: 10 }));
                     gsap.set(dots, { opacity: 0 });
 
-                    requestAnimationFrame(() => { requestAnimationFrame(() => {
+                    FX.raf(() => { FX.raf(() => {
                         _drawAllStackArcs(cards);
                         cards.forEach((card, i) => {
                             gsap.to(card, {
@@ -823,7 +823,7 @@ function buildStackLayers() {
             const { cards, dots } = _buildStack(attLayer, numLayers);
             cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07) }));
 
-            requestAnimationFrame(() => { requestAnimationFrame(() => {
+            FX.raf(() => { FX.raf(() => {
                 const mainSvg = document.getElementById('attArcSvg');
                 const mainTokens = document.querySelector('#attArea .att-tokens');
                 _drawArcsInSvg(mainSvg, mainTokens, MAIN_ARCS);
@@ -864,7 +864,7 @@ function _buildParamGrid(grid, cols) {
 }
 
 function _redrawAllArcsAfterLayout(mainArcDefs, layerArcDefs) {
-    requestAnimationFrame(() => { requestAnimationFrame(() => {
+    FX.raf(() => { FX.raf(() => {
         const mainSvg = document.getElementById('attArcSvg');
         const mainTokens = document.querySelector('#attArea .att-tokens');
         _drawArcsInSvg(mainSvg, mainTokens, mainArcDefs);
@@ -942,7 +942,7 @@ let _paramArcIndex = 0;
 
 function _stopParamLoop() {
     if (_paramLoopInterval) {
-        clearInterval(_paramLoopInterval);
+        FX.clearInterval(_paramLoopInterval);
         _paramLoopInterval = null;
     }
 }
@@ -1013,7 +1013,7 @@ function buildSpinAndShiftArcs() {
                 _runParamCycle();
 
                 // Start endless loop
-                _paramLoopInterval = setInterval(_runParamCycle, 3000);
+                _paramLoopInterval = FX.setInterval(_runParamCycle, 3000);
             }, null, 0);
         },
         replay: () => {
@@ -1028,9 +1028,9 @@ function buildSpinAndShiftArcs() {
 
             // Start loop
             _paramArcIndex = 0;
-            requestAnimationFrame(() => { requestAnimationFrame(() => {
+            FX.raf(() => { FX.raf(() => {
                 _runParamCycle();
-                _paramLoopInterval = setInterval(_runParamCycle, 3000);
+                _paramLoopInterval = FX.setInterval(_runParamCycle, 3000);
             }); });
         }
     };
@@ -1056,7 +1056,7 @@ function _replayStackState() {
     const { cards } = _buildStack(attLayer, 4);
     cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07) }));
 
-    requestAnimationFrame(() => { requestAnimationFrame(() => {
+    FX.raf(() => { FX.raf(() => {
         const mainSvg = document.getElementById('attArcSvg');
         const mainTokens = document.querySelector('#attArea .att-tokens');
         _drawArcsInSvg(mainSvg, mainTokens, MAIN_ARCS);
@@ -1358,14 +1358,14 @@ function _runForeverCycle() {
     });
 
     // ── Phase B: bolt fires partway through ──────────────────────
-    state.timeouts.push(setTimeout(() => {
+    state.timeouts.push(FX.setTimeout(() => {
         if (!state.active) return;
         if (nnViz) nnViz.fireBolt();
     }, CYCLE_BOLT_LEAD));
 
     // ── Phase C: gen-slot emerges from NN to its natural position ─
     const emergeStart = CYCLE_FLY_IN_MS;
-    state.timeouts.push(setTimeout(() => {
+    state.timeouts.push(FX.setTimeout(() => {
         if (!state.active) return;
         // Pre-populate full content (prefix + empty amber span)
         genTextEl.innerHTML = prefixHTML + '<span class="loop-new" id="loopNewSpan"> </span>';
@@ -1382,7 +1382,7 @@ function _runForeverCycle() {
 
     // ── Phase D: typewriter into the amber span ──────────────────
     const typeStart = emergeStart + CYCLE_EMERGE_MS;
-    state.timeouts.push(setTimeout(() => {
+    state.timeouts.push(FX.setTimeout(() => {
         if (!state.active) return;
         const newSpan = document.getElementById('loopNewSpan');
         if (!newSpan) return;
@@ -1392,7 +1392,7 @@ function _runForeverCycle() {
             if (!_foreverState || !_foreverState.active) return;
             if (i < sentence.length) {
                 newSpan.textContent += sentence[i++];
-                state.timeouts.push(setTimeout(tick, perChar));
+                state.timeouts.push(FX.setTimeout(tick, perChar));
             }
         };
         tick();
@@ -1400,7 +1400,7 @@ function _runForeverCycle() {
 
     // ── Phase E: gen-slot follows the arrow back to the page ─────
     const flyBackStart = typeStart + CYCLE_TYPE_MS + CYCLE_HOLD_MS;
-    state.timeouts.push(setTimeout(() => {
+    state.timeouts.push(FX.setTimeout(() => {
         if (!state.active) return;
         const path = document.getElementById('loopArrowPath');
         if (!path) return;
@@ -1468,7 +1468,7 @@ function _runForeverCycle() {
 
     // ── Phase F: schedule next cycle ─────────────────────────────
     const cycleTotal = flyBackStart + CYCLE_FLY_BACK_MS + CYCLE_GAP_MS;
-    state.timeouts.push(setTimeout(() => _runForeverCycle(), cycleTotal));
+    state.timeouts.push(FX.setTimeout(() => _runForeverCycle(), cycleTotal));
 }
 
 // Rebuild the curved arrow path so it docks to the actual box edges
@@ -1687,7 +1687,7 @@ function buildAutoregressiveLoop() {
             gsap.set(arrow, { opacity: 0.7 });
 
             // Build arrow + restart forever loop on next frame (boxes need layout first)
-            requestAnimationFrame(() => {
+            FX.raf(() => {
                 _buildLoopArrowPath();
                 _startLoopForever(0);
             });
@@ -2005,6 +2005,7 @@ const HALLUC_STEPS = [
 ];
 
 let _hallucStepIndex = -1;
+let _hallucTypeInterval = null;
 
 function _typeHallucToken(step) {
     const sentence = document.getElementById('hallucSentence');
@@ -2014,11 +2015,13 @@ function _typeHallucToken(step) {
     sentence.innerHTML = step.prefix + '<span id="_hTyping" class="' + tokenClass + '"></span><span class="halluc-cursor"></span>';
     const tokEl = document.getElementById('_hTyping');
     let i = 0;
-    const iv = setInterval(() => {
+    if (_hallucTypeInterval) FX.clearInterval(_hallucTypeInterval);
+    _hallucTypeInterval = FX.setInterval(() => {
         if (i < step.token.length) {
             tokEl.textContent = step.token.substring(0, ++i);
         } else {
-            clearInterval(iv);
+            FX.clearInterval(_hallucTypeInterval);
+            _hallucTypeInterval = null;
         }
     }, 40);
 

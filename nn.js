@@ -129,9 +129,16 @@ class NeuralNetViz {
         this.layerGroups = [];
         this.svg = null;
         this.built = false;
+        this._timeouts = new Set();
 
         this.LAYERS = 7;
         this.BASE_NODES = 13;
+    }
+
+    _setTimeout(fn, ms) {
+        const id = setTimeout(() => { this._timeouts.delete(id); fn(); }, ms);
+        this._timeouts.add(id);
+        return id;
     }
 
     build() {
@@ -204,7 +211,7 @@ class NeuralNetViz {
             const prevIndices = layerIdx > 0 ? path[layerIdx - 1] : [];
             const delay = layerIdx * STEP_MS;
 
-            setTimeout(() => {
+            this._setTimeout(() => {
                 nodeIndices.forEach(idx => {
                     const n = this.nodes[idx];
                     n.el.style.background = '#fabb43';
@@ -222,7 +229,7 @@ class NeuralNetViz {
                 });
             }, delay);
 
-            setTimeout(() => {
+            this._setTimeout(() => {
                 nodeIndices.forEach(idx => {
                     const n = this.nodes[idx];
                     n.el.style.background = '';
@@ -309,11 +316,11 @@ class NeuralNetViz {
         gsap.to(inEl, { color: '#fabb43', duration: 0.05, delay: 0.25 + 0.8 * 0.45 });
 
         // 2. Fire bolt synced with token arrival
-        setTimeout(() => this.fireBolt(), 250 + 800 * 0.5);
+        this._setTimeout(() => this.fireBolt(), 250 + 800 * 0.5);
 
         // 3. Output: word flies out to the right (mirrors input)
         const boltDone = 250 + 800 * 0.5 + this.LAYERS * 100;
-        setTimeout(() => {
+        this._setTimeout(() => {
             const word = this._streamWords[this._streamWordIndex % this._streamWords.length];
             this._streamWordIndex++;
 
@@ -346,6 +353,14 @@ class NeuralNetViz {
             clearInterval(this._streamInterval);
             this._streamInterval = null;
         }
+        this._timeouts.forEach(id => clearTimeout(id));
+        this._timeouts.clear();
+        // A bolt interrupted mid-flight leaves nodes highlighted — clear it
+        this.nodes.forEach(n => {
+            n.el.style.background = '';
+            n.el.style.boxShadow = '';
+            n.el.style.transform = '';
+        });
     }
 
     destroy() {
