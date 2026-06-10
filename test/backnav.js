@@ -78,7 +78,13 @@ async function settle(page) {
         { cwd: path.join(__dirname, '..'), stdio: 'ignore' });
     await new Promise(r => setTimeout(r, 800));
 
-    const browser = await chromium.launch();
+    // WSL without sudo: chromium's missing system libs live in a local extract
+    const libDir = path.join(process.env.HOME || '', '.local/chromium-libs/usr/lib/x86_64-linux-gnu');
+    const env = { ...process.env };
+    if (require('fs').existsSync(libDir)) {
+        env.LD_LIBRARY_PATH = `${libDir}:${path.join(libDir, 'nss')}:${env.LD_LIBRARY_PATH || ''}`;
+    }
+    const browser = await chromium.launch({ env });
     const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 
     try {
