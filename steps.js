@@ -2096,7 +2096,9 @@ function _replayHallucTo(targetStep) {
 
     const step = HALLUC_STEPS[targetStep];
     const tokenClass = step.red ? 'tok-red' : 'tok-new';
-    sentence.innerHTML = step.prefix + '<span class="' + tokenClass + '">' + step.token + '</span><span class="halluc-cursor"></span>';
+    // Match the exact final DOM produced by _typeHallucToken (forward): the
+    // freshly-typed token keeps id="_hTyping" until the next step replaces it.
+    sentence.innerHTML = step.prefix + '<span id="_hTyping" class="' + tokenClass + '">' + step.token + '</span><span class="halluc-cursor"></span>';
 
     step.bars.forEach((bar, idx) => {
         document.getElementById('hbw' + idx).textContent = bar.w;
@@ -2341,6 +2343,11 @@ const STEPS = [
             });
         },
         replay: () => {
+            // Forward fades these in; replayInstant left them at opacity:0.
+            ['#hallucLabel', '#hallucSublabel', '#hallucArea'].forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el) gsap.set(el, { opacity: 1, y: 0 });
+            });
             const initBars = [
                 { w: 'Gemäß', p: 31 }, { w: 'Der', p: 24 }, { w: 'In', p: 18 }, { w: 'Es', p: 12 }
             ];
