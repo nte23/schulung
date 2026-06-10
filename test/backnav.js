@@ -16,7 +16,13 @@ const URL = `http://localhost:${PORT}/index.html`;
 const SNAP_OPTS = {
     skipSubtree: ['#nnAmbient', '.loop-flyer', '.halluc-cursor', '#loopPage', '#loopGenSlot'],
     skipChildren: ['#nnBox', '#nnStreamInput', '#nnStreamOutput', '#paramGrid',
-                   '#attArcSvg', '.att-svg', '#loopArrow'],
+                   '#attArcSvg', '.att-svg', '#loopArrow',
+                   // #ntpSentence's only child is .ntp-cursor, which blinks
+                   // forever via a CSS step-end keyframe (opacity 1↔0). Its
+                   // visibility at snapshot time depends purely on the blink
+                   // phase, not on step state, so we keep the sentence
+                   // container's line but skip its blinking child.
+                   '#ntpSentence'],
 };
 
 // Serialized into the page. Returns a line-per-element textual state dump:

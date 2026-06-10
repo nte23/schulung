@@ -68,7 +68,7 @@ function buildTypewriter() {
                 const cb = document.getElementById('morphBracketCompound');
                 if (cb) cb.style.display = 'none';
                 wordEls.forEach(el => gsap.set(el, { opacity: 1 }));
-                wordsContainer.classList.add('typing-mode');
+                document.getElementById('morphWords').classList.add('typing-mode');
             }, null, typeStart);
 
             // 3. Build the full character sequence with spaces as part of word spans
@@ -115,7 +115,11 @@ function buildTypewriter() {
                 const el = document.getElementById(id);
                 const prefix = (i > 0 && !COMPOUND_PAIRS.has(i)) ? ' ' : '';
                 el.querySelector('.word-text').textContent = prefix + WORD_TEXTS[i];
-                gsap.set(el, { opacity: 1, y: 0 });
+                // Forward path leaves the word elements at FADE_IN_Y: they are
+                // [data-anim] children of pg-morph (set to y:25 by the page
+                // transition at step 7) but are never animated to y:0 by the
+                // typewriter timeline. Match that authored state here.
+                gsap.set(el, { opacity: 1, y: FADE_IN_Y });
             });
             // Show cursor on last word
             document.getElementById(MORPH_WORDS[MORPH_WORDS.length - 1]).classList.add('typing');
@@ -189,13 +193,15 @@ function buildTokenize() {
 
             // Show split/tokenized state with IDs
             const wordsContainer = document.getElementById('morphWords');
-            wordsContainer.classList.remove('sentence');
+            wordsContainer.classList.remove('sentence', 'typing-mode');
             wordsContainer.classList.add('split');
 
             MORPH_WORDS.forEach((id, i) => {
                 const el = document.getElementById(id);
                 el.querySelector('.word-text').textContent = WORD_TEXTS[i];
-                gsap.set(el, { opacity: 1, y: 0 });
+                // y:25 inherited from the page transition (see buildTypewriter
+                // replay) — tokenize never animates it back to 0.
+                gsap.set(el, { opacity: 1, y: FADE_IN_Y });
                 el.classList.add('tokenized');
             });
 
@@ -378,9 +384,11 @@ function buildTokensToNN() {
             wordsContainer.classList.remove('split', 'sentence', 'typing-mode');
             wordsContainer.classList.add('nn-input');
 
-            // Tokens already flew in — hide them
+            // Tokens already flew in — hide them; forward strips .tokenized too
             MORPH_WORDS.forEach(id => {
-                gsap.set(document.getElementById(id), { opacity: 0, scale: 0.4 });
+                const el = document.getElementById(id);
+                el.classList.remove('tokenized');
+                gsap.set(el, { opacity: 0, scale: 0.4 });
             });
             gsap.set(document.getElementById('compound-patent'), { opacity: 0, scale: 0.4 });
             document.querySelectorAll('#morphWords .token-id').forEach(el => { el.style.display = ''; });
@@ -417,7 +425,11 @@ function _zoomReplayBase() {
     });
     gsap.set(document.getElementById('morphQuestion'), { opacity: 0, display: 'none' });
     gsap.set(document.getElementById('morphOverline'), { opacity: 0, display: 'none' });
-    MORPH_WORDS.forEach(id => { gsap.set(document.getElementById(id), { opacity: 0 }); });
+    MORPH_WORDS.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('tokenized');
+        gsap.set(el, { opacity: 0 });
+    });
     gsap.set(document.getElementById('compound-patent'), { opacity: 0 });
     const wc = document.getElementById('morphWords');
     wc.classList.remove('split', 'sentence', 'typing-mode');
@@ -806,6 +818,7 @@ function buildStackLayers() {
             gsap.set(document.getElementById('zoomParams'), { opacity: 0 });
 
             const attLayer = document.getElementById('zoomAttention');
+            const label = document.getElementById('attLabel');
             const heading = document.getElementById('attHeadingZoom');
             const sub = document.getElementById('attSubZoom');
             const attArea = document.getElementById('attArea');
@@ -818,10 +831,13 @@ function buildStackLayers() {
             sub.textContent = '×96 Schichten — jede lernt andere Zusammenhänge';
             gsap.set(sub, { opacity: 1 });
             gsap.set(attArea, { opacity: 0.5 });
+            // Forward path FLIP-tweens x/y to 0, leaving an explicit identity
+            // matrix (matrix(1,0,0,1,0,0)). Reproduce it so the snapshot matches.
+            gsap.set([label, heading, sub, attArea], { x: 0, y: 0, scaleX: 1, scaleY: 1 });
             document.querySelectorAll('#attArea .att-token').forEach(tok => gsap.set(tok, { opacity: 1 }));
 
             const { cards, dots } = _buildStack(attLayer, numLayers);
-            cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07) }));
+            cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07), x: 0, y: 0 }));
 
             FX.raf(() => { FX.raf(() => {
                 const mainSvg = document.getElementById('attArcSvg');
@@ -1039,6 +1055,7 @@ function buildSpinAndShiftArcs() {
 // Shared replay helper for the stacked state (heading shrunk, layers visible)
 function _replayStackState() {
     const attLayer = document.getElementById('zoomAttention');
+    const label = document.getElementById('attLabel');
     const heading = document.getElementById('attHeadingZoom');
     const sub = document.getElementById('attSubZoom');
     const attArea = document.getElementById('attArea');
@@ -1051,10 +1068,12 @@ function _replayStackState() {
     sub.textContent = '×96 Schichten — jede lernt andere Zusammenhänge';
     gsap.set(sub, { opacity: 1 });
     gsap.set(attArea, { opacity: 0.5 });
+    // Forward FLIP leaves an explicit identity matrix on these — match it.
+    gsap.set([label, heading, sub, attArea], { x: 0, y: 0, scaleX: 1, scaleY: 1 });
     document.querySelectorAll('#attArea .att-token').forEach(tok => gsap.set(tok, { opacity: 1 }));
 
     const { cards } = _buildStack(attLayer, 4);
-    cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07) }));
+    cards.forEach((card, i) => gsap.set(card, { opacity: Math.max(0.12, 0.4 - i * 0.07), x: 0, y: 0 }));
 
     FX.raf(() => { FX.raf(() => {
         const mainSvg = document.getElementById('attArcSvg');
@@ -1083,7 +1102,10 @@ function _ntpReplayBase() {
     if (nnAmbientViz) nnAmbientViz.stop();
     document.body.classList.remove('nn-dark');
 
-    gsap.set(document.getElementById('nnBox'), { opacity: 0 });
+    // The NN is dissolved node-by-node (children fade), but the nnBox container
+    // itself stays at opacity 1 on the forward path and is never touched again
+    // through the NTP / temperature steps. Match that visible-but-empty state.
+    gsap.set(document.getElementById('nnBox'), { opacity: 1 });
     gsap.set(document.getElementById('zoomAttention'), { opacity: 0 });
     gsap.set(document.getElementById('zoomPosEnc'), { opacity: 0 });
     gsap.set(document.getElementById('zoomEmbed'), { opacity: 0 });
@@ -1801,6 +1823,25 @@ function buildShowNTPFromNN() {
                 document.getElementById(d.pct).textContent = '';
             });
             gsap.set(document.getElementById('ntpInsight'), { opacity: 0 });
+
+            // Heading + label are still centered at this step (they move to
+            // top-left only in buildNTPRevealBars). Reproduce the centering
+            // offset measured by the forward timeline; sentence + bars hidden.
+            const ntpLabel = document.getElementById('ntpLabel');
+            const ntpHeading = document.getElementById('ntpHeading');
+            gsap.set([ntpLabel, ntpHeading], { x: 0, y: 0, scale: 1 });
+            const labelRect = ntpLabel.getBoundingClientRect();
+            const headRect = ntpHeading.getBoundingClientRect();
+            const vcx = window.innerWidth / 2;
+            const vcy = window.innerHeight / 2;
+            const labelDx = vcx - (labelRect.left + labelRect.width / 2);
+            const labelDy = vcy - labelRect.top - labelRect.height - 30;
+            const headDx = vcx - (headRect.left + headRect.width / 2);
+            const headDy = vcy - (headRect.top + headRect.height / 2);
+            gsap.set(ntpLabel, { x: labelDx, y: labelDy, opacity: 1 });
+            gsap.set(ntpHeading, { x: headDx, y: headDy, opacity: 1, scale: 1.3 });
+            gsap.set(document.querySelector('.ntp-sentence'), { opacity: 0 });
+            gsap.set(document.querySelector('.ntp-bars'), { opacity: 0 });
         }
     };
 }
@@ -1845,10 +1886,7 @@ function _tempReplayBase(presetIdx) {
 // Map preset index to slider value: 0→0, 1→1, 2→2, 3→3
 function _setSliderTo(idx) {
     const slider = document.getElementById('tempSlider');
-    gsap.to(slider, { value: idx, duration: 0.4, ease: 'power2.inOut',
-        onUpdate: () => { slider.value = Math.round(gsap.getProperty(slider, 'value')); }
-    });
-    // GSAP can't tween range input value directly — use a proxy
+    // GSAP can't tween a range input's value directly — use a proxy
     const obj = { v: parseFloat(slider.value) };
     gsap.to(obj, { v: idx, duration: 0.4, ease: 'power2.inOut',
         onUpdate: () => { slider.value = Math.round(obj.v); }
@@ -2188,21 +2226,21 @@ const STEPS = [
     // --- TEIL 1: NTP ---
     // 20: NN dissolves → "Gib mir das wahrscheinlichste nächste Wort" appears centered
     buildShowNTPFromNN(),
-    // 20: Heading morphs to top-left, sentence + bars appear
+    // 21: Heading morphs to top-left, sentence + bars appear
     buildNTPRevealBars(),
-    // 21: Insight box — "Das Modell WEISS die Antwort nicht"
+    // 22: Insight box — "Das Modell WEISS die Antwort nicht"
     buildShowNTPInsight(),
-    // 22: Temperature panel slides in (T=0.7, default)
+    // 23: Temperature panel slides in (T=0.7, default)
     buildShowTempPanel(),
-    // 23: T=0 — deterministic, all on #1
+    // 24: T=0 — deterministic, all on #1
     buildTempZero(),
-    // 24: T=2.0 — chaos, nearly uniform
+    // 25: T=2.0 — chaos, nearly uniform
     buildTempChaos(),
-    // 25: Back to T=0.7 — default
+    // 26: Back to T=0.7 — default
     buildTempDefault(),
 
     // --- TEIL 1: ZWISCHENFAZIT ---
-    // 26: Transition to Fazit page — overline + heading
+    // 27: Transition to Fazit page — overline + heading
     {
         page: 'pg-fazit1',
         timeline: (tl, engine) => {
@@ -2237,7 +2275,7 @@ const STEPS = [
             });
         }
     },
-    // 27: Checkmarks stagger in
+    // 28: Checkmarks stagger in
     {
         timeline: (tl) => {
             const items = document.querySelectorAll('#pg-fazit1 .fazit-item');
@@ -2256,17 +2294,16 @@ const STEPS = [
     },
 
     // --- TEIL 2: GRENZEN & HALLUZINATIONEN ---
-    // 28: Opener — "Was KI nicht kann"
+    // 29: Opener — "Was KI nicht kann"
     {
         exit: ['#pg-fazit1 .overline', '#pg-fazit1 .hero', '#pg-fazit1 .fazit-list'],
         page: 'pg-teil2-opener',
         enter: ['#pg-teil2-opener .hero', '#pg-teil2-opener .subtitle'],
         stagger: 0.15
     },
-    // 29: Opener → Hallucination mechanism page
+    // 30: Opener → Hallucination mechanism page
     {
         exit: ['#pg-teil2-opener .hero', '#pg-teil2-opener .subtitle'],
-        page: 'pg-halluc',
         page: 'pg-halluc',
         timeline: (tl, engine) => {
             // Exit opener
@@ -2316,7 +2353,7 @@ const STEPS = [
             });
         }
     },
-    // 30-35: Hallucination mechanism — click-stepped token generation
+    // 31-36: Hallucination mechanism — click-stepped token generation
     buildHallucStep(0),
     buildHallucStep(1),
     buildHallucStep(2),
@@ -2325,13 +2362,13 @@ const STEPS = [
     buildHallucStep(5),
 
     // --- TEIL 2: SUMMARY ---
-    // 36: Transition to summary — "Kein Wissen — nur Muster"
+    // 37: Transition to summary — "Kein Wissen — nur Muster"
     {
         page: 'pg-teil2-summary',
         enter: ['#pg-teil2-summary .overline', '#pg-teil2-summary .hero'],
         stagger: 0.15
     },
-    // 37: Three warning points stagger in
+    // 38: Three warning points stagger in
     {
         timeline: (tl) => {
             const items = document.querySelectorAll('#pg-teil2-summary .fazit-item');
@@ -2348,7 +2385,7 @@ const STEPS = [
             });
         }
     },
-    // 38: Rule #1
+    // 39: Rule #1
     {
         timeline: (tl) => {
             const rule = document.querySelector('#pg-teil2-summary .halluc-rule');
