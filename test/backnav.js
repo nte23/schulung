@@ -62,6 +62,9 @@ function snapshotInPage(opts) {
 }
 
 async function settle(page) {
+    // Two rAFs first: engine.busy is set in GSAP's onStart, which fires on the
+    // next ticker tick — checking immediately would pass before the step begins.
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     await page.waitForFunction(() => window.engine && !window.engine.busy, null, { timeout: 60000 });
     await page.waitForTimeout(2000); // detached tweens / delayedCalls / rAF chains
 }
@@ -70,7 +73,13 @@ async function settle(page) {
     const args = process.argv.slice(2);
     const getNum = (name, dflt) => {
         const i = args.indexOf(name);
-        return i >= 0 ? parseInt(args[i + 1], 10) : dflt;
+        if (i < 0) return dflt;
+        const n = parseInt(args[i + 1], 10);
+        if (Number.isNaN(n)) {
+            console.error(`${name} requires a numeric value`);
+            process.exit(1);
+        }
+        return n;
     };
     const spam = args.includes('--spam');
 
