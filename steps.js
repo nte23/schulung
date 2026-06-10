@@ -210,7 +210,11 @@ function buildTokenize() {
                 gsap.set(el, { opacity: 1 });
             });
 
-            gsap.set(document.getElementById('morphBracketCompound'), { opacity: 1, y: 0 });
+            // buildTypewriter hid the bracket via display:none; tokenize's
+            // forward path restores display:'' before fading it in.
+            const bracket = document.getElementById('morphBracketCompound');
+            bracket.style.display = '';
+            gsap.set(bracket, { opacity: 1, y: 0 });
         }
     };
 }
