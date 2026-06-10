@@ -2359,5 +2359,5 @@ const STEPS = [
 
 // Boot
 document.addEventListener('DOMContentLoaded', () => {
-    new Engine(STEPS);
+    window.engine = new Engine(STEPS);
 });

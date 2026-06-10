@@ -1,0 +1,12 @@
+BLOCKED: chromium.launch() failed — missing system libraries (libnspr4.so, libnss3.so, libasound.so.2).
+
+Run the following as the local user, then re-run npm run test:backnav:
+
+  sudo npx playwright install-deps chromium
+
+Full error from chromium launch attempt:
+  [err] chrome-headless-shell: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory
+  process did exit: exitCode=127
+
+After installing deps, run:
+  npm run test:backnav 2>&1 | tee test/baseline.txt

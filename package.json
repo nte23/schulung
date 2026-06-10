@@ -1,0 +1,19 @@
+{
+  "name": "schulung",
+  "version": "1.0.0",
+  "main": "engine.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:backnav": "node test/backnav.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}
